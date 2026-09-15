@@ -2,18 +2,21 @@ package com.summit.service;
 
 import com.summit.model.entity.AsistenciaLog;
 import com.summit.model.entity.CertificadoMedico;
+import com.summit.model.entity.Pago;
 import com.summit.model.entity.Usuario;
 import com.summit.model.enums.EstadoLegal;
 import com.summit.model.enums.ResultadoAcceso;
 import com.summit.model.enums.TipoEvento;
 import com.summit.repository.AsistenciaLogRepository;
 import com.summit.repository.CertificadoMedicoRepository;
+import com.summit.repository.PagoRepository;
 import com.summit.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -25,13 +28,17 @@ public class AccesoService {
     private CertificadoMedicoRepository certificadoRepository;
     @Autowired
     private AsistenciaLogRepository asistenciaLogRepository;
+    
+    // Inyectamos el repositorio de pagos
+    @Autowired
+    private PagoRepository pagoRepository;
 
     @Transactional
     public ResultadoAcceso registrarIntentoDeAcceso(String dniUsuario) {
         // 1. Buscar al usuario
         Optional<Usuario> usuarioOpt = usuarioRepository.findByDni(dniUsuario);
         if (usuarioOpt.isEmpty()) {
-            return null; // O lanzar una excepción de "Usuario no encontrado"
+            return null; // El Controller devolverá 404
         }
         Usuario usuario = usuarioOpt.get();
 
@@ -46,16 +53,28 @@ public class AccesoService {
             ultimoCertificado.get().getFechaVencimiento().isBefore(LocalDate.now())) {
             
             resultadoFinal = ResultadoAcceso.BLOQUEO_MEDICO;
+            
+        } else {
+            // 3. BARRERA FINANCIERA: Evaluamos solo si superó la barrera médica
+            Optional<Pago> ultimoPago = pagoRepository.findTopByUsuarioIdOrderByFechaPagoDesc(usuario.getId());
+            
+            // Asumimos que un pago dura 30 días exactos desde su fecha de cobro
+            if (ultimoPago.isEmpty() || 
+                ultimoPago.get().getFechaPago().plusDays(30).isBefore(LocalDateTime.now())) {
+                
+                resultadoFinal = ResultadoAcceso.BLOQUEO_PAGO;
+            }
         }
 
-        // 3. Registrar el Log Inmutable (Auditoría)
+        // 4. Registrar el Log Inmutable (Auditoría)
         AsistenciaLog log = new AsistenciaLog();
         log.setUsuario(usuario);
+        log.setFechaHora(LocalDateTime.now());
         log.setTipoEvento(TipoEvento.ENTRADA);
         log.setResultado(resultadoFinal);
         
         asistenciaLogRepository.save(log);
 
-        return resultadoFinal; // Retorna si el molinete debe abrirse o sonar la chicharra
+        return resultadoFinal; // Retorna la decisión fáctica del motor
     }
 }

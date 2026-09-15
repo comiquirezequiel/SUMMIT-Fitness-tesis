@@ -46,7 +46,11 @@ public class AccesoController {
                 return ResponseEntity.ok("ACCESO_PERMITIDO"); // HTTP 200: Molinete Verde
             case BLOQUEO_MEDICO:
                 // HTTP 403 Forbidden: Molinete Rojo (Requiere certificado)
-                return ResponseEntity.status(403).body("BLOQUEO_MEDICO - Certificado Médico Vencido o Inválido"); 
+                return ResponseEntity.status(403).body("BLOQUEO_MEDICO - Certificado Médico Vencido o Inválido");
+            case BLOQUEO_PAGO:
+                // HTTP 403 Forbidden: Molinete Rojo (Requiere pago)
+                return ResponseEntity.status(403).body("BLOQUEO_PAGO - Cuota impaga o pago demorado");
+
             default:
                 return ResponseEntity.status(403).body("ACCESO_DENEGADO");
         }

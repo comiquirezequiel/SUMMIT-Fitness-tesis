@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Repository
 public interface PagoRepository extends JpaRepository<Pago, Long> {
@@ -23,4 +24,7 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
     // NUEVO: Suma estricta de hoy
     @Query("SELECT SUM(p.montoAbonado) FROM Pago p WHERE p.fechaPago BETWEEN :inicioDia AND :finDia AND p.estadoPago = 'APROBADO'")
     BigDecimal calcularIngresosDelDia(@Param("inicioDia") LocalDateTime inicioDia, @Param("finDia") LocalDateTime finDia);
+
+    // Busca el último pago de un usuario específico, ordenado desde el más reciente al más viejo
+    Optional<Pago> findTopByUsuarioIdOrderByFechaPagoDesc(Long usuarioId);
 }
