@@ -1,5 +1,6 @@
 package com.summit.service;
 
+import com.summit.model.enums.ResultadoAcceso;
 import com.summit.dto.DashboardMetricasDTO;
 import com.summit.model.enums.EstadoUsuario;
 import com.summit.repository.AsistenciaLogRepository;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,25 +33,37 @@ public class DashboardService {
     public DashboardMetricasDTO obtenerMetricasMensuales() {
         DashboardMetricasDTO metricas = new DashboardMetricasDTO();
 
+        // Definimos qué resultados cuentan como un ingreso físico exitoso
+        List<ResultadoAcceso> accesosExitosos = Arrays.asList(
+            ResultadoAcceso.ACCESO_PERMITIDO, 
+            ResultadoAcceso.ACCESO_FORZADO
+        );
+
         // 1. Calcular rango de fechas (Desde el día 1 del mes actual hasta el último)
         YearMonth mesActual = YearMonth.now();
         LocalDateTime inicioMes = mesActual.atDay(1).atStartOfDay();
         LocalDateTime finMes = mesActual.atEndOfMonth().atTime(23, 59, 59);
 
+        
         // 2. Ingresos del Mes
         BigDecimal ingresos = pagoRepository.calcularIngresosDelMes(inicioMes, finMes);
         metricas.setIngresosDelMes(ingresos != null ? ingresos : BigDecimal.ZERO);
+
 
         // 3. Socios Activos
         long activos = usuarioRepository.countByEstado(EstadoUsuario.ACTIVO);
         metricas.setTotalSociosActivos(activos);
 
-        // 4. Calcular Retención (Fórmula: Socios únicos que vinieron este mes / Total de activos * 100)
-        // Nota: En un entorno real haríamos un COUNT(DISTINCT usuario_id) en el repositorio.
-        // Aquí simulamos la métrica para el dashboard.
-        long asistenciasDelMes = asistenciaLogRepository.findByFechaHoraBetween(inicioMes, finMes).size();
+
+        // 4*. Porcentaje de Retencion (Nueva formula)
+        // Usamos el nuevo método del repositorio pasándole la lista
+        long asistenciasDelMes = asistenciaLogRepository
+            .findByFechaHoraBetweenAndResultadoIn(inicioMes, finMes, accesosExitosos)
+            .size();
+
         double retencion = activos == 0 ? 0 : Math.min(100.0, ((double) asistenciasDelMes / activos) * 100);
-        metricas.setPorcentajeRetencion(Math.round(retencion * 100.0) / 100.0); // Redondear a 2 decimales
+        metricas.setPorcentajeRetencion(Math.round(retencion * 100.0) / 100.0);
+
 
         // 5. Mapear Horas Pico
         List<Object[]> resultadosHoras = asistenciaLogRepository.calcularHorasPico();
