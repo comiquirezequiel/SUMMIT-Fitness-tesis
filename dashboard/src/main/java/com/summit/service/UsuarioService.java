@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class UsuarioService {
@@ -37,5 +38,21 @@ public class UsuarioService {
         nuevoSocio.setFechaRegistro(LocalDateTime.now());
 
         return usuarioRepository.save(nuevoSocio);
+
     }
+
+    @Transactional(readOnly = true)
+    public List<Usuario> obtenerTodosLosSocios() {
+        // A futuro, podemos filtrar para que solo traiga a los que tienen RolUsuario.SOCIO
+        return usuarioRepository.findAll();
+    }
+
+    @Transactional
+    public void eliminarSocio(Long id) throws Exception {
+        if (!usuarioRepository.existsById(id)) {
+            throw new Exception("Socio no encontrado en la base de datos.");
+        }
+        usuarioRepository.deleteById(id);
+    }
+
 }
