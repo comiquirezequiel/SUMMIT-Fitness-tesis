@@ -3,6 +3,7 @@ package com.summit.dto;
 public class EditarSocioDTO {
     private String nombreCompleto;
     private String email;
+    private String telefono;
     private String estado; // ACTIVO, INACTIVO, PENDIENTE
 
     public String getNombreCompleto() { return nombreCompleto; }
@@ -11,4 +12,6 @@ public class EditarSocioDTO {
     public void setEmail(String email) { this.email = email; }
     public String getEstado() { return estado; }
     public void setEstado(String estado) { this.estado = estado; }
+    public String getTelefono() { return telefono; }
+    public void setTelefono(String telefono) { this.telefono = telefono; }
 }

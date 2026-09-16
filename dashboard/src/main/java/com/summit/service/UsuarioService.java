@@ -2,21 +2,38 @@ package com.summit.service;
 
 import com.summit.dto.EditarSocioDTO;
 import com.summit.dto.NuevoSocioDTO;
+import com.summit.dto.SocioListadoDTO;
+import com.summit.model.entity.CertificadoMedico;
+import com.summit.model.entity.Pago;
 import com.summit.model.entity.Usuario;
+import com.summit.model.enums.EstadoLegal;
 import com.summit.model.enums.EstadoUsuario;
 import com.summit.model.enums.Rol;
 import com.summit.repository.UsuarioRepository;
+import com.summit.repository.PagoRepository;
+import com.summit.repository.CertificadoMedicoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.util.ArrayList;
 
 @Service
 public class UsuarioService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private PagoRepository pagoRepository;
+
+    @Autowired
+    private CertificadoMedicoRepository certificadoRepository;
+
 
     @Transactional
     public Usuario registrarNuevoSocio(NuevoSocioDTO dto) throws Exception {
@@ -43,17 +60,48 @@ public class UsuarioService {
     }
 
     @Transactional(readOnly = true)
-    public List<Usuario> obtenerTodosLosSocios() {
-        // A futuro, podemos filtrar para que solo traiga a los que tienen RolUsuario.SOCIO
-        return usuarioRepository.findAll();
+    public List<SocioListadoDTO> obtenerTodosLosSocios() {
+        List<Usuario> usuarios = usuarioRepository.findAll();
+        List<SocioListadoDTO> listaDtos = new ArrayList<>();
+
+        for (Usuario u : usuarios) {
+            SocioListadoDTO dto = new SocioListadoDTO();
+            dto.setId(u.getId());
+            dto.setNombreCompleto(u.getNombreCompleto());
+            dto.setDni(u.getDni());
+            dto.setEmail(u.getEmail());
+            dto.setTelefono(u.getTelefono());
+            dto.setEstado(u.getEstado().name());
+            dto.setFechaRegistro(u.getFechaRegistro());
+
+            // Cálculo Analítico Legal
+            Optional<CertificadoMedico> cert = certificadoRepository.findTopByUsuarioIdOrderByFechaEmisionDesc(u.getId());
+            boolean sinApto = cert.isEmpty() || 
+                              cert.get().getEstadoLegal() != EstadoLegal.VIGENTE || 
+                              cert.get().getFechaVencimiento().isBefore(LocalDate.now());
+            dto.setAlertaMedico(sinApto);
+
+            // Cálculo Analítico Financiero
+            Optional<Pago> pago = pagoRepository.findTopByUsuarioIdOrderByFechaPagoDesc(u.getId());
+            boolean sinPago = pago.isEmpty() || 
+                              pago.get().getFechaPago().plusDays(30).isBefore(LocalDateTime.now());
+            dto.setAlertaPago(sinPago);
+
+            listaDtos.add(dto);
+        }
+
+        return listaDtos;
     }
 
     @Transactional
     public void eliminarSocio(Long id) throws Exception {
-        if (!usuarioRepository.existsById(id)) {
-            throw new Exception("Socio no encontrado en la base de datos.");
-        }
-        usuarioRepository.deleteById(id);
+        Usuario socio = usuarioRepository.findById(id)
+                .orElseThrow(() -> new Exception("Socio no encontrado en la base de datos."));
+        
+        // BAJA LÓGICA: En lugar de borrar la fila (lo cual rompe la integridad referencial), 
+        // cambiamos su estado a INACTIVO.
+        socio.setEstado(EstadoUsuario.INACTIVO);
+        usuarioRepository.save(socio);
     }
 
     
@@ -64,6 +112,7 @@ public class UsuarioService {
 
         socio.setNombreCompleto(dto.getNombreCompleto());
         socio.setEmail(dto.getEmail());
+        socio.setTelefono(dto.getTelefono());
         
         // Convertimos el texto enviado desde React al Enum correspondiente
         socio.setEstado(EstadoUsuario.valueOf(dto.getEstado().toUpperCase()));

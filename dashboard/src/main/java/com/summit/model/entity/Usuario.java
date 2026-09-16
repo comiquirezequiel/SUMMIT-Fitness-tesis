@@ -23,6 +23,10 @@ public class Usuario {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
+    // NUEVO: telefono
+    @Column(name = "telefono", length = 20)
+    private String telefono;
+
     @Column(nullable = false, length = 255)
     private String password;
 
@@ -81,4 +85,13 @@ public class Usuario {
     public LocalDateTime getFechaRegistro() { return fechaRegistro; }
 
     public void setFechaRegistro(LocalDateTime fechaRegistro) { this.fechaRegistro = fechaRegistro; }
+
+        public String getTelefono() {
+        return telefono;
+    }
+
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
+    }
+
 }

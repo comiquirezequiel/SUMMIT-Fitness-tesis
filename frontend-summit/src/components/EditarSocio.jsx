@@ -7,7 +7,8 @@ export default function EditarSocio({ setVistaActual, socioSeleccionado }) {
     const [formData, setFormData] = useState({
         nombreCompleto: '',
         email: '',
-        estado: 'PENDIENTE'
+        estado: 'PENDIENTE',
+        telefono: ''
     });
     const [estadoReq, setEstadoReq] = useState('ESPERANDO');
     const [mensaje, setMensaje] = useState('');
@@ -17,7 +18,8 @@ export default function EditarSocio({ setVistaActual, socioSeleccionado }) {
             setFormData({
                 nombreCompleto: socioSeleccionado.nombreCompleto,
                 email: socioSeleccionado.email,
-                estado: socioSeleccionado.estado
+                estado: socioSeleccionado.estado,
+                telefono: socioSeleccionado.telefono || ''
             });
         }
     }, [socioSeleccionado]);
@@ -86,6 +88,13 @@ export default function EditarSocio({ setVistaActual, socioSeleccionado }) {
                         <div className="md:col-span-1">
                             <label className="block text-sm font-bold text-gray-700 mb-2">Correo Electrónico</label>
                             <input required type="email" name="email" value={formData.email} onChange={handleChange} 
+                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                                disabled={estadoReq === 'CARGANDO'} />
+                        </div>
+                        
+                        <div className="md:col-span-1">
+                            <label className="block text-sm font-bold text-gray-700 mb-2">Teléfono</label>
+                            <input type="text" name="telefono" value={formData.telefono} onChange={handleChange} 
                                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
                                 disabled={estadoReq === 'CARGANDO'} />
                         </div>

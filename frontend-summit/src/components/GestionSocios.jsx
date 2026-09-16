@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Users, UserCheck, UserX, Clock, UserPlus, AlertCircle, Dumbbell, Edit, Trash2 } from 'lucide-react';
+import { Users, UserCheck, UserX, Clock, UserPlus, AlertCircle, Dumbbell, Edit, Trash2, Activity, Wallet, Search } from 'lucide-react';
 import api from '../services/api';
 
 export default function GestionSocios({ setVistaActual, setSocioSeleccionado }) {
     // Estado para guardar los socios reales de la base de datos
     const [socios, setSocios] = useState([]);
     const [cargando, setCargando] = useState(true);
+    const [busqueda, setBusqueda] = useState(''); // Lo que el usuario teclea
+    const [busquedaDebounced, setBusquedaDebounced] = useState(''); // Lo que realmente usamos para filtrar
 
     // Función para ir a buscar los datos a Spring Boot
     const cargarSocios = async () => {
@@ -23,6 +25,16 @@ export default function GestionSocios({ setVistaActual, setSocioSeleccionado }) 
     useEffect(() => {
         cargarSocios();
     }, []);
+
+    //DEBOUNCE 500ms
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setBusquedaDebounced(busqueda);
+        }, 500); // Medio segundo de espera
+
+        return () => clearTimeout(timer);
+    }, [busqueda]);
+
 
     // Función para eliminar un socio
     const handleEliminar = async (id, nombre) => {
@@ -47,6 +59,18 @@ export default function GestionSocios({ setVistaActual, setSocioSeleccionado }) 
         return Math.floor(diferenciaMilisegundos / (1000 * 3600 * 24)); // Convertimos a días
     };
 
+    const sociosFiltrados = socios.filter(socio => {
+        if (!busquedaDebounced) return true;
+        
+        const termino = busquedaDebounced.toLowerCase();
+        return (
+            socio.nombreCompleto?.toLowerCase().includes(termino) ||
+            socio.dni?.toLowerCase().includes(termino) ||
+            socio.email?.toLowerCase().includes(termino) ||
+            socio.telefono?.toLowerCase().includes(termino)
+        );
+    });
+
     return (
         <div className="space-y-8 animate-fade-in">
             <div className="flex justify-between items-center">
@@ -65,35 +89,56 @@ export default function GestionSocios({ setVistaActual, setSocioSeleccionado }) 
                 <KpiCard titulo="Activos" valor={socios.filter(s => s.estado === 'ACTIVO').length} Icon={UserCheck} color="text-green-600" bg="bg-green-100" border="border-green-500" />
                 <KpiCard titulo="Inactivos" valor={socios.filter(s => s.estado === 'INACTIVO').length} Icon={UserX} color="text-red-600" bg="bg-red-100" border="border-red-500" />
                 <KpiCard titulo="Pendientes" valor={socios.filter(s => s.estado === 'PENDIENTE').length} Icon={AlertCircle} color="text-amber-600" bg="bg-amber-100" border="border-amber-500" />
-                <KpiCard titulo="Expira Pronto" valor="0" Icon={Clock} color="text-orange-600" bg="bg-orange-100" border="border-orange-500" />
-                <KpiCard titulo="Nuevos (Mes)" valor="-" Icon={UserPlus} color="text-blue-600" bg="bg-blue-100" border="border-blue-500" />
+                <KpiCard titulo="Expira Pronto" valor={socios.filter(s => s.expiraPronto).length} Icon={Clock} color="text-orange-600" bg="bg-orange-100" border="border-orange-500" />
+                <KpiCard titulo="Nuevos (Mes)" valor={socios.filter(s => new Date(s.fechaRegistro).getMonth() === new Date().getMonth()).length} Icon={UserPlus} color="text-blue-600" bg="bg-blue-100" border="border-blue-500" />
+            </div>
+
+            {/* Buscador de Socios */}
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
+                <Search className="text-gray-400" size={24} />
+                <input 
+                    type="text" 
+                    placeholder="Buscar por nombre, DNI, email o teléfono..." 
+                    className="w-full border-none outline-none text-gray-700 bg-transparent"
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                />
             </div>
 
             {/* Tabla de Socios Conectada a MySQL */}
-            <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 min-h-75">
+            <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 min-h-[300px]">
                 {cargando ? (
                     <div className="flex justify-center items-center h-48 text-gray-500 font-bold">
                         Cargando base de datos...
                     </div>
-                ) : socios.length === 0 ? (
+                ) : sociosFiltrados.length === 0 ? ( // CAMBIO ACÁ
                     <div className="flex justify-center items-center h-48 text-gray-500">
-                        No hay socios registrados en el sistema.
+                        {busquedaDebounced ? 'No se encontraron resultados para tu búsqueda.' : 'No hay socios registrados.'}
                     </div>
                 ) : (
                     <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-gray-800 text-white text-sm uppercase tracking-wider">
-                                <th className="p-4 font-semibold">Nombre Completo</th>
-                                <th className="p-4 font-semibold">Contacto</th>
-                                <th className="p-4 font-semibold">Estado y Antigüedad</th>
-                                <th className="p-4 font-semibold text-center">Acciones</th>
-                            </tr>
-                        </thead>
+                        {/* ... (<thead> igual) ... */}
                         <tbody className="divide-y divide-gray-200">
-                            {socios.map(socio => (
+                            {sociosFiltrados.map(socio => ( // CAMBIO ACÁ
                                 <tr key={socio.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="p-4">
-                                        <p className="font-bold text-gray-800">{socio.nombreCompleto}</p>
+                                        <div className="flex items-center gap-2">
+                                            <p className="font-bold text-gray-800">{socio.nombreCompleto}</p>
+                                            
+                                            {/* ALERTAS VISUALES */}
+                                            <div className="flex gap-1">
+                                                {socio.alertaPago && (
+                                                    <span title="Alerta Financiera: Cuota impaga o plan vencido" className="text-amber-500 cursor-help">
+                                                        <Wallet size={16} />
+                                                    </span>
+                                                )}
+                                                {socio.alertaMedico && (
+                                                    <span title="Alerta Legal: Apto médico vencido o no presentado" className="text-red-500 cursor-help">
+                                                        <Activity size={16} />
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
                                         <p className="text-xs text-gray-500">DNI: {socio.dni}</p>
                                     </td>
                                     <td className="p-4">

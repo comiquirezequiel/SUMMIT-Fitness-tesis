@@ -2,6 +2,7 @@ package com.summit.controller;
 
 import com.summit.dto.EditarSocioDTO;
 import com.summit.dto.NuevoSocioDTO;
+import com.summit.dto.SocioListadoDTO;
 import com.summit.model.entity.Usuario;
 import com.summit.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +35,7 @@ public class UsuarioController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Usuario>> listarSocios() {
+    public ResponseEntity<List<SocioListadoDTO>> listarSocios() {
         return ResponseEntity.ok(usuarioService.obtenerTodosLosSocios());
     }
 
