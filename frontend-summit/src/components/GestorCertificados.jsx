@@ -27,9 +27,9 @@ export default function GestorCertificados() {
     };
 
     return (
-        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-800">Simulador de Auditoría Médica</h2>
+                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Simulador de Auditoría Médica</h2>
                 <span className="text-xs font-semibold bg-purple-100 text-purple-700 px-2 py-1 rounded-full border border-purple-200">
                     Módulo IA (Próximamente)
                 </span>
@@ -43,7 +43,7 @@ export default function GestorCertificados() {
                 <input 
                     type="text" 
                     placeholder="DNI del socio..." 
-                    className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="flex-1 px-4 py-2 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     value={dni}
                     onChange={(e) => setDni(e.target.value)}
                 />

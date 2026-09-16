@@ -53,14 +53,14 @@ export default function MolineteSimulador() {
     };
 
     return (
-        <div className="bg-white p-6 rounded-xl shadow-md mt-8 border border-gray-200">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Simulador de Control de Acceso</h2>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md mt-8 border border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Simulador de Control de Acceso</h2>
             
             <form onSubmit={simularIngreso} className="flex gap-4 mb-6">
                 <input 
                     type="text" 
                     placeholder="Ingrese DNI del socio..." 
-                    className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-4 py-2 border rounded-lg focus:outline-none dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
                     value={dni}
                     onChange={(e) => setDni(e.target.value)}
                 />
@@ -77,7 +77,7 @@ export default function MolineteSimulador() {
                 estadoAcceso === 'PERMITIDO' ? 'bg-green-100 text-green-800 border-2 border-green-500' :
                 estadoAcceso === 'DENEGADO' ? 'bg-red-100 text-red-800 border-2 border-red-500' :
                 estadoAcceso === 'ALERTA_FINANCIERA' ? 'bg-orange-100 text-orange-800 border-2 border-orange-500' :
-                'bg-gray-100 text-gray-500 border-2 border-dashed border-gray-300'
+                'bg-gray-100 dark:bg-gray-900 text-gray-500 border-2 border-dashed border-gray-300'
             }`}>
                 {mensaje ? mensaje : 'Esperando lectura de DNI...'}
             </div>

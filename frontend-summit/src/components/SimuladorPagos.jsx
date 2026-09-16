@@ -81,19 +81,19 @@ export default function SimuladorPagos() {
     const onReady = async () => {};
 
     return (
-        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Simulador de Pagos (Checkout API)</h2>
-            <p className="text-sm text-gray-500 mb-4">
+        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 dark:bg-gray-800 dark:border-gray-700 ">
+            <h2 className="text-xl font-bold text-gray-800 mb-4 dark:text-gray-100 ">Simulador de Pagos (Checkout API)</h2>
+            <p className="text-sm text-gray-500 mb-4 dark:text-gray-400 ">
                 Módulo financiero de prueba. Seleccionando "Pase Libre" ($32.000).
             </p>
 
             <div className="mb-6">
-                <label className="block text-sm font-bold text-gray-700 mb-2">DNI del Socio que abona:</label>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">DNI del Socio que abona:</label>
                 <input 
                     type="text" 
                     ref={dniRef} // CAMBIO CLAVE: Enganchamos la referencia aquí (sin value ni onChange)
                     placeholder="Ej: 12345678" 
-                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 dark:border-gray-600 focus:ring-green-500"
                     disabled={estadoPago === 'PROCESANDO' || estadoPago === 'EXITO'}
                 />
             </div>

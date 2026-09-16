@@ -8,6 +8,7 @@ export default function GestionSocios({ setVistaActual, setSocioSeleccionado }) 
     const [cargando, setCargando] = useState(true);
     const [busqueda, setBusqueda] = useState(''); // Lo que el usuario teclea
     const [busquedaDebounced, setBusquedaDebounced] = useState(''); // Lo que realmente usamos para filtrar
+    const [filtroEstado, setFiltroEstado] = useState('TODOS'); // Filtro de estado
 
     // Función para ir a buscar los datos a Spring Boot
     const cargarSocios = async () => {
@@ -60,6 +61,10 @@ export default function GestionSocios({ setVistaActual, setSocioSeleccionado }) 
     };
 
     const sociosFiltrados = socios.filter(socio => {
+        // Primera barrera: Filtro por estado
+        if (filtroEstado !== 'TODOS' && socio.estado !== filtroEstado) return false;
+
+        // Segunda barrera: Filtro por texto
         if (!busquedaDebounced) return true;
         
         const termino = busquedaDebounced.toLowerCase();
@@ -74,7 +79,7 @@ export default function GestionSocios({ setVistaActual, setSocioSeleccionado }) 
     return (
         <div className="space-y-8 animate-fade-in">
             <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-extrabold text-gray-800">Gestión de Miembros</h1>
+                <h1 className="text-3xl font-extrabold text-gray-800 dark:text-gray-300">Gestión de Miembros</h1>
                 <button 
                     onClick={() => setVistaActual('nuevo-socio')}
                     className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2"
@@ -93,20 +98,38 @@ export default function GestionSocios({ setVistaActual, setSocioSeleccionado }) 
                 <KpiCard titulo="Nuevos (Mes)" valor={socios.filter(s => new Date(s.fechaRegistro).getMonth() === new Date().getMonth()).length} Icon={UserPlus} color="text-blue-600" bg="bg-blue-100" border="border-blue-500" />
             </div>
 
-            {/* Buscador de Socios */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
-                <Search className="text-gray-400" size={24} />
-                <input 
-                    type="text" 
-                    placeholder="Buscar por nombre, DNI, email o teléfono..." 
-                    className="w-full border-none outline-none text-gray-700 bg-transparent"
-                    value={busqueda}
-                    onChange={(e) => setBusqueda(e.target.value)}
-                />
+            {/* Buscador y Filtro de Socios */}
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row items-center gap-4 dark:bg-gray-450 dark:border-gray-700">
+                
+                {/* Buscador de texto */}
+                <div className="flex items-center gap-3 flex-1 w-full bg-gray-50 p-3 rounded-lg dark:bg-gray-600">
+                    <Search className="text-black-700" size={20} />
+                    <input 
+                        type="text" 
+                        placeholder="Buscar por nombre, DNI, email o teléfono..." 
+                        className="w-full border-none outline-none text-black bg-transparent dark:text-gray-200"
+                        value={busqueda}
+                        onChange={(e) => setBusqueda(e.target.value)}
+                    />
+                </div>
+
+                {/* Filtro de Estado */}
+                <div className="w-full md:w-auto border-l-0 md:border-l border-gray-200 dark:border-gray-700 pl-0 md:pl-4">
+                    <select 
+                        value={filtroEstado} 
+                        onChange={(e) => setFiltroEstado(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg outline-none bg-white text-gray-700 font-semibold focus:ring-2 focus:ring-blue-500 dark:bg-gray-500 dark:text-black dark:border-gray-600 cursor-pointer transition-colors"
+                    >
+                        <option value="TODOS">Todos los estados</option>
+                        <option value="ACTIVO">Solo Activos</option>
+                        <option value="INACTIVO">Solo Inactivos</option>
+                        <option value="PENDIENTE">Solo Pendientes</option>
+                    </select>
+                </div>
             </div>
 
             {/* Tabla de Socios Conectada a MySQL */}
-            <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 min-h-[300px]">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border border-gray-200 dark:border-gray-700 min-h-75">
                 {cargando ? (
                     <div className="flex justify-center items-center h-48 text-gray-500 font-bold">
                         Cargando base de datos...
@@ -118,12 +141,12 @@ export default function GestionSocios({ setVistaActual, setSocioSeleccionado }) 
                 ) : (
                     <table className="w-full text-left border-collapse">
                         {/* ... (<thead> igual) ... */}
-                        <tbody className="divide-y divide-gray-200">
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                             {sociosFiltrados.map(socio => ( // CAMBIO ACÁ
-                                <tr key={socio.id} className="hover:bg-gray-50 transition-colors">
+                                <tr key={socio.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                                     <td className="p-4">
                                         <div className="flex items-center gap-2">
-                                            <p className="font-bold text-gray-800">{socio.nombreCompleto}</p>
+                                            <p className="font-bold text-gray-800 dark:text-gray-100">{socio.nombreCompleto}</p>
                                             
                                             {/* ALERTAS VISUALES */}
                                             <div className="flex gap-1">
@@ -139,11 +162,11 @@ export default function GestionSocios({ setVistaActual, setSocioSeleccionado }) 
                                                 )}
                                             </div>
                                         </div>
-                                        <p className="text-xs text-gray-500">DNI: {socio.dni}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">DNI: {socio.dni}</p>
                                     </td>
                                     <td className="p-4">
-                                        <p className="text-sm text-gray-700">{socio.email}</p>
-                                        <p className="text-xs text-gray-500">{socio.telefono || 'Sin teléfono'}</p>
+                                        <p className="text-sm text-gray-700 dark:text-gray-100">{socio.email}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">{socio.telefono || 'Sin teléfono'}</p>
                                     </td>
                                     <td className="p-4">
                                         <span className={`px-2 py-1 text-xs font-bold rounded-full ${
@@ -153,7 +176,7 @@ export default function GestionSocios({ setVistaActual, setSocioSeleccionado }) 
                                         }`}>
                                             {socio.estado}
                                         </span>
-                                        <p className="text-xs text-gray-500 mt-1">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                             {calcularDiasEnSummit(socio.fechaRegistro)} días en SUMMIT
                                         </p>
                                     </td>
@@ -195,12 +218,13 @@ export default function GestionSocios({ setVistaActual, setSocioSeleccionado }) 
 // Sub-componente interno para las tarjetas KPI
 function KpiCard({ titulo, valor, Icon, color, bg, border }) {
     return (
-        <div className={`bg-white p-4 rounded-xl shadow-sm border-l-4 ${border} flex items-center justify-between`}>
+        <div className={`bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border-l-4 ${border} dark:border-opacity-70 flex items-center justify-between transition-colors`}>
             <div>
-                <h2 className="text-gray-500 text-[10px] font-bold uppercase">{titulo}</h2>
-                <p className="text-2xl font-black text-gray-800">{valor}</p>
+                <h2 className="text-gray-500 dark:text-gray-400 text-[10px] font-bold uppercase">{titulo}</h2>
+                <p className="text-2xl font-black text-gray-800 dark:text-gray-100">{valor}</p>
             </div>
-            <div className={`${bg} p-2 rounded-full`}>
+            {/* Agregamos dark:bg-opacity-20 para que el color de fondo del ícono sea sutil de noche */}
+            <div className={`${bg} dark:bg-opacity-20 p-2 rounded-full transition-colors`}>
                 <Icon className={color} size={20} />
             </div>
         </div>

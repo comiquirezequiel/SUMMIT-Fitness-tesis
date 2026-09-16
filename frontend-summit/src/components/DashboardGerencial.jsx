@@ -38,73 +38,73 @@ export default function DashboardGerencial() {
 
     return (
         <div className="p-8 max-w-7xl mx-auto">
-            <h1 className="text-3xl font-extrabold text-gray-800 mb-8">Tablero Gerencial - SUMMIT Fitness</h1>
+            <h1 className="text-3xl font-extrabold text-gray-800 dark:text-gray-400 mb-8">Tablero Gerencial - SUMMIT Fitness</h1>
 
             {/* Grid de Tarjetas KPI */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 
                 {/* 1. Ingresos del Mes */}
-                <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-green-500 flex items-center justify-between">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-green-500 flex items-center justify-between transition-colors">
                     <div>
-                        <h2 className="text-gray-500 text-xs font-bold uppercase tracking-wider">Ingresos del Mes</h2>
-                        <p className="text-3xl font-black text-gray-800 mt-1">${metricas.ingresosDelMes.toLocaleString('es-AR')}</p>
+                        <h2 className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">Ingresos del Mes</h2>
+                        <p className="text-3xl font-black text-gray-800 dark:text-gray-100 mt-1">${metricas.ingresosDelMes.toLocaleString('es-AR')}</p>
                     </div>
-                    <div className="bg-green-100 p-4 rounded-full">
+                    <div className="bg-green-100 dark:bg-opacity-20 p-4 rounded-full">
                         <DollarSign className="text-green-600" size={28} />
                     </div>
                 </div>
 
                 {/* 2. Socios Activos */}
-                <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500 flex items-center justify-between">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-blue-500 flex items-center justify-between">
                     <div>
-                        <h2 className="text-gray-500 text-xs font-bold uppercase tracking-wider">Socios Activos</h2>
-                        <p className="text-3xl font-black text-gray-800 mt-1">{metricas.totalSociosActivos}</p>
+                        <h2 className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">Socios Activos</h2>
+                        <p className="text-3xl font-black text-gray-800 dark:text-gray-100 mt-1">{metricas.totalSociosActivos}</p>
                     </div>
-                    <div className="bg-blue-100 p-4 rounded-full">
+                    <div className="bg-blue-100 dark:bg-opacity-20 p-4 rounded-full">
                         <Users className="text-blue-600" size={28} />
                     </div>
                 </div>
 
                 {/* KPI 3: Retención */}
-                <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-purple-500 flex items-center justify-between">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-purple-500 flex items-center justify-between">
                     <div>
-                        <h2 className="text-gray-500 text-xs font-bold uppercase tracking-wider">Retención Mensual</h2>
-                        <p className="text-3xl font-black text-gray-800 mt-1">{metricas.porcentajeRetencion}%</p>
+                        <h2 className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">Retención Mensual</h2>
+                        <p className="text-3xl font-black text-gray-800 dark:text-gray-100 mt-1">{metricas.porcentajeRetencion}%</p>
                     </div>
-                    <div className="bg-purple-100 p-4 rounded-full">
+                    <div className="bg-purple-100 dark:bg-opacity-20 p-4 rounded-full">
                         <Activity className="text-purple-600" size={28} />
                     </div>       
                 </div>
 
                 {/* 4. Solicitudes de Baja (NUEVO) */}
-                <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-red-500 flex items-center justify-between">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-red-500 flex items-center justify-between">
                     <div>
-                        <h2 className="text-gray-500 text-xs font-bold uppercase tracking-wider">Solicitudes de Baja</h2>
-                        <p className="text-3xl font-black text-gray-800 mt-1">{metricas.solicitudesDeBaja}</p>
+                        <h2 className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">Solicitudes de Baja</h2>
+                        <p className="text-3xl font-black text-gray-800 dark:text-gray-100 mt-1">{metricas.solicitudesDeBaja}</p>
                     </div>
-                    <div className="bg-red-100 p-4 rounded-full">
+                    <div className="bg-red-100 dark:bg-opacity-20 p-4 rounded-full">
                         <UserMinus className="text-red-600" size={28} />
                     </div>
                 </div>
 
                 {/* 5. Nuevos este mes (NUEVO) */}
-                <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-emerald-500 flex items-center justify-between">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-emerald-500 flex items-center justify-between">
                     <div>
-                        <h2 className="text-gray-500 text-xs font-bold uppercase tracking-wider">Nuevos este mes</h2>
-                        <p className="text-3xl font-black text-gray-800 mt-1">{metricas.nuevosEsteMes}</p>
+                        <h2 className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">Nuevos este mes</h2>
+                        <p className="text-3xl font-black text-gray-800 dark:text-gray-100 mt-1">{metricas.nuevosEsteMes}</p>
                     </div>
-                    <div className="bg-emerald-100 p-4 rounded-full">
+                    <div className="bg-emerald-100 dark:bg-opacity-20 p-4 rounded-full">
                         <UserPlus className="text-emerald-600" size={28} />
                     </div>
                 </div>
 
                 {/* 6. Ingresos de hoy (NUEVO) */}
-                <div className="bg-white p-6 rounded-xl shadow-md border-l-4 border-amber-500 flex items-center justify-between">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-amber-500 flex items-center justify-between">
                     <div>
-                        <h2 className="text-gray-500 text-xs font-bold uppercase tracking-wider">Ingresos de Hoy</h2>
-                        <p className="text-3xl font-black text-gray-800 mt-1">${metricas.ingresosDeHoy.toLocaleString('es-AR')}</p>
+                        <h2 className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider">Ingresos de Hoy</h2>
+                        <p className="text-3xl font-black text-gray-800 dark:text-gray-100 mt-1">${metricas.ingresosDeHoy.toLocaleString('es-AR')}</p>
                     </div>
-                    <div className="bg-amber-100 p-4 rounded-full">
+                    <div className="bg-amber-100 dark:bg-opacity-20 p-4 rounded-full">
                         <Wallet className="text-amber-600" size={28} />
                     </div>
                 </div>
@@ -114,7 +114,7 @@ export default function DashboardGerencial() {
 
 
             {/* Gráfico de Recharts */}
-            <div className="bg-white p-6 rounded-xl shadow-md">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
                 <h2 className="text-xl font-bold text-gray-800 mb-6">Flujo Operativo (Horas Pico)</h2>
                 <div className="h-80 w-full">
                     {datosGrafico.length > 0 ? (
