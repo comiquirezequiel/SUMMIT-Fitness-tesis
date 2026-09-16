@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Users, UserCheck, UserX, Clock, UserPlus, AlertCircle, Dumbbell, Edit, Trash2 } from 'lucide-react';
 import api from '../services/api';
 
-export default function GestionSocios({ setVistaActual }) {
+export default function GestionSocios({ setVistaActual, setSocioSeleccionado }) {
     // Estado para guardar los socios reales de la base de datos
     const [socios, setSocios] = useState([]);
     const [cargando, setCargando] = useState(true);
@@ -70,7 +70,7 @@ export default function GestionSocios({ setVistaActual }) {
             </div>
 
             {/* Tabla de Socios Conectada a MySQL */}
-            <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 min-h-[300px]">
+            <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 min-h-75">
                 {cargando ? (
                     <div className="flex justify-center items-center h-48 text-gray-500 font-bold">
                         Cargando base de datos...
@@ -117,9 +117,11 @@ export default function GestionSocios({ setVistaActual }) {
                                             <Dumbbell size={18} />
                                         </button>
                                         
-                                        {/* Botón de Editar (Lo armaremos a continuación) */}
                                         <button 
-                                            onClick={() => alert(`Próximamente: Editar a ${socio.nombreCompleto}`)}
+                                            onClick={() => {
+                                                setSocioSeleccionado(socio);
+                                                setVistaActual('editar-socio');
+                                            }}
                                             title="Editar" 
                                             className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
                                         >

@@ -1,5 +1,6 @@
 package com.summit.service;
 
+import com.summit.dto.EditarSocioDTO;
 import com.summit.dto.NuevoSocioDTO;
 import com.summit.model.entity.Usuario;
 import com.summit.model.enums.EstadoUsuario;
@@ -53,6 +54,21 @@ public class UsuarioService {
             throw new Exception("Socio no encontrado en la base de datos.");
         }
         usuarioRepository.deleteById(id);
+    }
+
+    
+    @Transactional
+    public Usuario actualizarSocio(Long id, EditarSocioDTO dto) throws Exception {
+        Usuario socio = usuarioRepository.findById(id)
+                .orElseThrow(() -> new Exception("Socio no encontrado en la base de datos."));
+
+        socio.setNombreCompleto(dto.getNombreCompleto());
+        socio.setEmail(dto.getEmail());
+        
+        // Convertimos el texto enviado desde React al Enum correspondiente
+        socio.setEstado(EstadoUsuario.valueOf(dto.getEstado().toUpperCase()));
+
+        return usuarioRepository.save(socio);
     }
 
 }

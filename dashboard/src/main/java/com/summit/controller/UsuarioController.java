@@ -1,5 +1,6 @@
 package com.summit.controller;
 
+import com.summit.dto.EditarSocioDTO;
 import com.summit.dto.NuevoSocioDTO;
 import com.summit.model.entity.Usuario;
 import com.summit.service.UsuarioService;
@@ -43,6 +44,21 @@ public class UsuarioController {
             usuarioService.eliminarSocio(id);
             Map<String, String> response = new HashMap<>();
             response.put("mensaje", "Socio eliminado correctamente del sistema.");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
+
+    
+    @PutMapping("/{id}")
+    public ResponseEntity<?> editarSocio(@PathVariable Long id, @RequestBody EditarSocioDTO request) {
+        try {
+            usuarioService.actualizarSocio(id, request);
+            Map<String, String> response = new HashMap<>();
+            response.put("mensaje", "Perfil del socio actualizado correctamente.");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();

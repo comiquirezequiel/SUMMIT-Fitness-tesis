@@ -6,10 +6,12 @@ import GestorCertificados from "./components/GestorCertificados";
 import SimuladorPagos from "./components/SimuladorPagos";
 import GestionSocios from "./components/GestionSocios";
 import NuevoSocio from "./components/NuevoSocio";
+import EditarSocio from "./components/EditarSocio";
 
 function App() {
   // Estado para controlar qué "endpoint" visualizamos
   const [vistaActual, setVistaActual] = useState('dashboard');
+  const [socioSeleccionado, setSocioSeleccionado] = useState(null); // NUEVO
 
   return (
     <div className="flex min-h-screen bg-gray-100 font-sans">
@@ -39,7 +41,8 @@ function App() {
 
         {vistaActual === 'socios' && (
           <div className="p-8">
-            <GestionSocios setVistaActual={setVistaActual} />
+            {/* Le pasamos la función setSocioSeleccionado para que la tabla pueda usarla */}
+            <GestionSocios setVistaActual={setVistaActual} setSocioSeleccionado={setSocioSeleccionado} />
           </div>
         )}
 
@@ -48,6 +51,14 @@ function App() {
             <NuevoSocio setVistaActual={setVistaActual} />
           </div>
         )}
+
+        {/* NUEVA VISTA */}
+        {vistaActual === 'editar-socio' && (
+          <div className="p-8">
+            <EditarSocio setVistaActual={setVistaActual} socioSeleccionado={socioSeleccionado} />
+          </div>
+        )}
+
       </main>
     </div>
   );
