@@ -1,3 +1,3 @@
 package com.summit.model.enums;
 
-public enum EstadoLegal { VIGENTE, VENCIDO, RECHAZADO }
+public enum EstadoLegal { PENDIENTE_REVISION, VIGENTE, VENCIDO, RECHAZADO }

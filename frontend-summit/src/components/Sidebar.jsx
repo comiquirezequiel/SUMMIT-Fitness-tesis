@@ -13,10 +13,10 @@ export default function Sidebar({ vistaActual, setVistaActual }) {
     ];
 
     return (
-        <div className={`bg-gray-900 text-white transition-all duration-300 flex flex-col ${expandido ? 'w-64' : 'w-20'} min-h-screen sticky top-0`}>
+        <div className={`bg-gray-300 dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 text-white transition-all duration-300 flex flex-col ${expandido ? 'w-64' : 'w-20'} min-h-screen sticky top-0`}>
             {/* Cabecera del Sidebar */}
-            <div className="p-4 flex justify-between items-center border-b border-gray-800 min-h-18">
-                {expandido && <span className="font-extrabold text-xl tracking-widest text-blue-400">SUMMIT</span>}
+            <div className="p-4 flex justify-between items-center border-b border-gray-100 dark:border-gray-800 min-h-18">
+                {expandido && <span className="font-extrabold text-xl tracking-widest text-blue-600 dark:text-blue-400">SUMMIT</span>}
                 <button 
                     onClick={() => setExpandido(!expandido)} 
                     className="p-2 hover:bg-gray-800 rounded-lg transition-colors mx-auto"

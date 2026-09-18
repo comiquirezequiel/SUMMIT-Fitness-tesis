@@ -53,4 +53,35 @@ public class CertificadoService {
 
         return "Certificado VIGENTE hasta " + certificado.getFechaVencimiento().toString();
     }
+
+    @Transactional
+    public void revisarCertificado(Long idCertificado, boolean aprobado) throws Exception {
+        CertificadoMedico cert = certificadoRepository.findById(idCertificado)
+            .orElseThrow(() -> new Exception("Certificado no encontrado."));
+
+        if (aprobado) {
+            // Control Legal Inflexible: Cálculo automático contra la fecha actual
+            if (cert.getFechaEmision().plusDays(365).isBefore(LocalDate.now())) {
+                cert.setEstadoLegal(EstadoLegal.RECHAZADO);
+                certificadoRepository.save(cert);
+                throw new Exception("BLOQUEO LEGAL ABSOLUTO: El certificado supera los 365 días de antigüedad.");
+            }
+            
+            // Si está en regla, lo activamos por 1 año desde su emisión
+            cert.setEstadoLegal(EstadoLegal.VIGENTE);
+            cert.setFechaVencimiento(cert.getFechaEmision().plusDays(365));
+
+            // "Despertamos" al socio si estaba inactivo/pendiente
+            Usuario socio = cert.getUsuario();
+            if (socio.getEstado() == EstadoUsuario.PENDIENTE || socio.getEstado() == EstadoUsuario.INACTIVO) {
+                socio.setEstado(EstadoUsuario.ACTIVO);
+                usuarioRepository.save(socio);
+            }
+        } else {
+            cert.setEstadoLegal(EstadoLegal.RECHAZADO);
+        }
+        
+        certificadoRepository.save(cert);
+    }
+
 }

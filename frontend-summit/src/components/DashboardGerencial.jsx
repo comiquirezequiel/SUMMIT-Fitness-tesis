@@ -115,15 +115,15 @@ export default function DashboardGerencial() {
 
             {/* Gráfico de Recharts */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                <h2 className="text-xl font-bold text-gray-800 mb-6">Flujo Operativo (Horas Pico)</h2>
-                <div className="h-80 w-full">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6">Flujo Operativo (Horas Pico)</h2>
+                <div className="h-80 w-full dark:text-gray-800">
                     {datosGrafico.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={datosGrafico}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="hora" />
+                                <XAxis dataKey="hora"/>
                                 <YAxis allowDecimals={false} />
-                                <Tooltip cursor={{fill: '#f3f4f6'}} />
+                                <Tooltip cursor={{fill: '#abb5c9'}} />
                                 <Bar dataKey="accesos" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Asistencias" />
                             </BarChart>
                         </ResponsiveContainer>

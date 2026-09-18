@@ -5,6 +5,10 @@ package com.summit.dto;
 public class PagoRequestDTO {
     private String token; // El token seguro de la tarjeta generado por el frontend
     private String paymentMethodId; // Ej: "visa", "master"
+
+    // NUEVO: Capturamos el ID del banco emisor que envía React
+    private String issuerId;
+
     private String payerEmail; // Email del pagador
     private Integer installments; // Cantidad de cuotas
     //private BigDecimal transactionAmount; // Monto a cobrar
@@ -35,4 +39,7 @@ public class PagoRequestDTO {
     public void setDniSocio(String dniSocio) { this.dniSocio = dniSocio; }
     public Long getPlanId() { return planId; }
     public void setPlanId(Long planId) { this.planId = planId; }
+
+    public String getIssuerId() { return issuerId; }
+    public void setIssuerId(String issuerId) { this.issuerId = issuerId; }
 }

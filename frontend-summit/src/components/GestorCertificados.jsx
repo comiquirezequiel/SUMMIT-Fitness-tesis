@@ -35,7 +35,7 @@ export default function GestorCertificados() {
                 </span>
             </div>
             
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-gray-500 mb-4 dark:text-gray-400">
                 Ingresá el DNI de un socio bloqueado. Esto simulará la carga de un PDF y su validación instantánea por 365 días.
             </p>
 

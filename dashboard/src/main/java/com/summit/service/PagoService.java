@@ -49,6 +49,7 @@ public class PagoService {
                 .description("Pago de Plan: " + plan.getNombrePlan() + " - SUMMIT Fitness")
                 .installments(request.getInstallments())
                 .paymentMethodId(request.getPaymentMethodId())
+                .issuerId(request.getIssuerId())
                 .payer(PaymentPayerRequest.builder()
                         .email(request.getPayerEmail())
                         .identification(IdentificationRequest.builder()

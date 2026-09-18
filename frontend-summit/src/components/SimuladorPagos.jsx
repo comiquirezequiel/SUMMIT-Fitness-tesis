@@ -3,7 +3,7 @@ import { initMercadoPago, Payment } from '@mercadopago/sdk-react';
 import api from '../services/api';
 
 // Inicializamos MP una sola vez
-initMercadoPago('TEST-68536601-13f7-435b-aa22-aa679fb964c0', { locale: 'es-AR' });
+initMercadoPago('TEST-a5f8185f-c1db-44c3-8233-0f87fbe61647', { locale: 'es-AR' });
 
 // Configuraciones inmutables fuera del componente
 const initialization = {
@@ -42,17 +42,15 @@ export default function SimuladorPagos() {
             // 2. PROGRAMACIÓN DEFENSIVA: Evitamos valores nulos
             const payload = {
                 token: formData.token,
-                
-                // Si el Brick nos da el dato, lo usamos. Si no, forzamos 'visa' para que no falle.
                 paymentMethodId: formData.payment_method_id || formData.paymentMethodId || 'visa', 
-                
-                payerEmail: formData.payer?.email || 'test_user_summit@test.com',
+                        
+                // NUEVO: El ID del banco emisor que exige Mastercard
+                issuerId: formData.issuer_id, 
+                        
+                payerEmail: 'socio.prueba.summit.2026@gmail.com',
                 payerIdentificationType: formData.payer?.identification?.type || 'DNI',
                 payerIdentificationNumber: formData.payer?.identification?.number || dniActual,
-                
-                // Las cuotas tampoco pueden ser nulas. Si falla, forzamos 1 cuota.
                 installments: formData.installments || 1, 
-                
                 dniSocio: dniActual, 
                 planId: 3 
             };

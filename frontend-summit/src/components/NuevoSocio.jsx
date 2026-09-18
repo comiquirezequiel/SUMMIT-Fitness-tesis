@@ -40,8 +40,8 @@ export default function NuevoSocio({ setVistaActual }) {
                 <ArrowLeft size={20} className="mr-2" /> Volver a Miembros
             </button>
 
-            <div className="bg-white p-8 rounded-xl shadow-md border border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Alta de Nuevo Miembro</h2>
+            <div className="bg-white dark:bg-gray-800 p-8 rounded-xl dark:border-gray-700 shadow-md border border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-300 mb-6">Alta de Nuevo Miembro</h2>
                 
                 {estado === 'EXITO' && (
                     <div className="mb-6 p-4 bg-green-100 text-green-800 font-bold rounded-lg border border-green-300">
@@ -58,33 +58,33 @@ export default function NuevoSocio({ setVistaActual }) {
                 <form onSubmit={guardarSocio} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Nombre</label>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-400 mb-2">Nombre</label>
                             <input required type="text" name="nombre" value={formData.nombre} onChange={handleChange} 
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                                className="w-full px-4 py-2 border rounded-lg dark:border-gray-500 focus:ring-2 focus:ring-blue-500 outline-none" 
                                 disabled={estado === 'CARGANDO'} />
                         </div>
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Apellido</label>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-400 mb-2">Apellido</label>
                             <input required type="text" name="apellido" value={formData.apellido} onChange={handleChange} 
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                                className="w-full px-4 py-2 border rounded-lg dark:border-gray-500 focus:ring-2 focus:ring-blue-500 outline-none" 
                                 disabled={estado === 'CARGANDO'} />
                         </div>
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">DNI</label>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-400 mb-2">DNI</label>
                             <input required type="text" name="dni" value={formData.dni} onChange={handleChange} 
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                                className="w-full px-4 py-2 border rounded-lg dark:border-gray-500 focus:ring-2 focus:ring-blue-500 outline-none" 
                                 disabled={estado === 'CARGANDO'} />
                         </div>
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Teléfono</label>
+                            <label className="block text-sm font-bold dark:text-gray-400 text-gray-700 mb-2">Teléfono</label>
                             <input type="text" name="telefono" value={formData.telefono} onChange={handleChange} 
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                                className="w-full px-4 py-2 border rounded-lg dark:border-gray-500 focus:ring-2 focus:ring-blue-500 outline-none" 
                                 disabled={estado === 'CARGANDO'} />
                         </div>
                         <div className="md:col-span-2">
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Correo Electrónico</label>
+                            <label className="block text-sm font-bold dark:text-gray-400 text-gray-700 mb-2">Correo Electrónico</label>
                             <input required type="email" name="email" value={formData.email} onChange={handleChange} 
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                                className="w-full px-4 py-2 border rounded-lg dark:border-gray-500 focus:ring-2 focus:ring-blue-500 outline-none" 
                                 disabled={estado === 'CARGANDO'} />
                         </div>
                     </div>
