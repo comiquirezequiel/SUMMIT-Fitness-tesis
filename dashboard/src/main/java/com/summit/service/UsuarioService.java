@@ -82,9 +82,16 @@ public class UsuarioService {
             dto.setAlertaMedico(sinApto);
 
             // Cálculo Analítico Financiero
+            // Verificamos que el último pago exista, esté APROBADO y tenga menos de 30 días
+            // Si el pago fue rechazado o pendiente, el cliente NO está al día
+            // Buscamos el último pago del usuario en la base de datos
             Optional<Pago> pago = pagoRepository.findTopByUsuarioIdOrderByFechaPagoDesc(u.getId());
+            // Verificamos: (1) que exista un pago, (2) que esté APROBADO, (3) que tenga menos de 30 días
+            // Si alguna de estas condiciones no se cumple, el cliente tiene alerta de pago
             boolean sinPago = pago.isEmpty() || 
+                              pago.get().getEstadoPago() != com.summit.model.enums.EstadoPago.APROBADO ||
                               pago.get().getFechaPago().plusDays(30).isBefore(LocalDateTime.now());
+            // Asignamos el valor de alerta de pago al DTO
             dto.setAlertaPago(sinPago);
 
             listaDtos.add(dto);

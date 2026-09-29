@@ -19,6 +19,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+// Import necesario para usar Optional en la validación de pagos previos
+import java.util.Optional;
+
 @Service
 public class PagoService {
 
@@ -39,7 +42,22 @@ public class PagoService {
         Plan plan = planRepository.findById(request.getPlanId())
                 .orElseThrow(() -> new Exception("Plan no encontrado"));
 
-        // 2. Construimos la petición para Mercado Pago usando el Patrón Builder (SDK v3)
+        // 2. VALIDACIÓN: Verificamos si el cliente ya tiene un pago válido (aprobado y no vencido)
+        //    Esto evita cobros duplicados cuando el cliente ya está al día con su cuota
+        // Buscamos el último pago del usuario en la base de datos
+        Optional<Pago> ultimoPago = pagoRepository.findTopByUsuarioIdOrderByFechaPagoDesc(usuario.getId());
+        // Si existe un pago previo, verificamos si todavía está vigente
+        if (ultimoPago.isPresent()) {
+            Pago pagoAnterior = ultimoPago.get();
+            // Si el último pago está aprobado y tiene menos de 30 días, el cliente ya está al día
+            if (pagoAnterior.getEstadoPago() == EstadoPago.APROBADO && 
+                pagoAnterior.getFechaPago().plusDays(30).isAfter(java.time.LocalDateTime.now())) {
+                // Lanzamos excepción para evitar cobro duplicado
+                throw new Exception("El cliente ya tiene un pago vigente. No es necesario realizar otro pago.");
+            }
+        }
+
+        // 3. Construimos la petición para Mercado Pago usando el Patrón Builder (SDK v3)
         PaymentClient client = new PaymentClient();
         
         PaymentCreateRequest createRequest = PaymentCreateRequest.builder()
@@ -59,10 +77,10 @@ public class PagoService {
                         .build())
                 .build();
 
-        // 3. Enviamos la petición a Mercado Pago
+        // 4. Enviamos la petición a Mercado Pago
         Payment mpPayment = client.create(createRequest);
 
-        // 4. Guardamos el resultado en NUESTRA base de datos (Historial y Dashboard)
+        // 5. Guardamos el resultado en NUESTRA base de datos (Historial y Dashboard)
         Pago pagoLocal = new Pago();
         pagoLocal.setUsuario(usuario);
         pagoLocal.setPlan(plan);
@@ -71,17 +89,25 @@ public class PagoService {
         pagoLocal.setMetodoPago(MetodoPago.MERCADO_PAGO);
         pagoLocal.setMpPaymentId(mpPayment.getId().toString()); // ¡Guardamos el ID de Mercado Pago!
 
-        // Evaluamos qué nos respondió MP
+        // 6. Evaluamos qué nos respondió MP y mapeamos el estado correctamente
+        //    APRO = Pago aprobado | OTHE = Pago rechazado | PEND = Pago pendiente
+        // Si MP devuelve "approved", marcamos el pago como APROBADO
         if ("approved".equals(mpPayment.getStatus())) {
             pagoLocal.setEstadoPago(EstadoPago.APROBADO);
+        // Si MP devuelve "in_process" o "pending", marcamos el pago como PENDIENTE
         } else if ("in_process".equals(mpPayment.getStatus()) || "pending".equals(mpPayment.getStatus())) {
             pagoLocal.setEstadoPago(EstadoPago.PENDIENTE);
         } else {
+            // Cualquier otro estado (rejected, cancelled, etc.) se marca como RECHAZADO
             pagoLocal.setEstadoPago(EstadoPago.RECHAZADO);
         }
 
-        if (usuario.getEstado() == EstadoUsuario.PENDIENTE) {
-            usuario.setEstado(EstadoUsuario.ACTIVO); usuarioRepository.save(usuario); }
+        // 7. Solo activamos al usuario si el pago fue aprobado
+        //    Si el pago fue rechazado o queda pendiente, el usuario permanece PENDIENTE
+        if (pagoLocal.getEstadoPago() == EstadoPago.APROBADO && usuario.getEstado() == EstadoUsuario.PENDIENTE) {
+            usuario.setEstado(EstadoUsuario.ACTIVO);
+            usuarioRepository.save(usuario);
+        }
 
         return pagoRepository.save(pagoLocal);
     }

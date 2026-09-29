@@ -56,12 +56,18 @@ public class AccesoService {
             
         } else {
             // 3. BARRERA FINANCIERA: Evaluamos solo si superó la barrera médica
+            // Buscamos el último pago del usuario
             Optional<Pago> ultimoPago = pagoRepository.findTopByUsuarioIdOrderByFechaPagoDesc(usuario.getId());
             
             // Asumimos que un pago dura 30 días exactos desde su fecha de cobro
+            // Pero también verificamos que el pago haya sido APROBADO (no rechazado ni pendiente)
+            // Si el pago fue rechazado, el cliente NO está al día y debe ser bloqueado
+            // Verificamos: (1) que exista un pago, (2) que esté APROBADO, (3) que tenga menos de 30 días
             if (ultimoPago.isEmpty() || 
+                ultimoPago.get().getEstadoPago() != com.summit.model.enums.EstadoPago.APROBADO ||
                 ultimoPago.get().getFechaPago().plusDays(30).isBefore(LocalDateTime.now())) {
                 
+                // Si alguna condición no se cumple, bloqueamos el acceso por pago
                 resultadoFinal = ResultadoAcceso.BLOQUEO_PAGO;
             }
         }

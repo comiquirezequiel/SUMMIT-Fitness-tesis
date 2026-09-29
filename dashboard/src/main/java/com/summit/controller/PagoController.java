@@ -25,10 +25,24 @@ public class PagoController {
             Pago pagoProcesado = pagoService.procesarPagoTarjeta(request);
             
             // Armamos una respuesta limpia para el Frontend
+            // Incluimos el estado real del pago para que el frontend muestre el mensaje correcto
             Map<String, Object> response = new HashMap<>();
             response.put("id_pago_local", pagoProcesado.getId());
             response.put("estado", pagoProcesado.getEstadoPago().toString());
-            response.put("mensaje", "Transacción procesada correctamente");
+            
+            // Mensaje dinámico según el estado real del pago
+            String mensaje;
+            // Si el pago fue APROBADO, mostramos mensaje de éxito con el ID de transacción
+            if (pagoProcesado.getEstadoPago() == com.summit.model.enums.EstadoPago.APROBADO) {
+                mensaje = "¡Pago Aprobado! ID de transacción: " + pagoProcesado.getId();
+            // Si el pago quedó PENDIENTE, informamos que está en proceso de confirmación
+            } else if (pagoProcesado.getEstadoPago() == com.summit.model.enums.EstadoPago.PENDIENTE) {
+                mensaje = "Pago pendiente de confirmación. ID de transacción: " + pagoProcesado.getId();
+            // Si el pago fue RECHAZADO, mostramos mensaje de error
+            } else {
+                mensaje = "Pago rechazado. Verificá los datos de la tarjeta e intentá nuevamente.";
+            }
+            response.put("mensaje", mensaje);
             
             return ResponseEntity.ok(response);
             

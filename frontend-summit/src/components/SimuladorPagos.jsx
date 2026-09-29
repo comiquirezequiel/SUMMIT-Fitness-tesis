@@ -57,8 +57,21 @@ export default function SimuladorPagos() {
 
             const respuesta = await api.post('/pagos/procesar', payload);
             
-            setEstadoPago('EXITO');
-            setMensaje(`¡Pago Aprobado! ID de transacción: ${respuesta.data.id_pago_local}`);
+            // Verificamos el estado real del pago devuelto por el backend
+            // APROBADO = Pago exitoso | PENDIENTE = Pago en proceso | RECHAZADO = Pago rechazado
+            // Si el estado es APROBADO, mostramos mensaje de éxito con el ID de transacción
+            if (respuesta.data.estado === 'APROBADO') {
+                setEstadoPago('EXITO');
+                setMensaje(`¡Pago Aprobado! ID de transacción: ${respuesta.data.id_pago_local}`);
+            // Si el estado es PENDIENTE, informamos que el pago está en proceso de confirmación
+            } else if (respuesta.data.estado === 'PENDIENTE') {
+                setEstadoPago('EXITO');
+                setMensaje(`Pago pendiente de confirmación. ID de transacción: ${respuesta.data.id_pago_local}`);
+            } else {
+                // RECHAZADO u otro estado no esperado: mostramos mensaje de error
+                setEstadoPago('ERROR');
+                setMensaje(respuesta.data.mensaje || 'Pago rechazado. Verificá los datos de la tarjeta e intentá nuevamente.');
+            }
             
             return Promise.resolve(); 
 
