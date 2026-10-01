@@ -56,10 +56,10 @@ export default function EditarSocio({ setVistaActual, socioSeleccionado }) {
                 <ArrowLeft size={20} className="mr-2" /> Volver a Miembros
             </button>
 
-            <div className="bg-white p-8 rounded-xl shadow-md border border-gray-200">
+            <div className="bg-white dark:bg-gray-800 p-8 rounded-xl dark:border-gray-700 shadow-md border border-gray-200">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-gray-800">Editar Perfil del Socio</h2>
-                    <span className="text-sm bg-gray-100 text-gray-500 py-1 px-3 rounded-full font-bold">
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-300">Editar Perfil del Socio</h2>
+                    <span className="text-sm bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 py-1 px-3 rounded-full font-bold">
                         DNI: {socioSeleccionado.dni} (Inmutable)
                     </span>
                 </div>
@@ -79,30 +79,30 @@ export default function EditarSocio({ setVistaActual, socioSeleccionado }) {
                 <form onSubmit={actualizarSocio} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="md:col-span-2">
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Nombre Completo</label>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-500 mb-2">Nombre Completo</label>
                             <input required type="text" name="nombreCompleto" value={formData.nombreCompleto} onChange={handleChange} 
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                                className="w-full px-4 py-2 border rounded-lg dark:border-gray-600 focus:ring-2 focus:ring-blue-500 outline-none" 
                                 disabled={estadoReq === 'CARGANDO'} />
                         </div>
                         
                         <div className="md:col-span-1">
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Correo Electrónico</label>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-500 mb-2">Correo Electrónico</label>
                             <input required type="email" name="email" value={formData.email} onChange={handleChange} 
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                                className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
                                 disabled={estadoReq === 'CARGANDO'} />
                         </div>
                         
                         <div className="md:col-span-1">
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Teléfono</label>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-500 mb-2">Teléfono</label>
                             <input type="text" name="telefono" value={formData.telefono} onChange={handleChange} 
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                                className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
                                 disabled={estadoReq === 'CARGANDO'} />
                         </div>
 
                         <div className="md:col-span-1">
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Estado del Socio</label>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-500 mb-2">Estado del Socio</label>
                             <select name="estado" value={formData.estado} onChange={handleChange}
-                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                className="w-full px-4 py-2 border dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-700"
                                 disabled={estadoReq === 'CARGANDO'}
                             >
                                 <option value="PENDIENTE">PENDIENTE</option>
