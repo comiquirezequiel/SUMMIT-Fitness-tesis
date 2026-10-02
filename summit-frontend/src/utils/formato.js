@@ -11,7 +11,8 @@ export const formatFecha = (fechaIso) => {
 // LocalDateTime de Java ('2026-10-01T21:43:04') -> '21:43'
 export const formatHora = (fechaHoraIso) => {
   if (!fechaHoraIso) return '—';
-  return new Date(fechaHoraIso).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  // hourCycle h23: algunas versiones de Chrome muestran "09:00 a. m." con es-AR
+  return new Date(fechaHoraIso).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 };
 
 // LocalDateTime de Java -> '01/10/2026 21:43'

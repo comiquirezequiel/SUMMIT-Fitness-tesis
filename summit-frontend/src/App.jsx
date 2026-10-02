@@ -1,25 +1,13 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import ConfiguracionAcceso from './pages/ConfiguracionAcceso';
 import ConstructorRutinas from './pages/ConstructorRutinas';
-import { sesionVigente, limpiarSesion, cerrarSesion } from './services/auth';
+import { sesionVigente, limpiarSesion } from './services/auth';
 import { usuarioActual } from './utils/formato';
 
-// El panel es para el personal. El portal del socio (app móvil) se construye en otra etapa.
-const PortalSocioPendiente = () => (
-  <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 text-center space-y-4">
-      <h1 className="text-2xl font-extrabold text-gray-900">Hola, {usuarioActual()?.nombreCompleto}</h1>
-      <p className="text-gray-500">
-        Este panel es para el personal del gimnasio. El portal del socio (rutina, progreso y pagos) va a estar disponible en la app.
-      </p>
-      <button onClick={() => cerrarSesion()} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold">
-        Cerrar sesión
-      </button>
-    </div>
-  </div>
-);
+// Portal del socio (pensado para el celular): se descarga aparte, el personal no lo necesita
+const PortalSocio = lazy(() => import('./portal/PortalSocio'));
 
 // Rutas protegidas: sin token, o con el token vencido, vuelve al login
 const ProtectedRoute = ({ children }) => {
@@ -28,8 +16,13 @@ const ProtectedRoute = ({ children }) => {
     limpiarSesion();
     return <Navigate to={habiaSesion ? '/login?sesion=expirada' : '/login'} replace />;
   }
+  // El socio usa su portal (pensado para el celular); el panel es para el personal
   if (usuarioActual()?.rol === 'SOCIO') {
-    return <PortalSocioPendiente />;
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-slate-50" />}>
+        <PortalSocio />
+      </Suspense>
+    );
   }
   return children;
 };
