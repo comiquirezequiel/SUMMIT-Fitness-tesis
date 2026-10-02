@@ -1,11 +1,14 @@
 package com.summit.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "usuarios")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"}) // proxies LAZY de Hibernate
 @Getter
 @Setter
 @NoArgsConstructor
@@ -27,6 +30,7 @@ public class Usuario {
     @Column(name = "email", unique = true, nullable = false, length = 100)
     private String email;
 
+    @JsonIgnore // el hash nunca sale en las respuestas de la API
     @Column(name = "password", nullable = false, length = 255)
     private String password;
 

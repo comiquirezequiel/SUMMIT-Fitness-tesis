@@ -20,7 +20,8 @@ import java.util.stream.Collectors;
  * Límites configurados:
  * - Login: máximo 5 peticiones por minuto por IP
  * - Check-in: máximo 10 peticiones por minuto por IP
- * - General: máximo 30 peticiones por minuto por IP
+ * - General: máximo 120 peticiones por minuto por IP
+ * Cada categoría cuenta por separado: navegar el panel no bloquea el login.
  *
  * Si se excede el límite, responde HTTP 429 Too Many Requests.
  */
@@ -28,11 +29,11 @@ import java.util.stream.Collectors;
 @Order(1)
 public class RateLimitingFilter implements Filter {
 
-    // Mapa de timestamps de peticiones por IP
+    // Mapa de timestamps de peticiones por IP y categoría ("ip|login", "ip|checkin", "ip|general")
     private final ConcurrentHashMap<String, List<Long>> requestTimestamps = new ConcurrentHashMap<>();
 
-    // Límites por minuto
-    private static final int MAX_REQUESTS_PER_MINUTE = 30;
+    // Límites por minuto (cada categoría tiene su propio contador)
+    private static final int MAX_REQUESTS_PER_MINUTE = 120;
     private static final int LOGIN_MAX_REQUESTS_PER_MINUTE = 5;
     private static final int CHECKIN_MAX_REQUESTS_PER_MINUTE = 10;
 
@@ -51,16 +52,20 @@ public class RateLimitingFilter implements Filter {
 
         // Determinar el límite según el endpoint
         int maxRequests;
+        String categoria;
         if (uri.contains("/api/auth/login")) {
             maxRequests = LOGIN_MAX_REQUESTS_PER_MINUTE;
+            categoria = "login";
         } else if (uri.contains("/api/asistencia/checkin")) {
             maxRequests = CHECKIN_MAX_REQUESTS_PER_MINUTE;
+            categoria = "checkin";
         } else {
             maxRequests = MAX_REQUESTS_PER_MINUTE;
+            categoria = "general";
         }
 
-        // Obtener o crear la lista de timestamps para esta IP
-        List<Long> timestamps = requestTimestamps.computeIfAbsent(clientIp,
+        // Obtener o crear la lista de timestamps para esta IP en esta categoría
+        List<Long> timestamps = requestTimestamps.computeIfAbsent(clientIp + "|" + categoria,
                 k -> new CopyOnWriteArrayList<>());
 
         long now = System.currentTimeMillis();

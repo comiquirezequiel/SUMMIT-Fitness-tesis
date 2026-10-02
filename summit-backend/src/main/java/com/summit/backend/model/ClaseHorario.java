@@ -1,11 +1,13 @@
 package com.summit.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import jakarta.persistence.*;
 import java.time.LocalTime;
 
 @Entity
 @Table(name = "clase_horarios")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"}) // proxies LAZY de Hibernate
 @Getter
 @Setter
 @NoArgsConstructor

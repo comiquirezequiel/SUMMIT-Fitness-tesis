@@ -63,23 +63,14 @@ public class AuthService {
             throw new RuntimeException("El DNI ya se encuentra registrado");
         }
 
-        // Determinar rol (por defecto SOCIO)
-        Rol rol = Rol.SOCIO;
-        if (request.getRol() != null && !request.getRol().isEmpty()) {
-            try {
-                rol = Rol.valueOf(request.getRol().toUpperCase());
-            } catch (IllegalArgumentException e) {
-                throw new RuntimeException("Rol inválido: " + request.getRol());
-            }
-        }
-
+        // El registro público solo crea socios: el personal lo da de alta un ADMIN
         Usuario usuario = Usuario.builder()
                 .dni(request.getDni())
                 .nombreCompleto(request.getNombreCompleto())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .telefono(request.getTelefono())
-                .rol(rol)
+                .rol(Rol.SOCIO)
                 .estado(EstadoUsuario.ACTIVO)
                 .build();
 

@@ -28,6 +28,4 @@ public class RegisterRequest {
 
     @Size(max = 25, message = "El teléfono no puede exceder 25 caracteres")
     private String telefono;
-
-    private String rol; // Si es null, se asigna SOCIO por defecto en el servicio
 }

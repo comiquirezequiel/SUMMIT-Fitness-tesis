@@ -9,6 +9,7 @@ import com.summit.backend.repository.PlanRepository;
 import com.summit.backend.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -28,7 +29,9 @@ public class PagoService {
 
     /**
      * Registra un nuevo pago y extiende automáticamente la suscripción del socio.
+     * Es atómico: si falla la extensión de la suscripción, el pago no queda guardado.
      */
+    @Transactional
     public PagoHistorial registrarPago(Long idUsuario, Long idPlan, BigDecimal monto,
                                         MetodoPago metodoPago, String comprobante) {
         Usuario usuario = usuarioRepository.findById(idUsuario)

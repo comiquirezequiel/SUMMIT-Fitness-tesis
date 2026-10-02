@@ -43,10 +43,14 @@ const ConstructorRutinas = () => {
 
   const fetchEjercicios = async () => {
     try {
-      const res = await fetch('http://localhost:8080/api/ejercicios', {
+      // El backend devuelve una página de Spring ({ content: [...] }); 50 es el máximo permitido
+      const res = await fetch('http://localhost:8080/api/ejercicios?size=50&sort=nombre', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
-      if (res.ok) setEjercicios(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        setEjercicios(Array.isArray(data) ? data : (data.content || []));
+      }
     } catch (e) {
       console.error(e);
     }
@@ -147,9 +151,10 @@ const ConstructorRutinas = () => {
       if (!resRutina.ok) throw new Error('Error al crear rutina');
       const rutinaData = await resRutina.json();
 
-      // 2. Agregar Ejercicios
+      // 2. Agregar Ejercicios (se registran los que el backend rechace)
+      const rechazados = [];
       for (const item of ejerciciosRutina) {
-        await fetch(`http://localhost:8080/api/rutinas/${rutinaData.idRutina}/ejercicios?forzar=${item.riesgoAsumido}`, {
+        const resEj = await fetch(`http://localhost:8080/api/rutinas/${rutinaData.idRutina}/ejercicios?forzar=${item.riesgoAsumido}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -162,6 +167,15 @@ const ConstructorRutinas = () => {
             pesoSugeridoKg: item.peso
           })
         });
+        if (!resEj.ok) {
+          const err = await resEj.json().catch(() => ({}));
+          rechazados.push(`${item.ejercicio.nombre}: ${err.error || 'error desconocido'}`);
+        }
+      }
+
+      if (rechazados.length > 0) {
+        setMensaje({ type: 'error', text: `Rutina creada, pero no se pudieron agregar: ${rechazados.join(' | ')}` });
+        return;
       }
 
       setMensaje({ type: 'success', text: 'Rutina guardada exitosamente.' });

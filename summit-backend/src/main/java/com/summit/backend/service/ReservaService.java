@@ -6,6 +6,7 @@ import com.summit.backend.repository.ReservaClaseRepository;
 import com.summit.backend.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -26,6 +27,7 @@ public class ReservaService {
      * Reserva una plaza en una clase grupal.
      * Verifica que no se exceda la capacidad máxima.
      */
+    @Transactional
     public ReservaClase reservar(Long idUsuario, Long idHorario, LocalDate fechaClase) {
         Usuario socio = usuarioRepository.findById(idUsuario)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -35,7 +37,7 @@ public class ReservaService {
 
         // Verificar cupo disponible (excluir canceladas)
         long reservasActuales = reservaClaseRepository
-                .countByHorarioIdHorarioAndFechaClase(idHorario, fechaClase);
+                .countByHorarioIdHorarioAndFechaClaseAndEstadoNot(idHorario, fechaClase, EstadoReserva.CANCELADA);
 
         if (reservasActuales >= horario.getClase().getCapacidadMaxima()) {
             throw new RuntimeException("La clase está completa. No hay cupos disponibles.");

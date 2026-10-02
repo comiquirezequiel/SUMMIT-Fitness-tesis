@@ -1,5 +1,6 @@
 package com.summit.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import jakarta.persistence.*;
 
@@ -17,6 +18,7 @@ public class RutinaEjercicio {
     @Column(name = "id_rutina_ejercicio")
     private Long idRutinaEjercicio;
 
+    @JsonIgnore // evita el ciclo Rutina -> ejercicios -> rutina al serializar
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rutina_id", nullable = false)
     private Rutina rutina;
