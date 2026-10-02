@@ -42,9 +42,9 @@ const MENU_ITEMS = [
     icon: Dumbbell, text: "Entrenamiento",
     subItems: [
       { icon: ListChecks, text: "Ejercicios", path: "/entrenamiento/ejercicios", roles: ['ADMIN', 'RECEPCION', 'PROFESOR'] },
-      { icon: CalendarCheck, text: "Rutina de Hoy", path: "/entrenamiento/hoy", roles: ['ADMIN', 'PROFESOR'], demo: true },
-      { icon: History, text: "Historial", path: "/entrenamiento/historial", roles: ['ADMIN', 'PROFESOR'], demo: true },
-      { icon: ClipboardList, text: "Rutinas", path: "/entrenamiento/rutinas", roles: ['ADMIN', 'PROFESOR'], demo: true },
+      { icon: CalendarCheck, text: "Rutina de Hoy", path: "/entrenamiento/hoy", roles: ['ADMIN', 'PROFESOR'] },
+      { icon: History, text: "Historial", path: "/entrenamiento/historial", roles: ['ADMIN', 'PROFESOR'] },
+      { icon: ClipboardList, text: "Rutinas", path: "/entrenamiento/rutinas", roles: ['ADMIN', 'PROFESOR'] },
     ]
   },
   {

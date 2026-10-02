@@ -54,6 +54,19 @@ public class EntrenamientoController {
     }
 
     /**
+     * Socios que registraron entrenamientos hoy, con su avance en el día de la rutina.
+     * Para el profesor en el salón: solo el personal (un socio ve únicamente lo suyo).
+     */
+    @GetMapping("/hoy")
+    public ResponseEntity<?> entrenandoHoy(Authentication auth) {
+        if (esSocio(auth)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Solo el personal del gimnasio puede ver quiénes entrenan hoy"));
+        }
+        return ResponseEntity.ok(entrenamientoService.entrenandoHoy());
+    }
+
+    /**
      * Sesiones del socio (por defecto, los últimos 90 días), de la más reciente a la más vieja.
      */
     @GetMapping("/socio/{idSocio}/sesiones")

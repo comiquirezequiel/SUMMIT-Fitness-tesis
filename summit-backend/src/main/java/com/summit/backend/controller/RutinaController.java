@@ -26,6 +26,19 @@ public class RutinaController {
     private final RutinaService rutinaService;
 
     /**
+     * Rutinas activas de todos los socios (nombre, días, ejercicios, profesor y último entrenamiento),
+     * para el listado del personal. Un socio no accede: solo ve la suya.
+     */
+    @GetMapping
+    public ResponseEntity<?> listarActivas(Authentication auth) {
+        if (esSocio(auth)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "El listado de rutinas es solo para el personal del gimnasio"));
+        }
+        return ResponseEntity.ok(rutinaService.listarActivas());
+    }
+
+    /**
      * Rutinas activas del socio, la más reciente primero.
      */
     @GetMapping("/socio/{idSocio}")
@@ -119,8 +132,11 @@ public class RutinaController {
 
     // Un socio solo ve sus propias rutinas; el personal, las de cualquier socio
     private boolean esOtroSocio(Authentication auth, Long idSocio) {
-        boolean esSocio = auth.getAuthorities().stream().anyMatch(a -> "ROLE_SOCIO".equals(a.getAuthority()));
-        return esSocio && !rutinaService.esElSocio(auth.getName(), idSocio);
+        return esSocio(auth) && !rutinaService.esElSocio(auth.getName(), idSocio);
+    }
+
+    private static boolean esSocio(Authentication auth) {
+        return auth.getAuthorities().stream().anyMatch(a -> "ROLE_SOCIO".equals(a.getAuthority()));
     }
 
     private static ResponseEntity<Map<String, String>> soloLaPropia() {

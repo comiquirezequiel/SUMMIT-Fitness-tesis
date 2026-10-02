@@ -55,6 +55,20 @@ public interface LogEntrenamientoRepository extends JpaRepository<LogEntrenamien
             """)
     List<Object[]> contarPorEjercicio(@Param("idSocio") Long idSocio);
 
+    // Filas [idSocio, nombreSocio, idRutina, nombreRutina, día, registros, RPE promedio,
+    //        ejercicios de ese día en la rutina, última carga] por socio y día entrenado en la fecha (una consulta)
+    @Query("""
+            SELECT s.idUsuario, s.nombreCompleto, r.idRutina, r.nombre, l.diaNumero, COUNT(l), AVG(l.rpe),
+                   (SELECT COUNT(re) FROM RutinaEjercicio re
+                    WHERE re.rutina = r AND COALESCE(re.diaNumero, 1) = l.diaNumero),
+                   MAX(l.fechaRegistro)
+            FROM LogEntrenamiento l JOIN l.socio s JOIN l.rutina r
+            WHERE l.fecha = :fecha
+            GROUP BY s.idUsuario, s.nombreCompleto, r.idRutina, r.nombre, l.diaNumero
+            ORDER BY MAX(l.fechaRegistro) DESC
+            """)
+    List<Object[]> resumenPorSocioDelDia(@Param("fecha") LocalDate fecha);
+
     // Al quitar un ejercicio de la rutina, sus registros quedan sin esa referencia (el historial no se pierde)
     @Modifying
     @Query("UPDATE LogEntrenamiento l SET l.rutinaEjercicio = null WHERE l.rutinaEjercicio.idRutinaEjercicio = :idRutinaEjercicio")

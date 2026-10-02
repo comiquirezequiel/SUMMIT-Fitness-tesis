@@ -5,6 +5,7 @@ import com.summit.backend.dto.RutinaEjercicioDTO;
 import com.summit.backend.dto.RutinaEjercicioRequestDTO;
 import com.summit.backend.dto.RutinaHoyDTO;
 import com.summit.backend.dto.RutinaRequestDTO;
+import com.summit.backend.dto.RutinaResumenDTO;
 import com.summit.backend.model.CertificadoMedico;
 import com.summit.backend.model.Ejercicio;
 import com.summit.backend.model.EstadoUsuario;
@@ -67,6 +68,28 @@ public class RutinaService {
     public List<RutinaDTO> listarActivasPorSocio(Long idSocio) {
         return rutinaRepository.findBySocioIdUsuarioAndActivaTrueOrderByFechaCreacionDescIdRutinaDesc(idSocio)
                 .stream().map(RutinaService::toDTO).toList();
+    }
+
+    /**
+     * Rutinas activas de todos los socios (listado del personal), por socio, en una sola consulta.
+     */
+    @Transactional(readOnly = true)
+    public List<RutinaResumenDTO> listarActivas() {
+        return rutinaRepository.resumenActivas().stream()
+                .map(fila -> RutinaResumenDTO.builder()
+                        .idRutina((Long) fila[0])
+                        .nombre((String) fila[1])
+                        .objetivo((String) fila[2])
+                        .idSocio((Long) fila[3])
+                        .nombreSocio((String) fila[4])
+                        .idProfesor((Long) fila[5])
+                        .nombreProfesor((String) fila[6])
+                        .fechaCreacion((LocalDate) fila[7])
+                        .totalDias(fila[8] != null ? ((Number) fila[8]).intValue() : 0)
+                        .cantidadEjercicios(((Number) fila[9]).longValue())
+                        .ultimoEntrenamiento((LocalDate) fila[10])
+                        .build())
+                .toList();
     }
 
     @Transactional(readOnly = true)

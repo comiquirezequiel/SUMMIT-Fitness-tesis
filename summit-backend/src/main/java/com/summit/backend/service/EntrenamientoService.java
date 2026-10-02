@@ -1,6 +1,7 @@
 package com.summit.backend.service;
 
 import com.summit.backend.dto.EjercicioHistorialDTO;
+import com.summit.backend.dto.EntrenandoHoyDTO;
 import com.summit.backend.dto.LogEntrenamientoDTO;
 import com.summit.backend.dto.LogEntrenamientoRequestDTO;
 import com.summit.backend.dto.ProgresoEjercicioDTO;
@@ -142,6 +143,27 @@ public class EntrenamientoService {
                                 Comparator.nullsLast(Comparator.naturalOrder()))
                         .thenComparing(LogEntrenamiento::getIdLog))
                 .map(EntrenamientoService::toDTO)
+                .toList();
+    }
+
+    /**
+     * Socios que registraron entrenamientos hoy, con su avance en el día de la rutina
+     * (la carga más reciente primero). Para el profesor en el salón.
+     */
+    @Transactional(readOnly = true)
+    public List<EntrenandoHoyDTO> entrenandoHoy() {
+        return logEntrenamientoRepository.resumenPorSocioDelDia(LocalDate.now()).stream()
+                .map(fila -> EntrenandoHoyDTO.builder()
+                        .idSocio((Long) fila[0])
+                        .nombreSocio((String) fila[1])
+                        .idRutina((Long) fila[2])
+                        .nombreRutina((String) fila[3])
+                        .diaNumero((Integer) fila[4])
+                        .ejerciciosRegistrados(((Number) fila[5]).longValue())
+                        .rpePromedio(fila[6] != null ? redondear(((Number) fila[6]).doubleValue()) : null)
+                        .totalEjercicios(((Number) fila[7]).longValue())
+                        .ultimoRegistro((LocalDateTime) fila[8])
+                        .build())
                 .toList();
     }
 
