@@ -6,6 +6,7 @@ import com.summit.backend.model.*;
 import com.summit.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -15,19 +16,23 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
+import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
  * Servicio de asistencia y check-in.
- * El ingreso en recepción evalúa todas las reglas y devuelve una ficha con:
+ * Las reglas de ingreso se evalúan en un solo lugar (evaluarAcceso), sin escribir en la base:
  * 1. Estado de la cuenta
  * 2. Cuota al día (con días de gracia)
  * 3. Límite semanal del plan (ej. 3 veces por semana)
  * 4. Certificado médico vigente (Ley 5397, con días de gracia)
+ * Recepción arma con esa evaluación la ficha del monitor y registra el intento; el portal del socio
+ * la usa para mostrarle si puede entrar, sin registrar nada.
  * El check-in desde la app además aplica cooldown anti-spam y geolocalización (< 20 metros).
  */
 @Service
@@ -46,12 +51,88 @@ public class AsistenciaService {
 
     private static final int COOLDOWN_SEGUNDOS = 30;
 
-    // Con cuántos días de anticipación se avisa en recepción que algo está por vencer
+    // Con cuántos días de anticipación se avisa que algo está por vencer
     private static final int DIAS_AVISO_CUOTA = 7;
     private static final int DIAS_AVISO_APTO = 15;
 
-    private static final DateTimeFormatter FECHA_CORTA = DateTimeFormatter.ofPattern("dd/MM");
+    // Formatos de los textos (también los usa el portal del socio)
+    static final DateTimeFormatter FECHA_CORTA = DateTimeFormatter.ofPattern("dd/MM");
     private static final String[] DIAS_SEMANA = {"lun", "mar", "mié", "jue", "vie", "sáb", "dom"};
+
+    /**
+     * Situación de la cuota o del apto médico frente a las reglas de ingreso.
+     */
+    public enum Vigencia {
+        NO_EXIGIDA,  // el gimnasio no la exige para entrar
+        FALTA,       // no tiene membresía activa / certificado cargado
+        RECHAZADA,   // solo apto: el último certificado fue rechazado
+        VENCIDA,     // venció y ya pasaron los días de gracia
+        EN_GRACIA,   // venció, pero todavía está dentro de los días de gracia
+        VENCE_HOY,
+        POR_VENCER,  // vence dentro de los días de aviso
+        AL_DIA;
+
+        public boolean bloquea() {
+            return this == FALTA || this == RECHAZADA || this == VENCIDA;
+        }
+    }
+
+    /**
+     * Resultado de evaluar las reglas de ingreso de un usuario en una fecha. No registra nada.
+     * Para el personal solo se evalúa la cuenta: cuota y apto quedan en null.
+     */
+    public record EvaluacionAcceso(
+            Usuario usuario,
+            LocalDate fecha,
+            ConfiguracionAcceso config,
+            Suscripcion suscripcion,              // membresía activa (null si no tiene)
+            CertificadoMedico certificado,        // el de vencimiento más lejano (null si no tiene)
+            Vigencia cuota,
+            Vigencia apto,
+            SortedSet<LocalDate> diasConIngreso,  // días de esta semana (lunes a hoy) con un ingreso permitido
+            boolean limiteSemanalExcedido,
+            List<ResultadoAsistencia> motivos) {  // faltas en orden: cuenta → cuota → límite semanal → apto
+
+        public boolean permitido() {
+            return motivos.isEmpty();
+        }
+
+        // Si hay varias faltas, el resultado registrado es la primera
+        public ResultadoAsistencia resultado() {
+            return permitido() ? ResultadoAsistencia.PERMITIDO : motivos.get(0);
+        }
+
+        public boolean esPersonal() {
+            return usuario.getRol() != Rol.SOCIO;
+        }
+
+        // Días por semana del plan: null = pase libre (o sin membresía)
+        public Integer diasSemanaPermitidos() {
+            return suscripcion != null ? suscripcion.getPlan().getVecesPorSemana() : null;
+        }
+
+        public boolean yaIngresoHoy() {
+            return diasConIngreso.contains(fecha);
+        }
+
+        // Los "días para vencer" son negativos si ya venció
+        public Long diasParaVencerCuota() {
+            return suscripcion != null ? ChronoUnit.DAYS.between(fecha, suscripcion.getFechaVencimiento()) : null;
+        }
+
+        public Long diasParaVencerApto() {
+            return certificado != null ? ChronoUnit.DAYS.between(fecha, certificado.getFechaVencimiento()) : null;
+        }
+
+        // Días de gracia que quedan después de hoy (0 = hoy es el último). Solo tiene sentido EN_GRACIA
+        public long graciaRestanteCuota() {
+            return config.getDiasGraciaMembresia() + diasParaVencerCuota();
+        }
+
+        public long graciaRestanteApto() {
+            return config.getDiasGraciaCertificado() + diasParaVencerApto();
+        }
+    }
 
     /**
      * Procesa un intento de check-in con validación completa.
@@ -123,186 +204,210 @@ public class AsistenciaService {
     }
 
     /**
-     * Evalúa todas las reglas (no se detiene en la primera falta) y registra el intento.
-     * Si hay varias faltas, el resultado registrado es la primera según este orden:
-     * cuenta → cuota → límite semanal → apto médico.
+     * Evalúa todas las reglas de ingreso de hoy sin registrar nada (no se detiene en la primera falta).
+     * La usan la verificación de recepción y el portal del socio: así los dos aplican las mismas reglas.
      */
-    private CheckInResponse validarAccesoInterno(Usuario usuario, TipoEventoAsistencia tipoEvento, Double distancia) {
-        CheckInResponse respuesta = fichaBase(usuario, distancia);
+    @Transactional(readOnly = true)
+    public EvaluacionAcceso evaluarAcceso(Usuario usuario) {
+        LocalDate hoy = LocalDate.now();
         List<ResultadoAsistencia> motivos = new ArrayList<>();
 
         if (usuario.getEstado() != EstadoUsuario.ACTIVO) {
             motivos.add(ResultadoAsistencia.DENEGADO_CUENTA_INACTIVA);
-            respuesta.getFaltas().add("Cuenta " + textoEstado(usuario.getEstado()) + ": no puede ingresar");
         }
-
         if (usuario.getRol() != Rol.SOCIO) {
-            // Personal del gimnasio: el ingreso queda registrado como presentismo, sin controles de socio
-            if (motivos.isEmpty()) {
-                respuesta.getAvisos().add("Personal del gimnasio (" + usuario.getRol().name() + "): se registra su ingreso");
-            }
-            return cerrarEvaluacion(usuario, tipoEvento, distancia, respuesta, motivos, null);
+            // Personal del gimnasio: su ingreso es presentismo, sin controles de socio
+            return new EvaluacionAcceso(usuario, hoy, null, null, null, null, null,
+                    Collections.emptySortedSet(), false, List.copyOf(motivos));
         }
 
         ConfiguracionAcceso config = configService.obtenerConfiguracionGlobal();
-        LocalDate hoy = LocalDate.now();
-
         Suscripcion suscripcion = suscripcionRepository
                 .findFirstByUsuarioIdUsuarioAndActivaTrueOrderByFechaVencimientoDesc(usuario.getIdUsuario())
                 .orElse(null);
+        CertificadoMedico certificado = certificadoMedicoRepository
+                .findFirstByUsuarioIdUsuarioOrderByFechaVencimientoDesc(usuario.getIdUsuario())
+                .orElse(null);
+        SortedSet<LocalDate> diasConIngreso = diasConIngresoEnLaSemana(usuario.getIdUsuario(), hoy);
 
-        evaluarCuota(suscripcion, config, hoy, respuesta, motivos);
-        Semana semana = evaluarLimiteSemanal(usuario, suscripcion, config, hoy, respuesta, motivos);
-        evaluarAptoMedico(usuario, config, hoy, respuesta, motivos);
-
-        return cerrarEvaluacion(usuario, tipoEvento, distancia, respuesta, motivos, semana);
-    }
-
-    private void evaluarCuota(Suscripcion suscripcion, ConfiguracionAcceso config, LocalDate hoy,
-                              CheckInResponse respuesta, List<ResultadoAsistencia> motivos) {
-        if (suscripcion != null) {
-            long dias = ChronoUnit.DAYS.between(hoy, suscripcion.getFechaVencimiento());
-            respuesta.setPlan(suscripcion.getPlan().getNombrePlan());
-            respuesta.setVencimientoCuota(suscripcion.getFechaVencimiento());
-            respuesta.setDiasParaVencerCuota(dias);
-        }
-
-        if (!config.isRequerirMembresiaActiva()) {
-            return;
-        }
-
-        if (suscripcion == null) {
+        Vigencia cuota = vigenciaCuota(suscripcion, config, hoy);
+        if (cuota.bloquea()) {
             motivos.add(ResultadoAsistencia.DENEGADO_CUOTA_VENCIDA);
-            respuesta.getFaltas().add("No tiene una membresía activa");
-            return;
         }
 
-        String vence = suscripcion.getFechaVencimiento().format(FECHA_CORTA);
-        long dias = respuesta.getDiasParaVencerCuota();
-        if (dias < 0) {
-            long graciaRestante = config.getDiasGraciaMembresia() + dias;
-            if (graciaRestante < 0) {
-                motivos.add(ResultadoAsistencia.DENEGADO_CUOTA_VENCIDA);
-                respuesta.getFaltas().add("Cuota vencida el " + vence + " (hace " + textoDias(-dias) + ")");
-            } else {
-                respuesta.getAvisos().add("Cuota vencida el " + vence + ": ingresa por días de gracia ("
-                        + (graciaRestante == 0 ? "hoy es el último" : "quedan " + textoDias(graciaRestante)) + ")");
-            }
-        } else if (dias == 0) {
-            respuesta.getAvisos().add("La cuota vence hoy");
-        } else if (dias <= DIAS_AVISO_CUOTA) {
-            respuesta.getAvisos().add("La cuota vence en " + textoDias(dias) + " (" + vence + ")");
+        // Volver a entrar el mismo día no descuenta otro día
+        Integer permitidos = suscripcion != null ? suscripcion.getPlan().getVecesPorSemana() : null;
+        boolean limiteExcedido = permitidos != null && config.isRequerirMembresiaActiva()
+                && !diasConIngreso.contains(hoy) && diasConIngreso.size() >= permitidos;
+        if (limiteExcedido) {
+            motivos.add(ResultadoAsistencia.DENEGADO_LIMITE_SEMANAL);
         }
+
+        Vigencia apto = vigenciaApto(certificado, config, hoy);
+        if (apto.bloquea()) {
+            motivos.add(ResultadoAsistencia.DENEGADO_CERTIFICADO_MEDICO);
+        }
+
+        return new EvaluacionAcceso(usuario, hoy, config, suscripcion, certificado, cuota, apto,
+                diasConIngreso, limiteExcedido, List.copyOf(motivos));
     }
 
     /**
-     * Cuenta los días distintos (lunes a domingo) con un ingreso permitido.
-     * Volver a entrar el mismo día no descuenta otro día.
+     * Evalúa las reglas, arma la ficha del monitor de recepción y registra el intento en el log.
      */
-    private Semana evaluarLimiteSemanal(Usuario usuario, Suscripcion suscripcion, ConfiguracionAcceso config,
-                                        LocalDate hoy, CheckInResponse respuesta,
-                                        List<ResultadoAsistencia> motivos) {
-        if (suscripcion == null) {
-            return null;
-        }
+    private CheckInResponse validarAccesoInterno(Usuario usuario, TipoEventoAsistencia tipoEvento, Double distancia) {
+        EvaluacionAcceso evaluacion = evaluarAcceso(usuario);
+        CheckInResponse respuesta = fichaRecepcion(evaluacion, distancia);
+        registrarLog(usuario, tipoEvento, evaluacion.resultado(), null, null, distancia);
+        return respuesta;
+    }
 
+    private static Vigencia vigenciaCuota(Suscripcion suscripcion, ConfiguracionAcceso config, LocalDate hoy) {
+        if (!config.isRequerirMembresiaActiva()) {
+            return Vigencia.NO_EXIGIDA;
+        }
+        if (suscripcion == null) {
+            return Vigencia.FALTA;
+        }
+        return vigenciaPorFecha(hoy, suscripcion.getFechaVencimiento(), config.getDiasGraciaMembresia(), DIAS_AVISO_CUOTA);
+    }
+
+    private static Vigencia vigenciaApto(CertificadoMedico certificado, ConfiguracionAcceso config, LocalDate hoy) {
+        if (!config.isRequerirCertificadoMedico()) {
+            return Vigencia.NO_EXIGIDA;
+        }
+        if (certificado == null) {
+            return Vigencia.FALTA;
+        }
+        if (certificado.getEstadoLegal() == EstadoLegalCertificado.RECHAZADO) {
+            return Vigencia.RECHAZADA;
+        }
+        return vigenciaPorFecha(hoy, certificado.getFechaVencimiento(), config.getDiasGraciaCertificado(), DIAS_AVISO_APTO);
+    }
+
+    // Lo vencido bloquea recién cuando pasan los días de gracia
+    private static Vigencia vigenciaPorFecha(LocalDate hoy, LocalDate vencimiento, int diasGracia, int diasAviso) {
+        long dias = ChronoUnit.DAYS.between(hoy, vencimiento);
+        if (dias < 0) {
+            return diasGracia + dias < 0 ? Vigencia.VENCIDA : Vigencia.EN_GRACIA;
+        }
+        if (dias == 0) {
+            return Vigencia.VENCE_HOY;
+        }
+        return dias <= diasAviso ? Vigencia.POR_VENCER : Vigencia.AL_DIA;
+    }
+
+    /**
+     * Días distintos de esta semana (lunes a hoy) con un ingreso permitido.
+     */
+    private SortedSet<LocalDate> diasConIngresoEnLaSemana(Long idUsuario, LocalDate hoy) {
         LocalDate lunes = hoy.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        TreeSet<LocalDate> diasConIngreso = logAsistenciaRepository
-                .findByUsuarioIdUsuarioAndResultadoAndFechaHoraBetween(usuario.getIdUsuario(),
+        TreeSet<LocalDate> dias = logAsistenciaRepository
+                .findByUsuarioIdUsuarioAndResultadoAndFechaHoraBetween(idUsuario,
                         ResultadoAsistencia.PERMITIDO, lunes.atStartOfDay(), hoy.atTime(LocalTime.MAX))
                 .stream()
                 .map(log -> log.getFechaHora().toLocalDate())
                 .collect(Collectors.toCollection(TreeSet::new));
-
-        Integer permitidos = suscripcion.getPlan().getVecesPorSemana();
-        Semana semana = new Semana(permitidos, diasConIngreso.size(), diasConIngreso.contains(hoy));
-
-        if (permitidos != null && config.isRequerirMembresiaActiva()
-                && !semana.yaIngresoHoy() && semana.usados() >= permitidos) {
-            String detalle = diasConIngreso.stream()
-                    .map(d -> DIAS_SEMANA[d.getDayOfWeek().getValue() - 1] + " " + d.format(FECHA_CORTA))
-                    .collect(Collectors.joining(", "));
-            motivos.add(ResultadoAsistencia.DENEGADO_LIMITE_SEMANAL);
-            respuesta.getFaltas().add("Excedió los días semanales de su plan: ya usó "
-                    + semana.usados() + " de " + permitidos + " (" + detalle + ")");
-        }
-        return semana;
+        return Collections.unmodifiableSortedSet(dias);
     }
 
-    private void evaluarAptoMedico(Usuario usuario, ConfiguracionAcceso config, LocalDate hoy,
-                                   CheckInResponse respuesta, List<ResultadoAsistencia> motivos) {
-        Optional<CertificadoMedico> certificado = certificadoMedicoRepository
-                .findFirstByUsuarioIdUsuarioOrderByFechaVencimientoDesc(usuario.getIdUsuario());
+    /**
+     * Ficha del monitor de recepción: los textos le hablan al recepcionista.
+     * Las faltas siguen el orden de las reglas: cuenta → cuota → límite semanal → apto médico.
+     */
+    private CheckInResponse fichaRecepcion(EvaluacionAcceso ev, Double distancia) {
+        Usuario usuario = ev.usuario();
+        CheckInResponse respuesta = fichaBase(usuario, distancia);
 
-        certificado.ifPresent(cert -> {
-            respuesta.setVencimientoApto(cert.getFechaVencimiento());
-            respuesta.setDiasParaVencerApto(ChronoUnit.DAYS.between(hoy, cert.getFechaVencimiento()));
-        });
-
-        if (!config.isRequerirCertificadoMedico()) {
-            return;
+        if (usuario.getEstado() != EstadoUsuario.ACTIVO) {
+            respuesta.getFaltas().add("Cuenta " + textoEstado(usuario.getEstado()) + ": no puede ingresar");
         }
-
-        if (certificado.isEmpty()) {
-            motivos.add(ResultadoAsistencia.DENEGADO_CERTIFICADO_MEDICO);
-            respuesta.getFaltas().add("No tiene certificado médico (apto físico) cargado");
-            return;
-        }
-        if (certificado.get().getEstadoLegal() == EstadoLegalCertificado.RECHAZADO) {
-            motivos.add(ResultadoAsistencia.DENEGADO_CERTIFICADO_MEDICO);
-            respuesta.getFaltas().add("Su último certificado médico fue rechazado");
-            return;
-        }
-
-        String vence = certificado.get().getFechaVencimiento().format(FECHA_CORTA);
-        long dias = respuesta.getDiasParaVencerApto();
-        if (dias < 0) {
-            long graciaRestante = config.getDiasGraciaCertificado() + dias;
-            if (graciaRestante < 0) {
-                motivos.add(ResultadoAsistencia.DENEGADO_CERTIFICADO_MEDICO);
-                respuesta.getFaltas().add("Apto médico vencido el " + vence + " (hace " + textoDias(-dias) + ")");
-            } else {
-                respuesta.getAvisos().add("Apto médico vencido el " + vence + ": ingresa por días de gracia ("
-                        + (graciaRestante == 0 ? "hoy es el último" : "quedan " + textoDias(graciaRestante)) + ")");
+        if (ev.esPersonal()) {
+            // Personal del gimnasio: el ingreso queda registrado como presentismo
+            if (ev.permitido()) {
+                respuesta.getAvisos().add("Personal del gimnasio (" + usuario.getRol().name() + "): se registra su ingreso");
             }
-        } else if (dias == 0) {
-            respuesta.getAvisos().add("El apto médico vence hoy");
-        } else if (dias <= DIAS_AVISO_APTO) {
-            respuesta.getAvisos().add("El apto médico vence en " + textoDias(dias) + " (" + vence + ")");
+        } else {
+            fichaCuota(ev, respuesta);
+            if (ev.limiteSemanalExcedido()) {
+                respuesta.getFaltas().add("Excedió los días semanales de su plan: ya usó "
+                        + ev.diasConIngreso().size() + " de " + ev.diasSemanaPermitidos()
+                        + " (" + detalleDias(ev.diasConIngreso()) + ")");
+            }
+            fichaApto(ev, respuesta);
+            fichaSemana(ev, respuesta);
+        }
+
+        respuesta.setPermitido(ev.permitido());
+        respuesta.setResultado(ev.resultado().name());
+        respuesta.setMensaje(ev.permitido() ? "Acceso permitido" : String.join(" · ", respuesta.getFaltas()));
+        return respuesta;
+    }
+
+    private static void fichaCuota(EvaluacionAcceso ev, CheckInResponse respuesta) {
+        Suscripcion suscripcion = ev.suscripcion();
+        Long dias = ev.diasParaVencerCuota();
+        String vence = null;
+        if (suscripcion != null) {
+            respuesta.setPlan(suscripcion.getPlan().getNombrePlan());
+            respuesta.setVencimientoCuota(suscripcion.getFechaVencimiento());
+            respuesta.setDiasParaVencerCuota(dias);
+            vence = suscripcion.getFechaVencimiento().format(FECHA_CORTA);
+        }
+        switch (ev.cuota()) {
+            case FALTA -> respuesta.getFaltas().add("No tiene una membresía activa");
+            case VENCIDA -> respuesta.getFaltas().add("Cuota vencida el " + vence + " (hace " + textoDias(-dias) + ")");
+            case EN_GRACIA -> respuesta.getAvisos().add("Cuota vencida el " + vence + ": ingresa por días de gracia ("
+                    + textoGracia(ev.graciaRestanteCuota()) + ")");
+            case VENCE_HOY -> respuesta.getAvisos().add("La cuota vence hoy");
+            case POR_VENCER -> respuesta.getAvisos().add("La cuota vence en " + textoDias(dias) + " (" + vence + ")");
+            default -> { } // al día o no exigida: nada que avisar
+        }
+    }
+
+    private static void fichaApto(EvaluacionAcceso ev, CheckInResponse respuesta) {
+        CertificadoMedico certificado = ev.certificado();
+        Long dias = ev.diasParaVencerApto();
+        String vence = null;
+        if (certificado != null) {
+            respuesta.setVencimientoApto(certificado.getFechaVencimiento());
+            respuesta.setDiasParaVencerApto(dias);
+            vence = certificado.getFechaVencimiento().format(FECHA_CORTA);
+        }
+        switch (ev.apto()) {
+            case FALTA -> respuesta.getFaltas().add("No tiene certificado médico (apto físico) cargado");
+            case RECHAZADA -> respuesta.getFaltas().add("Su último certificado médico fue rechazado");
+            case VENCIDA -> respuesta.getFaltas().add("Apto médico vencido el " + vence + " (hace " + textoDias(-dias) + ")");
+            case EN_GRACIA -> respuesta.getAvisos().add("Apto médico vencido el " + vence + ": ingresa por días de gracia ("
+                    + textoGracia(ev.graciaRestanteApto()) + ")");
+            case VENCE_HOY -> respuesta.getAvisos().add("El apto médico vence hoy");
+            case POR_VENCER -> respuesta.getAvisos().add("El apto médico vence en " + textoDias(dias) + " (" + vence + ")");
+            default -> { } // vigente o no exigido: nada que avisar
         }
     }
 
     /**
-     * Define el resultado final, completa los días de la semana y registra el intento en el log.
+     * Días de la semana en la ficha: si el ingreso se permite, el de hoy ya cuenta como usado.
      */
-    private CheckInResponse cerrarEvaluacion(Usuario usuario, TipoEventoAsistencia tipoEvento, Double distancia,
-                                             CheckInResponse respuesta, List<ResultadoAsistencia> motivos,
-                                             Semana semana) {
-        boolean permitido = motivos.isEmpty();
-        ResultadoAsistencia resultado = permitido ? ResultadoAsistencia.PERMITIDO : motivos.get(0);
-
-        if (semana != null) {
-            int usados = semana.usados() + (permitido && !semana.yaIngresoHoy() ? 1 : 0);
-            respuesta.setDiasSemanaPermitidos(semana.permitidos());
-            respuesta.setDiasSemanaUsados(usados);
-            if (semana.permitidos() != null) {
-                int restantes = Math.max(0, semana.permitidos() - usados);
-                respuesta.setDiasSemanaRestantes(restantes);
-                if (permitido && restantes == 0 && !semana.yaIngresoHoy()) {
-                    respuesta.getAvisos().add("Hoy usa su último día disponible de la semana");
-                }
-            }
-            if (permitido && semana.yaIngresoHoy()) {
-                respuesta.getAvisos().add("Ya había ingresado hoy: no descuenta otro día");
+    private static void fichaSemana(EvaluacionAcceso ev, CheckInResponse respuesta) {
+        if (ev.suscripcion() == null) {
+            return;
+        }
+        boolean cuentaHoy = ev.permitido() && !ev.yaIngresoHoy();
+        int usados = ev.diasConIngreso().size() + (cuentaHoy ? 1 : 0);
+        Integer permitidos = ev.diasSemanaPermitidos();
+        respuesta.setDiasSemanaPermitidos(permitidos);
+        respuesta.setDiasSemanaUsados(usados);
+        if (permitidos != null) {
+            int restantes = Math.max(0, permitidos - usados);
+            respuesta.setDiasSemanaRestantes(restantes);
+            if (cuentaHoy && restantes == 0) {
+                respuesta.getAvisos().add("Hoy usa su último día disponible de la semana");
             }
         }
-
-        respuesta.setPermitido(permitido);
-        respuesta.setResultado(resultado.name());
-        respuesta.setMensaje(permitido ? "Acceso permitido" : String.join(" · ", respuesta.getFaltas()));
-
-        registrarLog(usuario, tipoEvento, resultado, null, null, distancia);
-        return respuesta;
+        if (ev.permitido() && ev.yaIngresoHoy()) {
+            respuesta.getAvisos().add("Ya había ingresado hoy: no descuenta otro día");
+        }
     }
 
     /**
@@ -314,14 +419,11 @@ public class AsistenciaService {
 
     // ---- Métodos privados ----
 
-    // Uso del plan en la semana actual (permitidos null = pase libre)
-    private record Semana(Integer permitidos, int usados, boolean yaIngresoHoy) {}
-
-    private static String textoDias(long dias) {
+    static String textoDias(long dias) {
         return dias == 1 ? "1 día" : dias + " días";
     }
 
-    private static String textoEstado(EstadoUsuario estado) {
+    static String textoEstado(EstadoUsuario estado) {
         return switch (estado) {
             case ACTIVO -> "activa";
             case INACTIVO -> "inactiva";
@@ -329,6 +431,17 @@ public class AsistenciaService {
             case SUSPENDIDO -> "suspendida";
             case CANCELADO -> "dada de baja";
         };
+    }
+
+    // Ej. "lun 28/09, mar 29/09"
+    static String detalleDias(Collection<LocalDate> dias) {
+        return dias.stream()
+                .map(d -> DIAS_SEMANA[d.getDayOfWeek().getValue() - 1] + " " + d.format(FECHA_CORTA))
+                .collect(Collectors.joining(", "));
+    }
+
+    private static String textoGracia(long graciaRestante) {
+        return graciaRestante == 0 ? "hoy es el último" : "quedan " + textoDias(graciaRestante);
     }
 
     private void registrarLog(Usuario usuario, TipoEventoAsistencia tipoEvento,

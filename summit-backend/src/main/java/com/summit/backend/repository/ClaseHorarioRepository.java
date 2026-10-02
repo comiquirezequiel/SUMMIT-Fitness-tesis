@@ -16,4 +16,8 @@ public interface ClaseHorarioRepository extends JpaRepository<ClaseHorario, Long
     // Horarios de clases activas de un día, con la clase y su profesor (agenda y control de superposición)
     @EntityGraph(attributePaths = {"clase", "clase.profesor"})
     List<ClaseHorario> findByDiaSemanaAndClaseActivaTrueOrderByHoraInicio(DiaSemana diaSemana);
+
+    // Horarios de todas las clases activas, con la clase y su profesor (agenda de varios días)
+    @EntityGraph(attributePaths = {"clase", "clase.profesor"})
+    List<ClaseHorario> findByClaseActivaTrueOrderByHoraInicioAscIdHorarioAsc();
 }
