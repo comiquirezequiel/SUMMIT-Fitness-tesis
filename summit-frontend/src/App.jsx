@@ -2,12 +2,20 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import ConfiguracionAcceso from './pages/ConfiguracionAcceso';
-import ConstructorRutinas from './pages/ConstructorRutinas';
 import { sesionVigente, limpiarSesion } from './services/auth';
 import { usuarioActual } from './utils/formato';
 
 // Portal del socio (pensado para el celular): se descarga aparte, el personal no lo necesita
 const PortalSocio = lazy(() => import('./portal/PortalSocio'));
+
+// Pantallas de entrenamiento (solo profesor y admin): también se descargan aparte
+const ConstructorRutinas = lazy(() => import('./pages/ConstructorRutinas'));
+const EntrenamientoHoy = lazy(() => import('./pages/EntrenamientoHoy'));
+const EntrenamientoHistorial = lazy(() => import('./pages/EntrenamientoHistorial'));
+const EntrenamientoPlanes = lazy(() => import('./pages/EntrenamientoPlanes'));
+const Diferida = ({ children }) => (
+  <Suspense fallback={<div className="p-8 text-sm text-slate-400">Cargando…</div>}>{children}</Suspense>
+);
 
 // Rutas protegidas: sin token, o con el token vencido, vuelve al login
 const ProtectedRoute = ({ children }) => {
@@ -46,9 +54,6 @@ import AjustesTablas from './pages/AjustesTablas';
 import AjustesEquipo from './pages/AjustesEquipo';
 import AjustesAsistencia from './pages/AjustesAsistencia';
 
-import EntrenamientoHoy from './pages/EntrenamientoHoy';
-import EntrenamientoHistorial from './pages/EntrenamientoHistorial';
-import EntrenamientoPlanes from './pages/EntrenamientoPlanes';
 
 // Inicio según el rol: el tablero de recepción no le sirve al profesor
 const Inicio = () => (usuarioActual()?.rol === 'PROFESOR'
@@ -71,7 +76,7 @@ function App() {
           
           {/* Socios */}
           <Route path="socios" element={<Socios />} />
-          <Route path="rutinas/constructor" element={<ConstructorRutinas />} />
+          <Route path="rutinas/constructor" element={<Diferida><ConstructorRutinas /></Diferida>} />
           <Route path="socios/metricas" element={<MetricasGenerales />} />
           <Route path="socios/nuevo" element={<NuevoSocio />} />
           <Route path="socios/chat" element={<Chat />} />
@@ -87,9 +92,9 @@ function App() {
           <Route path="membresias/estado" element={<EstadoMembresias />} />
           
           {/* Entrenamiento */}
-          <Route path="entrenamiento/hoy" element={<EntrenamientoHoy />} />
-          <Route path="entrenamiento/historial" element={<EntrenamientoHistorial />} />
-          <Route path="entrenamiento/rutinas" element={<EntrenamientoPlanes />} />
+          <Route path="entrenamiento/hoy" element={<Diferida><EntrenamientoHoy /></Diferida>} />
+          <Route path="entrenamiento/historial" element={<Diferida><EntrenamientoHistorial /></Diferida>} />
+          <Route path="entrenamiento/rutinas" element={<Diferida><EntrenamientoPlanes /></Diferida>} />
           <Route path="entrenamiento/ejercicios" element={<Entrenamiento />} />
           
           {/* Clases */}
