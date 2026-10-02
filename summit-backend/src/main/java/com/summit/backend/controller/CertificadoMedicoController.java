@@ -1,49 +1,55 @@
 package com.summit.backend.controller;
 
 import com.summit.backend.model.CertificadoMedico;
+import com.summit.backend.service.ArchivoService;
 import com.summit.backend.service.CertificadoMedicoService;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
+/**
+ * Certificados médicos (apto físico) de un socio.
+ * Alta y descarga con permisos de SecurityConfig: escriben ADMIN y RECEPCION; consulta también PROFESOR.
+ */
 @RestController
 @RequestMapping("/api/socios/{idSocio}/certificados")
 @RequiredArgsConstructor
 public class CertificadoMedicoController {
 
     private final CertificadoMedicoService certificadoMedicoService;
+    private final ArchivoService archivoService;
 
-    @Data
-    public static class CertificadoRequestDTO {
-        @NotBlank(message = "La URL del archivo es obligatoria")
-        private String archivoUrl;
-
-        @NotNull(message = "La fecha de emisión es obligatoria")
-        private LocalDate fechaEmision;
-        
-        private String observacionesPatologias;
-    }
-
-    @PostMapping
+    /**
+     * Carga un certificado con su archivo (PDF, JPG, PNG o WEBP, máximo 5 MB).
+     */
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> registrarCertificado(
             @PathVariable Long idSocio,
-            @Valid @RequestBody CertificadoRequestDTO request) {
-        
+            @RequestParam(value = "archivo", required = false) MultipartFile archivo,
+            @RequestParam(value = "fechaEmision", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaEmision,
+            @RequestParam(value = "observacionesPatologias", required = false) String observacionesPatologias) {
         try {
             CertificadoMedico certificado = certificadoMedicoService.registrarCertificado(
-                    idSocio, request.getArchivoUrl(), request.getFechaEmision(), request.getObservacionesPatologias());
+                    idSocio, archivo, fechaEmision, observacionesPatologias);
             return ResponseEntity.status(HttpStatus.CREATED).body(certificado);
-        } catch (IllegalArgumentException e) {
+        } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
+    }
+
+    @GetMapping
+    public ResponseEntity<List<CertificadoMedico>> listar(@PathVariable Long idSocio) {
+        return ResponseEntity.ok(certificadoMedicoService.listarPorSocio(idSocio));
     }
 
     @GetMapping("/vigencia")
@@ -60,5 +66,22 @@ public class CertificadoMedicoController {
         return certificadoMedicoService.obtenerCertificadoActual(idSocio)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Devuelve el archivo del certificado para verlo en el navegador.
+     */
+    @GetMapping("/{idCertificado}/archivo")
+    public ResponseEntity<?> descargarArchivo(@PathVariable Long idSocio, @PathVariable Long idCertificado) {
+        try {
+            CertificadoMedico certificado = certificadoMedicoService.buscarDelSocio(idSocio, idCertificado);
+            ArchivoService.Archivo archivo = archivoService.cargar(certificado.getArchivoUrl());
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(archivo.tipo()))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + archivo.nombre() + "\"")
+                    .body(archivo.recurso());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        }
     }
 }

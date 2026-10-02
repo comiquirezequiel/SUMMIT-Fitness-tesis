@@ -1,5 +1,6 @@
 package com.summit.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import jakarta.persistence.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -20,10 +21,12 @@ public class CertificadoMedico {
     @Column(name = "id_certificado")
     private Long idCertificado;
 
+    @JsonIgnore // el certificado se pide siempre por socio: no hace falta repetir sus datos
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
+    @JsonIgnore // ruta interna en disco: el archivo se descarga por /archivo, que valida permisos
     @Column(name = "archivo_url", nullable = false, length = 255)
     private String archivoUrl;
 

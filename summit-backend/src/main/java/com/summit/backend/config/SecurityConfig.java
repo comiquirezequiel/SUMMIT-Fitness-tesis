@@ -74,11 +74,9 @@ public class SecurityConfig {
                 // Página de error interna de Spring: si queda protegida, un 403 se convierte en 401
                 .requestMatchers("/error").permitAll()
 
-                // Alta de personal: solo ADMIN
-                .requestMatchers(HttpMethod.POST, "/api/usuarios/**").hasRole("ADMIN")
-
-                // Gestión de usuarios/socios: solo ADMIN y RECEPCION
-                .requestMatchers("/api/usuarios/**").hasAnyRole("ADMIN", "RECEPCION")
+                // Usuarios del sistema: RECEPCION consulta; alta, edición y baja del personal solo ADMIN
+                .requestMatchers(HttpMethod.GET, "/api/usuarios/**").hasAnyRole("ADMIN", "RECEPCION")
+                .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
 
                 // Socios y certificados: el PROFESOR solo consulta (lo necesita el constructor de rutinas)
                 .requestMatchers(HttpMethod.GET, "/api/socios/**").hasAnyRole("ADMIN", "RECEPCION", "PROFESOR")
@@ -116,7 +114,12 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/api/clases/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/clases/**").hasRole("ADMIN")
 
+                // Asistencia a clases (presente/ausente) y lista de inscriptos con DNI: personal del gimnasio
+                .requestMatchers(HttpMethod.PATCH, "/api/reservas/**").hasAnyRole("ADMIN", "RECEPCION", "PROFESOR")
+                .requestMatchers(HttpMethod.GET, "/api/reservas/horario/**").hasAnyRole("ADMIN", "RECEPCION", "PROFESOR")
+
                 // Lectura de ejercicios y clases, y reservas: cualquier usuario autenticado
+                // (un socio solo opera sobre sus propias reservas: lo controla ReservaController)
                 .requestMatchers("/api/ejercicios/**", "/api/clases/**", "/api/reservas/**").authenticated()
 
                 // Todo lo demás requiere autenticación

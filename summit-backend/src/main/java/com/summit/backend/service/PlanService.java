@@ -43,6 +43,7 @@ public class PlanService {
         if (planData.getVecesPorSemana() != null) {
             plan.setVecesPorSemana(normalizarVecesPorSemana(planData.getVecesPorSemana()));
         }
+        if (planData.getActivo() != null) plan.setActivo(planData.getActivo()); // permite reactivar un plan
         return planRepository.save(plan);
     }
 

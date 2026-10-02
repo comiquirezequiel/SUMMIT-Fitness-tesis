@@ -11,5 +11,6 @@ import java.util.Optional;
 public interface CertificadoMedicoRepository extends JpaRepository<CertificadoMedico, Long> {
     Optional<CertificadoMedico> findFirstByUsuarioIdUsuarioOrderByFechaVencimientoDesc(Long idUsuario);
     List<CertificadoMedico> findByUsuarioIdUsuario(Long idUsuario);
+    List<CertificadoMedico> findByUsuarioIdUsuarioOrderByFechaEmisionDesc(Long idUsuario);
     List<CertificadoMedico> findByEstadoLegalAndFechaVencimientoBefore(com.summit.backend.model.EstadoLegalCertificado estado, java.time.LocalDate date);
 }

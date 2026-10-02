@@ -3,7 +3,23 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './pages/Login';
 import ConfiguracionAcceso from './pages/ConfiguracionAcceso';
 import ConstructorRutinas from './pages/ConstructorRutinas';
-import { sesionVigente, limpiarSesion } from './services/auth';
+import { sesionVigente, limpiarSesion, cerrarSesion } from './services/auth';
+import { usuarioActual } from './utils/formato';
+
+// El panel es para el personal. El portal del socio (app móvil) se construye en otra etapa.
+const PortalSocioPendiente = () => (
+  <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 text-center space-y-4">
+      <h1 className="text-2xl font-extrabold text-gray-900">Hola, {usuarioActual()?.nombreCompleto}</h1>
+      <p className="text-gray-500">
+        Este panel es para el personal del gimnasio. El portal del socio (rutina, progreso y pagos) va a estar disponible en la app.
+      </p>
+      <button onClick={() => cerrarSesion()} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold">
+        Cerrar sesión
+      </button>
+    </div>
+  </div>
+);
 
 // Rutas protegidas: sin token, o con el token vencido, vuelve al login
 const ProtectedRoute = ({ children }) => {
@@ -11,6 +27,9 @@ const ProtectedRoute = ({ children }) => {
     const habiaSesion = !!localStorage.getItem('token');
     limpiarSesion();
     return <Navigate to={habiaSesion ? '/login?sesion=expirada' : '/login'} replace />;
+  }
+  if (usuarioActual()?.rol === 'SOCIO') {
+    return <PortalSocioPendiente />;
   }
   return children;
 };
@@ -38,6 +57,11 @@ import EntrenamientoHoy from './pages/EntrenamientoHoy';
 import EntrenamientoHistorial from './pages/EntrenamientoHistorial';
 import EntrenamientoPlanes from './pages/EntrenamientoPlanes';
 
+// Inicio según el rol: el tablero de recepción no le sirve al profesor
+const Inicio = () => (usuarioActual()?.rol === 'PROFESOR'
+  ? <Navigate to="/rutinas/constructor" replace />
+  : <Dashboard />);
+
 function App() {
   return (
     <Router>
@@ -50,7 +74,7 @@ function App() {
             <Layout />
           </ProtectedRoute>
         }>
-          <Route index element={<Dashboard />} />
+          <Route index element={<Inicio />} />
           
           {/* Socios */}
           <Route path="socios" element={<Socios />} />

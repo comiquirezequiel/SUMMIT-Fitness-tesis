@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -20,10 +21,21 @@ public class SocioResponseDTO {
     private String telefono;
     private EstadoUsuario estado;
     private LocalDateTime fechaCreacion;
-    private boolean aptoMedicoVigente; // Motor de Validación Ley 5397
-    
+
+    // --- Apto médico (Motor de Validación Ley 5397) ---
+    private boolean aptoMedicoVigente;
+    private LocalDate vencimientoApto;
+
     // --- Membresía ---
     private String planActual;
     private boolean membresiaAlDia;
-    private java.time.LocalDate vencimientoMembresia;
+    private LocalDate vencimientoMembresia;
+
+    // --- Perfil ---
+    private LocalDate fechaNacimiento;
+    private String genero;
+    private String domicilio;
+    private String ciudad;
+    private String objetivo;
+    private String observaciones;
 }

@@ -6,6 +6,9 @@ target/
 # Logs
 *.log
 
+# Archivos subidos por usuarios (certificados médicos: datos de salud, Ley 25.326)
+uploads/
+
 # Entorno local
 .env
 .env.*

@@ -40,6 +40,28 @@ export const diasHasta = (fechaIso) => {
   return Math.round((new Date(anio, mes - 1, dia) - inicioHoy) / 86400000);
 };
 
+// Edad en años a partir de 'YYYY-MM-DD'
+export const edad = (fechaNacimientoIso) => {
+  if (!fechaNacimientoIso) return null;
+  const [anio, mes, dia] = fechaNacimientoIso.split('-').map(Number);
+  const hoy = new Date();
+  let anios = hoy.getFullYear() - anio;
+  if (hoy.getMonth() + 1 < mes || (hoy.getMonth() + 1 === mes && hoy.getDate() < dia)) anios--;
+  return anios;
+};
+
+// Descarga un CSV que Excel abre bien en español (separador ";" y BOM UTF-8)
+export const descargarCsv = (nombreArchivo, columnas, filas) => {
+  const escapar = (valor) => `"${String(valor ?? '').replace(/"/g, '""')}"`;
+  const contenido = [columnas, ...filas].map(fila => fila.map(escapar).join(';')).join('\r\n');
+  const url = URL.createObjectURL(new Blob(['﻿' + contenido], { type: 'text/csv;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = nombreArchivo;
+  link.click();
+  URL.revokeObjectURL(url);
+};
+
 // Fecha local de hoy en formato 'YYYY-MM-DD' (para inputs type="date" y la API)
 export const hoyIso = () => {
   const d = new Date();

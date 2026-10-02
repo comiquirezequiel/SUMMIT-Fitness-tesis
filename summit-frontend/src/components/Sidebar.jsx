@@ -8,62 +8,67 @@ import {
   LogOut, LayoutDashboard, ChevronDown, ChevronUp, GitBranch, Clipboard,
   MessageCircle, CheckSquare, UserX, Home, ScanLine
 } from 'lucide-react';
+import { usuarioActual } from '../utils/formato';
 
-// Sidebar Menu Configuration (Cleaned up as per requirements)
+// Roles que ven cada opción (los mismos permisos que exige el backend).
+// demo: pantallas que todavía muestran datos de ejemplo (no están conectadas al backend).
+const STAFF = ['ADMIN', 'RECEPCION'];
 const MENU_ITEMS = [
   {
     icon: Users, text: "Socios",
     subItems: [
-      { icon: User, text: "Lista de Socios", path: "/socios" },
-      { icon: Dumbbell, text: "Constructor de Rutinas", path: "/rutinas/constructor" },
-      { icon: MessageCircle, text: "Chat", path: "/socios/chat" },
-      { icon: CheckSquare, text: "Tareas CRM", path: "/socios/tareas" },
-      { icon: UserX, text: "Inactividad", path: "/socios/inactividad" },
+      { icon: User, text: "Lista de Socios", path: "/socios", roles: ['ADMIN', 'RECEPCION', 'PROFESOR'] },
+      { icon: Dumbbell, text: "Constructor de Rutinas", path: "/rutinas/constructor", roles: ['ADMIN', 'PROFESOR'] },
+      { icon: MessageCircle, text: "Chat", path: "/socios/chat", roles: STAFF, demo: true },
+      { icon: CheckSquare, text: "Tareas CRM", path: "/socios/tareas", roles: STAFF, demo: true },
+      { icon: UserX, text: "Inactividad", path: "/socios/inactividad", roles: STAFF, demo: true },
     ]
   },
   {
     icon: Wallet, text: "Caja & Pagos",
     subItems: [
-      { icon: Wallet, text: "Caja", path: "/caja" },
+      { icon: Wallet, text: "Caja", path: "/caja", roles: STAFF },
     ]
   },
   {
     icon: Tag, text: "Membresías",
     subItems: [
-      { icon: Tag, text: "Planes", path: "/planes" },
-      { icon: TrendingUp, text: "Métricas de Planes", path: "/membresias/metricas" },
-      { icon: AlertTriangle, text: "Estado de Membresías", path: "/membresias/estado" }
+      { icon: Tag, text: "Planes", path: "/planes", roles: STAFF },
+      { icon: AlertTriangle, text: "Estado de Membresías", path: "/membresias/estado", roles: STAFF },
+      { icon: TrendingUp, text: "Métricas de Planes", path: "/membresias/metricas", roles: ['ADMIN'], demo: true },
     ]
   },
   {
     icon: Dumbbell, text: "Entrenamiento",
     subItems: [
-      { icon: CalendarCheck, text: "Rutina de Hoy", path: "/entrenamiento/hoy" },
-      { icon: History, text: "Historial", path: "/entrenamiento/historial" },
-      { icon: ClipboardList, text: "Rutinas", path: "/entrenamiento/rutinas" },
-      { icon: ListChecks, text: "Ejercicios", path: "/entrenamiento/ejercicios" }
+      { icon: ListChecks, text: "Ejercicios", path: "/entrenamiento/ejercicios", roles: ['ADMIN', 'RECEPCION', 'PROFESOR'] },
+      { icon: CalendarCheck, text: "Rutina de Hoy", path: "/entrenamiento/hoy", roles: ['ADMIN', 'PROFESOR'], demo: true },
+      { icon: History, text: "Historial", path: "/entrenamiento/historial", roles: ['ADMIN', 'PROFESOR'], demo: true },
+      { icon: ClipboardList, text: "Rutinas", path: "/entrenamiento/rutinas", roles: ['ADMIN', 'PROFESOR'], demo: true },
     ]
   },
   {
     icon: Calendar, text: "Clases",
     subItems: [
-      { icon: CalendarDays, text: "Panel de Clases", path: "/clases/panel" },
-      { icon: Calendar, text: "Calendario", path: "/clases/calendario" },
-      { icon: BookOpen, text: "Reservas", path: "/clases/reservas" },
-      { icon: Settings, text: "Configuración", path: "/clases/configuracion" }
+      { icon: CalendarDays, text: "Agenda de Clases", path: "/clases", roles: ['ADMIN', 'RECEPCION', 'PROFESOR'] },
     ]
   },
   {
     icon: Settings, text: "Ajustes",
     subItems: [
-      { icon: Settings, text: "General", path: "/ajustes/general" },
-      { icon: CheckSquare, text: "Reglas de Acceso", path: "/ajustes/acceso" },
-      { icon: GitBranch, text: "Tablas del Sistema", path: "/ajustes/tablas" },
-      { icon: Users, text: "Equipo", path: "/ajustes/equipo" },
-      { icon: Clipboard, text: "Asistencia Staff", path: "/ajustes/asistencia" }
+      { icon: CheckSquare, text: "Reglas de Acceso", path: "/ajustes/acceso", roles: STAFF },
+      { icon: Users, text: "Equipo", path: "/ajustes/equipo", roles: ['ADMIN'] },
+      { icon: Settings, text: "General", path: "/ajustes/general", roles: ['ADMIN'], demo: true },
+      { icon: GitBranch, text: "Tablas del Sistema", path: "/ajustes/tablas", roles: ['ADMIN'], demo: true },
+      { icon: Clipboard, text: "Asistencia Staff", path: "/ajustes/asistencia", roles: ['ADMIN'], demo: true },
     ]
   }
 ];
+
+// Menú filtrado por el rol del usuario: se ocultan los grupos que quedan vacíos
+const menuParaRol = (rol) => MENU_ITEMS
+  .map(item => ({ ...item, subItems: item.subItems.filter(sub => sub.roles.includes(rol)) }))
+  .filter(item => item.subItems.length > 0);
 
 const SidebarItem = ({ icon: Icon, text, path, subItems, activePath, onNavigate }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -116,6 +121,11 @@ const SidebarItem = ({ icon: Icon, text, path, subItems, activePath, onNavigate 
               >
                 <SubIcon className={`w-4 h-4 ${isActive ? 'text-blue-500' : 'text-slate-400'}`} />
                 {sub.text}
+                {sub.demo && (
+                  <span className="ml-auto text-[9px] font-bold uppercase tracking-wide text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded" title="Pantalla con datos de ejemplo">
+                    Demo
+                  </span>
+                )}
               </NavLink>
             );
           })}
@@ -127,6 +137,7 @@ const SidebarItem = ({ icon: Icon, text, path, subItems, activePath, onNavigate 
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const location = useLocation();
+  const rol = usuarioActual()?.rol;
 
   return (
     <aside 
@@ -134,19 +145,21 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       }`}
     >
-      <NavLink 
-        to="/"
-        onClick={() => setIsOpen(false)}
-        className={({isActive}) => `p-3.5 flex items-center gap-3 border-b border-slate-100 transition-colors ${isActive ? 'bg-slate-50' : 'hover:bg-slate-50'}`}
-      >
-        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-          <LayoutDashboard className="w-4 h-4 text-blue-600" />
-        </div>
-        <span className="font-bold text-slate-800 text-sm">Dashboard</span>
-      </NavLink>
-      
+      {STAFF.includes(rol) && (
+        <NavLink
+          to="/"
+          onClick={() => setIsOpen(false)}
+          className={({isActive}) => `p-3.5 flex items-center gap-3 border-b border-slate-100 transition-colors ${isActive ? 'bg-slate-50' : 'hover:bg-slate-50'}`}
+        >
+          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+            <LayoutDashboard className="w-4 h-4 text-blue-600" />
+          </div>
+          <span className="font-bold text-slate-800 text-sm">Dashboard</span>
+        </NavLink>
+      )}
+
       <div className="flex-1 overflow-y-auto p-3 sidebar-scroll">
-        {MENU_ITEMS.map((item, idx) => (
+        {menuParaRol(rol).map((item, idx) => (
           <SidebarItem 
             key={idx} 
             icon={item.icon} 

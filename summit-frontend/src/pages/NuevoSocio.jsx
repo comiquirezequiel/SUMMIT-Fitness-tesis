@@ -1,52 +1,161 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  UserPlus, ChevronRight, ChevronLeft,
-  User, Mail, Phone, Calendar, CreditCard,
-  MapPin, FileText, AlertTriangle, Check, X
+  UserPlus, ChevronRight, ChevronLeft, User, Mail, Phone, CreditCard,
+  MapPin, FileText, Check, X, KeyRound, HeartPulse, Upload, CheckCircle2, XCircle, AlertTriangle
 } from 'lucide-react';
+import Campo, { inputClass } from '../components/Campo';
+import { apiFetch } from '../services/api';
+import { subirCertificado, validarArchivoApto } from '../services/certificados';
+import { formatFecha, formatMoneda, hoyIso, diasHasta } from '../utils/formato';
+import { GENEROS, OBJETIVOS, METODOS_PAGO, textoMetodoPago } from '../utils/constantes';
 
-// --- Campo de formulario reutilizable ---
-const FormField = ({ label, required, children }) => (
-  <div>
-    <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
-      {label} {required && <span className="text-rose-500">*</span>}
-    </label>
-    {children}
+const STEPS = ['Datos Personales', 'Contacto y Acceso', 'Membresía y Apto', 'Confirmación'];
+
+const FORM_INICIAL = {
+  nombre: '', apellido: '', dni: '', fechaNacimiento: '', genero: '', objetivo: '',
+  email: '', telefono: '', domicilio: '', ciudad: '', password: '',
+  idPlan: '', monto: '', metodoPago: 'EFECTIVO', comprobante: '',
+  archivoApto: null, fechaEmisionApto: '', patologias: '', observaciones: '',
+};
+
+// Contraseña inicial para la app del socio (sin caracteres que se confunden: 0/O, 1/l)
+const generarPassword = () => {
+  const caracteres = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const valores = crypto.getRandomValues(new Uint32Array(8));
+  return Array.from(valores, v => caracteres[v % caracteres.length]).join('');
+};
+
+// Devuelve { campo: mensaje } con los errores del paso indicado
+const validarPaso = (paso, form) => {
+  const e = {};
+  if (paso === 0) {
+    if (!form.nombre.trim()) e.nombre = 'Ingresá el nombre';
+    if (!form.apellido.trim()) e.apellido = 'Ingresá el apellido';
+    if (!/^\d{7,15}$/.test(form.dni)) e.dni = 'Solo números, entre 7 y 15 dígitos';
+    if (form.fechaNacimiento && diasHasta(form.fechaNacimiento) >= 0) e.fechaNacimiento = 'Debe ser anterior a hoy';
+  }
+  if (paso === 1) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = 'Ingresá un email válido';
+    if (form.password.length < 6) e.password = 'Mínimo 6 caracteres';
+  }
+  if (paso === 2) {
+    if (form.idPlan && !(Number(form.monto) > 0)) e.monto = 'Ingresá el monto cobrado';
+    if (form.archivoApto) {
+      const errorArchivo = validarArchivoApto(form.archivoApto);
+      if (errorArchivo) e.archivoApto = errorArchivo;
+      if (!form.fechaEmisionApto) e.fechaEmisionApto = 'Indicá la fecha de emisión';
+      else if (diasHasta(form.fechaEmisionApto) > 0) e.fechaEmisionApto = 'No puede ser una fecha futura';
+      else if (diasHasta(form.fechaEmisionApto) < -365) e.fechaEmisionApto = 'El certificado tiene más de 365 días: está vencido';
+    }
+  }
+  return e;
+};
+
+const FilaResumen = ({ label, valor }) => (
+  <div className="flex justify-between gap-4">
+    <span className="text-slate-500">{label}</span>
+    <span className="font-medium text-slate-800 text-right">{valor || '—'}</span>
   </div>
 );
-
-const inputClass =
-  "w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-shadow placeholder:text-slate-300";
-
-const STEPS = ['Datos Personales', 'Contacto', 'Membresía', 'Confirmación'];
 
 const NuevoSocio = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState({
-    nombre: '',
-    apellido: '',
-    dni: '',
-    fechaNacimiento: '',
-    genero: '',
-    email: '',
-    telefono: '',
-    domicilio: '',
-    ciudad: '',
-    plan: '',
-    metodoPago: '',
-    observaciones: '',
-    certificadoMedico: false,
-  });
+  const [form, setForm] = useState(FORM_INICIAL);
+  const [errores, setErrores] = useState({});
+  const [planes, setPlanes] = useState([]);
+  const [enviando, setEnviando] = useState(false);
+  const [errorEnvio, setErrorEnvio] = useState('');
+  const [resultado, setResultado] = useState(null); // { socio, cobro, apto }
 
-  const update = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+  useEffect(() => {
+    apiFetch('/planes')
+      .then(res => (res.ok ? res.json() : []))
+      .then(data => setPlanes(data.filter(p => p.activo)))
+      .catch(() => setPlanes([]));
+  }, []);
 
-  const siguiente = () => setStep(s => Math.min(s + 1, STEPS.length - 1));
+  const update = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    setErrores(prev => ({ ...prev, [field]: undefined }));
+  };
+
+  const elegirPlan = (idPlan) => {
+    const plan = planes.find(p => p.idPlan.toString() === idPlan);
+    setForm(prev => ({ ...prev, idPlan, monto: plan ? plan.precioBase : '' }));
+    setErrores(prev => ({ ...prev, monto: undefined }));
+  };
+
+  const siguiente = () => {
+    const e = validarPaso(step, form);
+    setErrores(e);
+    if (Object.keys(e).length === 0) setStep(s => Math.min(s + 1, STEPS.length - 1));
+  };
   const anterior = () => setStep(s => Math.max(s - 1, 0));
 
+  const planElegido = planes.find(p => p.idPlan.toString() === form.idPlan);
+
+  const registrar = async () => {
+    setEnviando(true);
+    setErrorEnvio('');
+    try {
+      // 1. Alta del socio con su perfil
+      const resSocio = await apiFetch('/socios', {
+        method: 'POST',
+        body: JSON.stringify({
+          dni: form.dni,
+          nombreCompleto: `${form.nombre.trim()} ${form.apellido.trim()}`,
+          email: form.email.trim(),
+          password: form.password,
+          telefono: form.telefono,
+          fechaNacimiento: form.fechaNacimiento || null,
+          genero: form.genero,
+          domicilio: form.domicilio,
+          ciudad: form.ciudad,
+          objetivo: form.objetivo,
+          observaciones: form.observaciones,
+        }),
+      });
+      const datosSocio = await resSocio.json().catch(() => ({}));
+      if (!resSocio.ok) {
+        const detalle = datosSocio.detalles ? Object.values(datosSocio.detalles).join(' · ') : '';
+        throw new Error(detalle || datosSocio.error || 'No se pudo registrar el socio');
+      }
+
+      // 2. Cobro de la membresía (opcional)
+      let cobro = null;
+      if (form.idPlan) {
+        const resPago = await apiFetch('/pagos', {
+          method: 'POST',
+          body: JSON.stringify({
+            idUsuario: datosSocio.idSocio,
+            idPlan: form.idPlan,
+            monto: form.monto,
+            metodoPago: form.metodoPago,
+            comprobante: form.comprobante,
+          }),
+        });
+        const errPago = resPago.ok ? null : (await resPago.json().catch(() => ({}))).error;
+        cobro = { ok: resPago.ok, error: errPago || 'No se pudo registrar el cobro' };
+      }
+
+      // 3. Certificado médico (opcional)
+      let apto = null;
+      if (form.archivoApto) {
+        apto = await subirCertificado(datosSocio.idSocio, form.archivoApto, form.fechaEmisionApto, form.patologias);
+      }
+
+      setResultado({ socio: datosSocio, cobro, apto });
+    } catch (err) {
+      setErrorEnvio(err.message);
+    } finally {
+      setEnviando(false);
+    }
+  };
+
   const StepIndicator = () => (
-    <div className="flex items-center justify-center gap-0 mb-8">
+    <div className="flex items-center justify-center gap-0 mb-8 overflow-x-auto">
       {STEPS.map((label, idx) => (
         <React.Fragment key={idx}>
           <div className="flex flex-col items-center">
@@ -57,22 +166,70 @@ const NuevoSocio = () => {
             }`}>
               {idx < step ? <Check className="w-4 h-4" /> : idx + 1}
             </div>
-            <span className={`text-[10px] mt-1 font-medium ${idx === step ? 'text-blue-600' : 'text-slate-400'}`}>
+            <span className={`text-[10px] mt-1 font-medium whitespace-nowrap ${idx === step ? 'text-blue-600' : 'text-slate-400'}`}>
               {label}
             </span>
           </div>
           {idx < STEPS.length - 1 && (
-            <div className={`h-0.5 w-16 mx-1 mb-4 transition-all ${idx < step ? 'bg-blue-600' : 'bg-slate-200'}`} />
+            <div className={`h-0.5 w-8 sm:w-16 mx-1 mb-4 transition-all ${idx < step ? 'bg-blue-600' : 'bg-slate-200'}`} />
           )}
         </React.Fragment>
       ))}
     </div>
   );
 
+  // --- Pantalla final: qué se registró y qué falta ---
+  if (resultado) {
+    const Item = ({ ok, texto, detalle }) => (
+      <li className={`flex items-start gap-3 p-3 rounded-lg ${ok ? 'bg-emerald-50' : 'bg-amber-50'}`}>
+        {ok ? <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" /> : <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />}
+        <div>
+          <p className={`font-semibold ${ok ? 'text-emerald-800' : 'text-amber-800'}`}>{texto}</p>
+          {detalle && <p className={`text-sm ${ok ? 'text-emerald-700' : 'text-amber-700'}`}>{detalle}</p>}
+        </div>
+      </li>
+    );
+    return (
+      <div className="max-w-2xl mx-auto bg-white border border-slate-200 rounded-xl shadow-sm p-8 space-y-6">
+        <div className="text-center">
+          <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-3">
+            <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-800">Socio registrado</h1>
+          <p className="text-slate-500">{resultado.socio.nombreCompleto} · DNI {resultado.socio.dni}</p>
+        </div>
+        <ul className="space-y-2">
+          <Item ok texto="Datos del socio guardados" detalle={`Usuario para la app: ${resultado.socio.email}`} />
+          {resultado.cobro
+            ? <Item ok={resultado.cobro.ok}
+                    texto={resultado.cobro.ok ? `Cobro registrado: ${planElegido?.nombrePlan}` : 'El cobro no se registró'}
+                    detalle={resultado.cobro.ok ? `${formatMoneda(form.monto)} · membresía activa por ${planElegido?.duracionDias} días` : `${resultado.cobro.error}. Podés cobrarlo desde la lista de socios.`} />
+            : <Item ok={false} texto="Sin membresía" detalle="No se registró un cobro: el socio no podrá ingresar hasta pagar un plan." />}
+          {resultado.apto
+            ? <Item ok={resultado.apto.ok}
+                    texto={resultado.apto.ok ? 'Certificado médico cargado' : 'El certificado no se cargó'}
+                    detalle={resultado.apto.ok ? `Vence el ${formatFecha(resultado.apto.certificado.fechaVencimiento)}` : `${resultado.apto.error}. Podés cargarlo desde la ficha del socio.`} />
+            : <Item ok={false} texto="Sin certificado médico" detalle="Cargalo desde la ficha del socio: sin apto vigente no puede ingresar (Ley 5397)." />}
+        </ul>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <button onClick={() => navigate('/socios')} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold">
+            Ver lista de socios
+          </button>
+          <button
+            onClick={() => { setForm(FORM_INICIAL); setResultado(null); setStep(0); }}
+            className="px-5 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-50"
+          >
+            Registrar otro socio
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-start mb-2">
+      <div className="flex justify-between items-start mb-2 gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
             <UserPlus className="w-6 h-6 text-blue-600" /> Nuevo Socio
@@ -87,7 +244,7 @@ const NuevoSocio = () => {
         </button>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-8">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-5 md:p-8">
         <StepIndicator />
 
         {/* PASO 1: Datos Personales */}
@@ -97,173 +254,165 @@ const NuevoSocio = () => {
               <User className="w-5 h-5 text-blue-500" /> Datos Personales
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <FormField label="Nombre" required>
-                <input
-                  type="text" placeholder="Ej: Juan" value={form.nombre}
-                  onChange={e => update('nombre', e.target.value)}
-                  className={inputClass}
-                />
-              </FormField>
-              <FormField label="Apellido" required>
-                <input
-                  type="text" placeholder="Ej: Pérez" value={form.apellido}
-                  onChange={e => update('apellido', e.target.value)}
-                  className={inputClass}
-                />
-              </FormField>
-              <FormField label="DNI / Documento" required>
-                <input
-                  type="text" placeholder="Ej: 38.456.789" value={form.dni}
-                  onChange={e => update('dni', e.target.value)}
-                  className={inputClass}
-                />
-              </FormField>
-              <FormField label="Fecha de Nacimiento" required>
-                <input
-                  type="date" value={form.fechaNacimiento}
-                  onChange={e => update('fechaNacimiento', e.target.value)}
-                  className={inputClass}
-                />
-              </FormField>
-              <FormField label="Género">
-                <select
-                  value={form.genero}
-                  onChange={e => update('genero', e.target.value)}
-                  className={inputClass}
-                >
+              <Campo label="Nombre" required error={errores.nombre}>
+                <input type="text" placeholder="Ej: Juan" value={form.nombre}
+                  onChange={e => update('nombre', e.target.value)} className={inputClass} />
+              </Campo>
+              <Campo label="Apellido" required error={errores.apellido}>
+                <input type="text" placeholder="Ej: Pérez" value={form.apellido}
+                  onChange={e => update('apellido', e.target.value)} className={inputClass} />
+              </Campo>
+              <Campo label="DNI" required error={errores.dni} ayuda="Sin puntos. Es el dato que se usa para ingresar al gimnasio.">
+                <input type="text" inputMode="numeric" placeholder="Ej: 38456789" value={form.dni}
+                  onChange={e => update('dni', e.target.value.replace(/\D/g, ''))} className={inputClass} />
+              </Campo>
+              <Campo label="Fecha de Nacimiento" error={errores.fechaNacimiento}>
+                <input type="date" value={form.fechaNacimiento} max={hoyIso()}
+                  onChange={e => update('fechaNacimiento', e.target.value)} className={inputClass} />
+              </Campo>
+              <Campo label="Género">
+                <select value={form.genero} onChange={e => update('genero', e.target.value)} className={inputClass}>
                   <option value="">Seleccionar...</option>
-                  <option value="M">Masculino</option>
-                  <option value="F">Femenino</option>
-                  <option value="NB">No binario</option>
-                  <option value="NS">Prefiero no decirlo</option>
+                  {GENEROS.map(g => <option key={g} value={g}>{g}</option>)}
                 </select>
-              </FormField>
+              </Campo>
+              <Campo label="Objetivo">
+                <select value={form.objetivo} onChange={e => update('objetivo', e.target.value)} className={inputClass}>
+                  <option value="">Seleccionar...</option>
+                  {OBJETIVOS.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </Campo>
             </div>
           </div>
         )}
 
-        {/* PASO 2: Contacto */}
+        {/* PASO 2: Contacto y acceso */}
         {step === 1 && (
           <div className="space-y-5">
             <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
-              <Mail className="w-5 h-5 text-blue-500" /> Datos de Contacto
+              <Mail className="w-5 h-5 text-blue-500" /> Contacto y Acceso
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <FormField label="Email" required>
+              <Campo label="Email" required error={errores.email}>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-300 absolute left-3 top-3" />
-                  <input
-                    type="email" placeholder="correo@ejemplo.com" value={form.email}
-                    onChange={e => update('email', e.target.value)}
-                    className={`${inputClass} pl-9`}
-                  />
+                  <input type="email" placeholder="correo@ejemplo.com" value={form.email}
+                    onChange={e => update('email', e.target.value)} className={`${inputClass} pl-9`} />
                 </div>
-              </FormField>
-              <FormField label="Teléfono" required>
+              </Campo>
+              <Campo label="Teléfono">
                 <div className="relative">
                   <Phone className="w-4 h-4 text-slate-300 absolute left-3 top-3" />
-                  <input
-                    type="tel" placeholder="+54 9 11 1234 5678" value={form.telefono}
-                    onChange={e => update('telefono', e.target.value)}
-                    className={`${inputClass} pl-9`}
-                  />
+                  <input type="tel" placeholder="+54 9 11 1234 5678" value={form.telefono}
+                    onChange={e => update('telefono', e.target.value)} className={`${inputClass} pl-9`} />
                 </div>
-              </FormField>
-              <FormField label="Domicilio">
+              </Campo>
+              <Campo label="Domicilio">
                 <div className="relative">
                   <MapPin className="w-4 h-4 text-slate-300 absolute left-3 top-3" />
-                  <input
-                    type="text" placeholder="Av. Siempreviva 742" value={form.domicilio}
-                    onChange={e => update('domicilio', e.target.value)}
-                    className={`${inputClass} pl-9`}
-                  />
+                  <input type="text" placeholder="Av. Siempreviva 742" value={form.domicilio}
+                    onChange={e => update('domicilio', e.target.value)} className={`${inputClass} pl-9`} />
                 </div>
-              </FormField>
-              <FormField label="Ciudad">
-                <input
-                  type="text" placeholder="Buenos Aires" value={form.ciudad}
-                  onChange={e => update('ciudad', e.target.value)}
-                  className={inputClass}
-                />
-              </FormField>
+              </Campo>
+              <Campo label="Ciudad">
+                <input type="text" placeholder="Corrientes" value={form.ciudad}
+                  onChange={e => update('ciudad', e.target.value)} className={inputClass} />
+              </Campo>
+              <Campo label="Contraseña inicial (app del socio)" required error={errores.password}
+                     ayuda="Entregásela al socio: con su email y esta contraseña entra a la app."
+                     className="md:col-span-2">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <KeyRound className="w-4 h-4 text-slate-300 absolute left-3 top-3" />
+                    <input type="text" value={form.password} placeholder="Mínimo 6 caracteres"
+                      onChange={e => update('password', e.target.value)} className={`${inputClass} pl-9 font-mono`} />
+                  </div>
+                  <button type="button" onClick={() => update('password', generarPassword())}
+                    className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 whitespace-nowrap">
+                    Generar
+                  </button>
+                </div>
+              </Campo>
             </div>
           </div>
         )}
 
-        {/* PASO 3: Membresía */}
+        {/* PASO 3: Membresía y apto médico */}
         {step === 2 && (
-          <div className="space-y-5">
-            <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
-              <CreditCard className="w-5 h-5 text-blue-500" /> Membresía y Pago
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <FormField label="Plan" required>
-                <select
-                  value={form.plan}
-                  onChange={e => update('plan', e.target.value)}
-                  className={inputClass}
-                >
-                  <option value="">Seleccionar plan...</option>
-                  <option value="musculacion">Musculación Mensual — $5.000</option>
-                  <option value="crossfit">Crossfit Mensual — $6.500</option>
-                  <option value="yoga">Yoga Flow — $4.000</option>
-                  <option value="pase-libre">Pase Libre Anual — $15.000</option>
-                </select>
-              </FormField>
-              <FormField label="Método de Pago" required>
-                <select
-                  value={form.metodoPago}
-                  onChange={e => update('metodoPago', e.target.value)}
-                  className={inputClass}
-                >
-                  <option value="">Seleccionar...</option>
-                  <option value="efectivo">Efectivo</option>
-                  <option value="transferencia">Transferencia Bancaria</option>
-                  <option value="mercadopago">MercadoPago</option>
-                  <option value="debito">Débito Automático</option>
-                </select>
-              </FormField>
-              <FormField label="Fecha de Inicio" required>
-                <div className="relative">
-                  <Calendar className="w-4 h-4 text-slate-300 absolute left-3 top-3" />
-                  <input
-                    type="date"
-                    defaultValue={new Date().toISOString().split('T')[0]}
-                    className={`${inputClass} pl-9`}
-                  />
-                </div>
-              </FormField>
-            </div>
-
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-semibold text-amber-800">Certificado Médico</p>
-                <p className="text-xs text-amber-700 mt-1">
-                  El socio debe presentar un certificado médico de aptitud física.
-                </p>
-                <label className="flex items-center gap-2 mt-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.certificadoMedico}
-                    onChange={e => update('certificadoMedico', e.target.checked)}
-                    className="rounded border-amber-300 text-amber-500 focus:ring-amber-300"
-                  />
-                  <span className="text-xs font-medium text-amber-800">
-                    Confirmo que el certificado médico fue recibido
-                  </span>
-                </label>
+          <div className="space-y-6">
+            <div className="space-y-5">
+              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+                <CreditCard className="w-5 h-5 text-blue-500" /> Membresía y Pago
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <Campo label="Plan" ayuda="Podés dejarlo sin plan y cobrarlo después desde la lista de socios.">
+                  <select value={form.idPlan} onChange={e => elegirPlan(e.target.value)} className={inputClass}>
+                    <option value="">Sin plan por ahora</option>
+                    {planes.map(p => (
+                      <option key={p.idPlan} value={p.idPlan}>
+                        {p.nombrePlan} — {formatMoneda(p.precioBase)}{p.vecesPorSemana ? ` (${p.vecesPorSemana}x semana)` : ' (libre)'}
+                      </option>
+                    ))}
+                  </select>
+                </Campo>
+                {form.idPlan && (
+                  <>
+                    <Campo label="Monto cobrado ($)" required error={errores.monto}>
+                      <input type="number" min="0" step="0.01" value={form.monto}
+                        onChange={e => update('monto', e.target.value)} className={inputClass} />
+                    </Campo>
+                    <Campo label="Método de Pago" required>
+                      <select value={form.metodoPago} onChange={e => update('metodoPago', e.target.value)} className={inputClass}>
+                        {METODOS_PAGO.map(m => <option key={m.valor} value={m.valor}>{m.texto}</option>)}
+                      </select>
+                    </Campo>
+                    <Campo label="Nro. de comprobante">
+                      <input type="text" value={form.comprobante} placeholder="Opcional"
+                        onChange={e => update('comprobante', e.target.value)} className={inputClass} />
+                    </Campo>
+                  </>
+                )}
               </div>
             </div>
 
-            <FormField label="Observaciones">
-              <textarea
-                rows={3} placeholder="Lesiones previas, notas especiales..."
-                value={form.observaciones}
-                onChange={e => update('observaciones', e.target.value)}
-                className={`${inputClass} resize-none`}
-              />
-            </FormField>
+            <div className="space-y-5">
+              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+                <HeartPulse className="w-5 h-5 text-blue-500" /> Certificado Médico (Apto Físico)
+              </h2>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+                Sin un apto médico vigente (menos de 365 días) el socio no puede ingresar (Ley 5397).
+                Si todavía no lo trajo, podés cargarlo después desde su ficha.
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <Campo label="Archivo (PDF o imagen, máx. 5 MB)" error={errores.archivoApto} className="md:col-span-2">
+                  <label className="flex items-center gap-3 px-3 py-2.5 border border-dashed border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50">
+                    <Upload className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm text-slate-600 truncate">
+                      {form.archivoApto ? form.archivoApto.name : 'Seleccionar archivo...'}
+                    </span>
+                    <input type="file" accept=".pdf,image/jpeg,image/png,image/webp" className="hidden"
+                      onChange={e => update('archivoApto', e.target.files[0] || null)} />
+                  </label>
+                </Campo>
+                {form.archivoApto && (
+                  <>
+                    <Campo label="Fecha de emisión" required error={errores.fechaEmisionApto}>
+                      <input type="date" value={form.fechaEmisionApto} max={hoyIso()}
+                        onChange={e => update('fechaEmisionApto', e.target.value)} className={inputClass} />
+                    </Campo>
+                    <Campo label="Patologías / lesiones" ayuda="Separadas por coma (ej: hernia de disco, asma). Se usan en el constructor de rutinas.">
+                      <input type="text" value={form.patologias} placeholder="Ninguna"
+                        onChange={e => update('patologias', e.target.value)} className={inputClass} />
+                    </Campo>
+                  </>
+                )}
+              </div>
+              <Campo label="Observaciones">
+                <textarea rows={3} placeholder="Notas para recepción (horarios, preferencias...)"
+                  value={form.observaciones} onChange={e => update('observaciones', e.target.value)}
+                  className={`${inputClass} resize-none`} />
+              </Campo>
+            </div>
           </div>
         )}
 
@@ -274,33 +423,35 @@ const NuevoSocio = () => {
               <FileText className="w-5 h-5 text-blue-500" /> Resumen del Registro
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-                <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Datos Personales</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-slate-500">Nombre completo</span><span className="font-medium text-slate-800">{form.nombre} {form.apellido}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-500">DNI</span><span className="font-medium text-slate-800">{form.dni || '—'}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-500">Fecha de nac.</span><span className="font-medium text-slate-800">{form.fechaNacimiento || '—'}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-500">Género</span><span className="font-medium text-slate-800">{form.genero || '—'}</span></div>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
+                <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide mb-2">Datos Personales</h3>
+                <FilaResumen label="Nombre completo" valor={`${form.nombre} ${form.apellido}`} />
+                <FilaResumen label="DNI" valor={form.dni} />
+                <FilaResumen label="Fecha de nac." valor={form.fechaNacimiento && formatFecha(form.fechaNacimiento)} />
+                <FilaResumen label="Género" valor={form.genero} />
+                <FilaResumen label="Objetivo" valor={form.objetivo} />
               </div>
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-                <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Contacto</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-slate-500">Email</span><span className="font-medium text-slate-800">{form.email || '—'}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-500">Teléfono</span><span className="font-medium text-slate-800">{form.telefono || '—'}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-500">Domicilio</span><span className="font-medium text-slate-800">{form.domicilio || '—'}</span></div>
-                </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
+                <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide mb-2">Contacto</h3>
+                <FilaResumen label="Email" valor={form.email} />
+                <FilaResumen label="Teléfono" valor={form.telefono} />
+                <FilaResumen label="Domicilio" valor={[form.domicilio, form.ciudad].filter(Boolean).join(', ')} />
               </div>
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3 md:col-span-2">
-                <h3 className="font-semibold text-blue-700 text-sm uppercase tracking-wide">Membresía</h3>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="flex justify-between"><span className="text-blue-600">Plan</span><span className="font-bold text-blue-800">{form.plan || '—'}</span></div>
-                  <div className="flex justify-between"><span className="text-blue-600">Método de pago</span><span className="font-bold text-blue-800">{form.metodoPago || '—'}</span></div>
-                  <div className="flex justify-between"><span className="text-blue-600">Certificado médico</span><span className={`font-bold ${form.certificadoMedico ? 'text-emerald-600' : 'text-rose-600'}`}>{form.certificadoMedico ? 'Presentado ✓' : 'Pendiente ✗'}</span></div>
-                </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2 md:col-span-2">
+                <h3 className="font-semibold text-blue-700 text-sm uppercase tracking-wide mb-2">Membresía y Apto</h3>
+                <FilaResumen label="Plan" valor={planElegido ? planElegido.nombrePlan : 'Sin plan por ahora'} />
+                {planElegido && <FilaResumen label="Cobro" valor={`${formatMoneda(form.monto)} · ${textoMetodoPago(form.metodoPago)}`} />}
+                <FilaResumen label="Certificado médico" valor={form.archivoApto ? `${form.archivoApto.name} (emitido ${formatFecha(form.fechaEmisionApto)})` : 'Pendiente'} />
+                {form.patologias && <FilaResumen label="Patologías" valor={form.patologias} />}
               </div>
             </div>
+
+            {errorEnvio && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">
+                <XCircle className="w-5 h-5 shrink-0" /> {errorEnvio}
+              </div>
+            )}
           </div>
         )}
 
@@ -308,7 +459,7 @@ const NuevoSocio = () => {
         <div className="flex justify-between items-center mt-8 pt-6 border-t border-slate-100">
           <button
             onClick={anterior}
-            disabled={step === 0}
+            disabled={step === 0 || enviando}
             className="flex items-center gap-2 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft className="w-4 h-4" /> Anterior
@@ -323,9 +474,11 @@ const NuevoSocio = () => {
             </button>
           ) : (
             <button
-              className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm"
+              onClick={registrar}
+              disabled={enviando}
+              className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm"
             >
-              <Check className="w-4 h-4" /> Registrar Socio
+              <Check className="w-4 h-4" /> {enviando ? 'Registrando...' : 'Registrar Socio'}
             </button>
           )}
         </div>

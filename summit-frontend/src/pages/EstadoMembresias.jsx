@@ -1,29 +1,56 @@
-import React, { useState } from 'react';
-import { AlertTriangle, CalendarX, Clock, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { AlertTriangle, CalendarX, Clock, CheckCircle2, UserX, Wallet, Phone } from 'lucide-react';
+import CobroModal from '../components/socios/CobroModal';
+import { apiFetch } from '../services/api';
+import { formatFecha, diasHasta, textoVencimiento, usuarioActual } from '../utils/formato';
 
+// Categoría de cada socio según los días que faltan para que venza su membresía
 const TABS = [
-  { id: 'vencidas', label: 'Vencidas', count: 0, icon: CalendarX, color: 'rose' },
-  { id: '0-7', label: '0-7 días', count: 0, icon: AlertTriangle, color: 'orange' },
-  { id: '8-15', label: '8-15 días', count: 0, icon: Clock, color: 'yellow' },
-  { id: '15+', label: '15+ días', count: 1, icon: CheckCircle2, color: 'emerald' },
+  { id: 'vencidas', label: 'Vencidas', icon: CalendarX, color: 'rose', incluye: (d) => d !== null && d < 0 },
+  { id: '0-7', label: '0-7 días', icon: AlertTriangle, color: 'orange', incluye: (d) => d !== null && d >= 0 && d <= 7 },
+  { id: '8-15', label: '8-15 días', icon: Clock, color: 'yellow', incluye: (d) => d !== null && d >= 8 && d <= 15 },
+  { id: '15+', label: '15+ días', icon: CheckCircle2, color: 'emerald', incluye: (d) => d !== null && d > 15 },
+  { id: 'sin-plan', label: 'Sin membresía', icon: UserX, color: 'slate', incluye: (d) => d === null },
 ];
 
-const EstadoMembresias = () => {
-  const [activeTab, setActiveTab] = useState('15+');
+const COLORES = {
+  rose: { border: 'border-rose-200', text: 'text-rose-600', activeBg: 'bg-rose-50', activeBorder: 'border-rose-500' },
+  orange: { border: 'border-orange-200', text: 'text-orange-600', activeBg: 'bg-orange-50', activeBorder: 'border-orange-500' },
+  yellow: { border: 'border-yellow-200', text: 'text-yellow-600', activeBg: 'bg-yellow-50', activeBorder: 'border-yellow-500' },
+  emerald: { border: 'border-emerald-200', text: 'text-emerald-600', activeBg: 'bg-emerald-50', activeBorder: 'border-emerald-500' },
+  slate: { border: 'border-slate-200', text: 'text-slate-600', activeBg: 'bg-slate-50', activeBorder: 'border-slate-500' },
+};
 
-  // Colores dinámicos basados en la selección
-  const getTabColors = (tab, isActive) => {
-    const baseColors = {
-      rose: { border: 'border-rose-200', text: 'text-rose-600', activeBg: 'bg-rose-50', activeBorder: 'border-rose-500' },
-      orange: { border: 'border-orange-200', text: 'text-orange-600', activeBg: 'bg-orange-50', activeBorder: 'border-orange-500' },
-      yellow: { border: 'border-yellow-200', text: 'text-yellow-600', activeBg: 'bg-yellow-50', activeBorder: 'border-yellow-500' },
-      emerald: { border: 'border-emerald-200', text: 'text-emerald-600', activeBg: 'bg-emerald-50', activeBorder: 'border-emerald-500' },
-    };
-    
-    const theme = baseColors[tab.color];
-    if (isActive) {
-      return `${theme.activeBg} ${theme.activeBorder} ${theme.text} shadow-sm`;
+const EstadoMembresias = () => {
+  const puedeCobrar = ['ADMIN', 'RECEPCION'].includes(usuarioActual()?.rol);
+  const [activeTab, setActiveTab] = useState('vencidas');
+  const [socios, setSocios] = useState([]);
+  const [planes, setPlanes] = useState([]);
+  const [error, setError] = useState('');
+  const [socioCobro, setSocioCobro] = useState(null);
+
+  const cargar = async () => {
+    try {
+      const [resSocios, resPlanes] = await Promise.all([apiFetch('/socios'), apiFetch('/planes')]);
+      if (!resSocios.ok) throw new Error();
+      // Los socios dados de baja no cuentan para el seguimiento de membresías
+      setSocios((await resSocios.json()).filter(s => s.estado !== 'CANCELADO'));
+      setPlanes(resPlanes.ok ? await resPlanes.json() : []);
+      setError('');
+    } catch {
+      setError('No se pudieron cargar las membresías.');
     }
+  };
+
+  useEffect(() => { cargar(); }, []);
+
+  const conDias = socios.map(s => ({ ...s, dias: diasHasta(s.vencimientoMembresia) }));
+  const tabActiva = TABS.find(t => t.id === activeTab);
+  const lista = conDias.filter(s => tabActiva.incluye(s.dias)).sort((a, b) => (a.dias ?? 0) - (b.dias ?? 0));
+
+  const getTabColors = (tab, isActive) => {
+    const theme = COLORES[tab.color];
+    if (isActive) return `${theme.activeBg} ${theme.activeBorder} ${theme.text} shadow-sm`;
     return `bg-white ${theme.border} text-slate-500 hover:bg-slate-50 opacity-70`;
   };
 
@@ -37,28 +64,25 @@ const EstadoMembresias = () => {
         </div>
       </div>
 
+      {error && <div className="p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>}
+
       <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-        <h2 className="font-bold text-slate-800 mb-4">Estado de Membresías</h2>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           {TABS.map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
-            
+            const cantidad = conDias.filter(s => tab.incluye(s.dias)).length;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex justify-between items-start p-6 rounded-xl border-2 transition-all text-left ${getTabColors(tab, isActive)} ${isActive ? 'shadow-[0_4px_12px_-4px_rgba(0,0,0,0.1)] -translate-y-0.5' : 'shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:-translate-y-0.5 hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.1)]'}`}
+                className={`flex justify-between items-start p-5 rounded-xl border-2 transition-all text-left ${getTabColors(tab, isActive)} ${isActive ? 'shadow-[0_4px_12px_-4px_rgba(0,0,0,0.1)] -translate-y-0.5' : 'shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:-translate-y-0.5'}`}
               >
                 <div className="flex flex-col">
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <span className="font-semibold text-[13px]">{tab.label}</span>
-                    <span className="w-3.5 h-3.5 rounded-full border border-current flex items-center justify-center text-[9px] cursor-help opacity-50">?</span>
-                  </div>
-                  <span className="text-4xl font-extrabold tracking-tight">{tab.count}</span>
+                  <span className="font-semibold text-[13px] mb-2">{tab.label}</span>
+                  <span className="text-4xl font-extrabold tracking-tight">{cantidad}</span>
                 </div>
-                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-white/50">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/50">
                   <Icon className="w-5 h-5 opacity-90" />
                 </div>
               </button>
@@ -66,14 +90,61 @@ const EstadoMembresias = () => {
           })}
         </div>
 
-        {/* Estado Vacío */}
-        <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-          <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-4">
-            <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+        {lista.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+            <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-4">
+              <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+            </div>
+            <p className="text-sm font-medium">No hay membresías en esta categoría</p>
           </div>
-          <p className="text-sm font-medium">No hay membresías en esta categoría</p>
-        </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
+                <tr>
+                  <th className="px-4 py-3 font-medium">Socio</th>
+                  <th className="px-4 py-3 font-medium">Contacto</th>
+                  <th className="px-4 py-3 font-medium">Plan</th>
+                  <th className="px-4 py-3 font-medium">Vencimiento</th>
+                  {puedeCobrar && <th className="px-4 py-3 font-medium text-right">Acción</th>}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {lista.map(s => (
+                  <tr key={s.idSocio} className="hover:bg-slate-50">
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-slate-800">{s.nombreCompleto}</p>
+                      <p className="text-xs text-slate-500">DNI {s.dni}</p>
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {s.telefono ? <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-slate-400" />{s.telefono}</span> : s.email}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">{s.planActual}</td>
+                    <td className="px-4 py-3">
+                      {s.vencimientoMembresia
+                        ? <><p className="text-slate-700">{formatFecha(s.vencimientoMembresia)}</p><p className={`text-xs ${s.dias < 0 ? 'text-rose-600' : 'text-slate-500'}`}>{textoVencimiento(s.dias)}</p></>
+                        : <span className="text-slate-400">—</span>}
+                    </td>
+                    {puedeCobrar && (
+                      <td className="px-4 py-3 text-right">
+                        <button onClick={() => setSocioCobro(s)}
+                          className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-bold inline-flex items-center gap-1 border border-blue-200">
+                          <Wallet className="w-3 h-3" /> {s.vencimientoMembresia ? 'Renovar' : 'Cobrar'}
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+
+      {socioCobro && (
+        <CobroModal socio={socioCobro} planes={planes} onClose={() => setSocioCobro(null)}
+          onGuardado={() => { setSocioCobro(null); cargar(); }} />
+      )}
     </div>
   );
 };

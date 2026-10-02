@@ -4,10 +4,12 @@ import com.summit.backend.model.Clase;
 import com.summit.backend.model.ClaseHorario;
 import com.summit.backend.service.ClaseService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.Map;
 
 /**
@@ -19,6 +21,14 @@ import java.util.Map;
 public class ClaseController {
 
     private final ClaseService claseService;
+
+    /**
+     * Agenda de un día: horarios de las clases activas con las reservas de esa fecha.
+     */
+    @GetMapping("/agenda")
+    public ResponseEntity<?> agenda(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
+        return ResponseEntity.ok(claseService.agenda(fecha));
+    }
 
     @GetMapping
     public ResponseEntity<?> listar() {

@@ -1,125 +1,176 @@
-import React from 'react';
-import { Wallet, TrendingUp, TrendingDown, Calendar, Search, Plus, Filter, Download } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Wallet, TrendingUp, CalendarDays, Receipt, Calendar, Search, Plus, Download, RefreshCw } from 'lucide-react';
+import { apiFetch } from '../services/api';
+import { formatFecha, formatHora, formatMoneda, descargarCsv } from '../utils/formato';
+import { textoMetodoPago } from '../utils/constantes';
 
-const StatCard = ({ title, amount, icon: Icon, type }) => (
+const TarjetaMonto = ({ title, amount, detalle, icon: Icon, color }) => (
   <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
     <div>
       <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
-      <h3 className="text-2xl font-bold text-slate-800">${amount}</h3>
+      <h3 className="text-2xl font-bold text-slate-800">{amount}</h3>
+      {detalle && <p className="text-xs text-slate-500 mt-1">{detalle}</p>}
     </div>
-    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-      type === 'income' ? 'bg-emerald-50 text-emerald-600' :
-      type === 'expense' ? 'bg-rose-50 text-rose-600' :
-      'bg-blue-50 text-blue-600'
-    }`}>
+    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${color}`}>
       <Icon className="w-6 h-6" />
     </div>
   </div>
 );
 
+const TAMANIO_PAGINA = 15;
+
+/**
+ * Caja: ingresos de hoy y del mes, y los cobros registrados (en recepción o por la app).
+ */
 const Caja = () => {
-  const transacciones = [
-    { id: 1, fecha: '10 Sep 2026', hora: '10:30', socio: 'Juan Pérez', concepto: 'Pase Libre Anual', metodo: 'MercadoPago', monto: 15000, tipo: 'ingreso', estado: 'Aprobado' },
-    { id: 2, fecha: '10 Sep 2026', hora: '09:15', socio: 'María Gómez', concepto: 'Musculación Mensual', metodo: 'Efectivo', monto: 5000, tipo: 'ingreso', estado: 'Aprobado' },
-    { id: 3, fecha: '09 Sep 2026', hora: '18:45', socio: 'Carlos Ruiz', concepto: 'Crossfit Mensual', metodo: 'Transferencia', monto: 6500, tipo: 'ingreso', estado: 'Pendiente' },
-    { id: 4, fecha: '09 Sep 2026', hora: '14:20', socio: '-', concepto: 'Mantenimiento Equipos', metodo: 'Transferencia', monto: 12000, tipo: 'egreso', estado: 'Completado' },
-    { id: 5, fecha: '09 Sep 2026', hora: '11:10', socio: 'Ana Torres', concepto: 'Clase Suelta Yoga', metodo: 'Efectivo', monto: 1500, tipo: 'ingreso', estado: 'Aprobado' },
-  ];
+  const navigate = useNavigate();
+  const [resumen, setResumen] = useState(null);
+  const [pagina, setPagina] = useState(null); // respuesta paginada de Spring
+  const [numeroPagina, setNumeroPagina] = useState(0);
+  const [busqueda, setBusqueda] = useState('');
+  const [error, setError] = useState('');
+  const [cargando, setCargando] = useState(false);
+
+  const cargar = useCallback(async () => {
+    setCargando(true);
+    try {
+      const [resResumen, resPagos] = await Promise.all([
+        apiFetch('/pagos/resumen'),
+        apiFetch(`/pagos?page=${numeroPagina}&size=${TAMANIO_PAGINA}&sort=fechaPago,desc`),
+      ]);
+      if (!resResumen.ok || !resPagos.ok) throw new Error();
+      setResumen(await resResumen.json());
+      setPagina(await resPagos.json());
+      setError('');
+    } catch {
+      setError('No se pudieron cargar los movimientos de caja.');
+    } finally {
+      setCargando(false);
+    }
+  }, [numeroPagina]);
+
+  useEffect(() => { cargar(); }, [cargar]);
+
+  const pagos = pagina?.content || [];
+  const filtro = busqueda.trim().toLowerCase();
+  const pagosFiltrados = pagos.filter(p => !filtro ||
+    p.nombreSocio.toLowerCase().includes(filtro) || p.dniSocio.includes(filtro) ||
+    p.plan.toLowerCase().includes(filtro) || (p.comprobante || '').toLowerCase().includes(filtro));
+
+  const exportar = () => descargarCsv(`caja-${new Date().toISOString().substring(0, 10)}.csv`,
+    ['Fecha', 'Hora', 'Socio', 'DNI', 'Plan', 'Método', 'Comprobante', 'Monto'],
+    pagosFiltrados.map(p => [formatFecha(p.fechaPago), formatHora(p.fechaPago), p.nombreSocio, p.dniSocio, p.plan,
+      textoMetodoPago(p.metodoPago), p.comprobante, p.monto]));
+
+  const detalleMetodos = resumen && Object.keys(resumen.ingresosHoyPorMetodo).length > 0
+    ? Object.entries(resumen.ingresosHoyPorMetodo).map(([m, total]) => `${textoMetodoPago(m)}: ${formatMoneda(total)}`).join(' · ')
+    : 'Sin cobros hoy';
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-2">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Caja y Pagos</h1>
-          <p className="text-sm text-slate-500">Gestión de ingresos, egresos y facturación</p>
+          <p className="text-sm text-slate-500">Ingresos por cobro de membresías</p>
         </div>
         <div className="flex gap-3">
-          <button className="bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm">
+          <button onClick={exportar} disabled={pagosFiltrados.length === 0}
+            className="bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50 transition-colors shadow-sm">
             <Download className="w-4 h-4" /> Exportar
           </button>
-          <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm">
-            <Plus className="w-4 h-4" /> Nuevo Movimiento
+          <button onClick={() => navigate('/socios')} title="El cobro se registra desde la lista de socios"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm">
+            <Plus className="w-4 h-4" /> Registrar cobro
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard title="Ingresos Hoy" amount="21,500" icon={TrendingUp} type="income" />
-        <StatCard title="Egresos Hoy" amount="12,000" icon={TrendingDown} type="expense" />
-        <StatCard title="Balance Total (Mes)" amount="458,200" icon={Wallet} type="balance" />
+        <TarjetaMonto title="Ingresos hoy" amount={resumen ? formatMoneda(resumen.ingresosHoy) : '—'}
+          detalle={detalleMetodos} icon={TrendingUp} color="bg-emerald-50 text-emerald-600" />
+        <TarjetaMonto title="Cobros hoy" amount={resumen ? resumen.cobrosHoy : '—'}
+          icon={Receipt} color="bg-blue-50 text-blue-600" />
+        <TarjetaMonto title="Ingresos del mes" amount={resumen ? formatMoneda(resumen.ingresosMes) : '—'}
+          detalle={resumen ? `${resumen.cobrosMes} cobros` : ''} icon={CalendarDays} color="bg-violet-50 text-violet-600" />
       </div>
+
+      {error && <div className="p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>}
 
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
         <div className="p-5 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <h2 className="text-lg font-bold text-slate-800">Últimos Movimientos</h2>
+          <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Wallet className="w-5 h-5 text-slate-400" /> Últimos movimientos</h2>
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <div className="relative flex-1 sm:w-64">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-              <input 
-                type="text" 
-                placeholder="Buscar por socio o concepto..." 
+              <input
+                type="text"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                placeholder="Buscar por socio, DNI, plan..."
                 className="pl-9 pr-4 py-2 w-full border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 transition-shadow"
               />
             </div>
-            <button className="p-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
-              <Filter className="w-4 h-4" />
+            <button onClick={cargar} title="Actualizar" className="p-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+              <RefreshCw className={`w-4 h-4 ${cargando ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600">
-            <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200 uppercase text-xs tracking-wider">
-              <tr>
-                <th className="px-6 py-4">Fecha y Hora</th>
-                <th className="px-6 py-4">Concepto / Socio</th>
-                <th className="px-6 py-4">Método</th>
-                <th className="px-6 py-4">Estado</th>
-                <th className="px-6 py-4 text-right">Monto</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {transacciones.map((tx) => (
-                <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="font-medium text-slate-700">{tx.fecha}</div>
-                    <div className="text-slate-400 text-xs flex items-center gap-1 mt-0.5"><Calendar className="w-3 h-3" /> {tx.hora}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-slate-800">{tx.concepto}</div>
-                    <div className="text-slate-500 text-xs mt-0.5">{tx.socio}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2 py-1 rounded bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200">
-                      {tx.metodo}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold border ${
-                      tx.estado === 'Aprobado' || tx.estado === 'Completado' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 
-                      'bg-amber-50 text-amber-700 border-amber-200'
-                    }`}>
-                      {tx.estado}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <span className={`font-bold ${tx.tipo === 'ingreso' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                      {tx.tipo === 'ingreso' ? '+' : '-'}${tx.monto.toLocaleString('es-AR')}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        
-        <div className="p-4 border-t border-slate-200 flex items-center justify-between bg-slate-50 text-sm text-slate-500">
-          <span>Mostrando 5 de 145 movimientos</span>
-          <div className="flex gap-1">
-            <button className="px-3 py-1 border border-slate-200 rounded hover:bg-white transition-colors disabled:opacity-50" disabled>Anterior</button>
-            <button className="px-3 py-1 border border-slate-200 rounded hover:bg-white transition-colors">Siguiente</button>
+        {pagosFiltrados.length === 0 ? (
+          <div className="p-10 text-center text-slate-500 text-sm">
+            {pagos.length === 0 ? 'Todavía no hay cobros registrados.' : 'Ningún cobro coincide con la búsqueda en esta página.'}
           </div>
-        </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-slate-600">
+              <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200 uppercase text-xs tracking-wider">
+                <tr>
+                  <th className="px-6 py-4">Fecha y Hora</th>
+                  <th className="px-6 py-4">Concepto / Socio</th>
+                  <th className="px-6 py-4">Método</th>
+                  <th className="px-6 py-4">Comprobante</th>
+                  <th className="px-6 py-4 text-right">Monto</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {pagosFiltrados.map((p) => (
+                  <tr key={p.idPago} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="font-medium text-slate-700">{formatFecha(p.fechaPago)}</div>
+                      <div className="text-slate-400 text-xs flex items-center gap-1 mt-0.5"><Calendar className="w-3 h-3" /> {formatHora(p.fechaPago)}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-slate-800">{p.plan}</div>
+                      <div className="text-slate-500 text-xs mt-0.5">{p.nombreSocio} · DNI {p.dniSocio}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-2 py-1 rounded bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200 whitespace-nowrap">
+                        {textoMetodoPago(p.metodoPago)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-slate-500">{p.comprobante || '—'}</td>
+                    <td className="px-6 py-4 text-right whitespace-nowrap">
+                      <span className="font-bold text-emerald-600">+{formatMoneda(p.monto)}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {pagina && pagina.totalElements > 0 && (
+          <div className="p-4 border-t border-slate-200 flex items-center justify-between bg-slate-50 text-sm text-slate-500">
+            <span>Página {pagina.number + 1} de {pagina.totalPages} · {pagina.totalElements} cobros</span>
+            <div className="flex gap-1">
+              <button onClick={() => setNumeroPagina(n => n - 1)} disabled={pagina.first}
+                className="px-3 py-1 border border-slate-200 rounded hover:bg-white transition-colors disabled:opacity-50">Anterior</button>
+              <button onClick={() => setNumeroPagina(n => n + 1)} disabled={pagina.last}
+                className="px-3 py-1 border border-slate-200 rounded hover:bg-white transition-colors disabled:opacity-50">Siguiente</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

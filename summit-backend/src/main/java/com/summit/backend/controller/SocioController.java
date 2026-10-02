@@ -52,4 +52,9 @@ public class SocioController {
         socioService.cancelarSocio(id);
         return ResponseEntity.ok(Map.of("mensaje", "Socio cancelado correctamente (baja lógica)"));
     }
+
+    @PatchMapping("/{id}/reactivar")
+    public ResponseEntity<SocioResponseDTO> reactivarSocio(@PathVariable Long id) {
+        return ResponseEntity.ok(socioService.reactivarSocio(id));
+    }
 }
