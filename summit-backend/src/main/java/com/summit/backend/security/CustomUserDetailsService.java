@@ -1,5 +1,6 @@
 package com.summit.backend.security;
 
+import com.summit.backend.model.EstadoUsuario;
 import com.summit.backend.model.Usuario;
 import com.summit.backend.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
@@ -34,9 +35,14 @@ public class CustomUserDetailsService implements UserDetailsService {
         GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name());
         List<GrantedAuthority> authorities = Collections.singletonList(authority);
 
+        // Una cuenta que no está ACTIVO (dada de baja, desactivada, suspendida) queda deshabilitada:
+        // el filtro JWT deja de aceptar sus tokens aunque todavía no hayan vencido
+        boolean activa = usuario.getEstado() == EstadoUsuario.ACTIVO;
+
         return new User(
                 usuario.getEmail(),
                 usuario.getPassword(),
+                activa, true, true, true,
                 authorities
         );
     }

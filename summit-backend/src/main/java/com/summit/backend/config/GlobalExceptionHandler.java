@@ -9,6 +9,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.time.LocalDateTime;
@@ -29,6 +32,24 @@ public class GlobalExceptionHandler {
         body.put("status", HttpStatus.BAD_REQUEST.value());
         body.put("error", "El archivo supera el tamaño máximo de 5 MB");
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    // Parámetro con formato inválido (ej. ?fecha=hola o un id con letras)
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, Object>> handleParametroInvalido(MethodArgumentTypeMismatchException ex) {
+        return error(HttpStatus.BAD_REQUEST, "El valor de '" + ex.getName() + "' no es válido");
+    }
+
+    // Sin este manejador caía en Exception y respondía 500 como si fuera una falla del servidor
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<Map<String, Object>> handleParametroFaltante(MissingServletRequestParameterException ex) {
+        return error(HttpStatus.BAD_REQUEST, "Falta el parámetro '" + ex.getParameterName() + "'");
+    }
+
+    // JSON mal formado o con un valor que no corresponde (ej. un texto donde va un número)
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleCuerpoInvalido(HttpMessageNotReadableException ex) {
+        return error(HttpStatus.BAD_REQUEST, "Los datos enviados no tienen un formato válido");
     }
 
     @ExceptionHandler(RuntimeException.class)
@@ -74,6 +95,14 @@ public class GlobalExceptionHandler {
         body.put("detalles", errors);
 
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    private static ResponseEntity<Map<String, Object>> error(HttpStatus status, String mensaje) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", status.value());
+        body.put("error", mensaje);
+        return new ResponseEntity<>(body, status);
     }
 
     @ExceptionHandler(Exception.class)

@@ -37,7 +37,7 @@ public class AuthService {
         }
 
         if (usuario.getEstado() != EstadoUsuario.ACTIVO) {
-            throw new RuntimeException("La cuenta se encuentra " + usuario.getEstado().name().toLowerCase());
+            throw new RuntimeException("La cuenta está " + textoEstado(usuario.getEstado()) + ": comunicate con el gimnasio");
         }
 
         String token = jwtTokenProvider.generateToken(usuario.getEmail(), usuario.getRol().name());
@@ -85,5 +85,16 @@ public class AuthService {
                 .nombreCompleto(usuario.getNombreCompleto())
                 .rol(usuario.getRol().name())
                 .build();
+    }
+
+    // "cuenta" es femenino: el nombre del enum (INACTIVO, CANCELADO...) no sirve tal cual
+    private static String textoEstado(EstadoUsuario estado) {
+        return switch (estado) {
+            case INACTIVO -> "inactiva";
+            case PENDIENTE -> "pendiente de activación";
+            case SUSPENDIDO -> "suspendida";
+            case CANCELADO -> "dada de baja";
+            default -> estado.name().toLowerCase();
+        };
     }
 }
