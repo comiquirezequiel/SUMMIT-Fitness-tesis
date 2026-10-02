@@ -3,6 +3,7 @@ package com.summit.backend.config;
 import com.summit.backend.security.CustomUserDetailsService;
 import com.summit.backend.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -38,6 +39,10 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomUserDetailsService customUserDetailsService;
+
+    // Origenes del frontend que pueden llamar a la API (summit.cors.origins, separados por coma)
+    @Value("${summit.cors.origins}")
+    private List<String> origenesPermitidos;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -132,10 +137,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:5173",  // Vite dev server
-                "http://localhost:3000"   // Alternativa
-        ));
+        configuration.setAllowedOrigins(origenesPermitidos);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
