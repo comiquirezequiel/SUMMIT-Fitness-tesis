@@ -8,10 +8,9 @@ import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.List;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 /**
  * Filtro de control de tasa (Rate Limiting) por IP.
@@ -29,8 +28,8 @@ import java.util.stream.Collectors;
 @Order(1)
 public class RateLimitingFilter implements Filter {
 
-    // Mapa de timestamps de peticiones por IP y categoría ("ip|login", "ip|checkin", "ip|general")
-    private final ConcurrentHashMap<String, List<Long>> requestTimestamps = new ConcurrentHashMap<>();
+    // Timestamps de peticiones por IP y categoría ("ip|login", "ip|checkin", "ip|general"), del más viejo al más nuevo
+    private final ConcurrentHashMap<String, Deque<Long>> requestTimestamps = new ConcurrentHashMap<>();
 
     // Límites por minuto (cada categoría tiene su propio contador)
     private static final int MAX_REQUESTS_PER_MINUTE = 120;
@@ -46,6 +45,12 @@ public class RateLimitingFilter implements Filter {
 
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
+
+        // Las consultas previas de CORS (OPTIONS) las manda el navegador solo: no cuentan para el límite
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            chain.doFilter(request, response);
+            return;
+        }
 
         String clientIp = getClientIp(request);
         String uri = request.getRequestURI();
@@ -64,21 +69,23 @@ public class RateLimitingFilter implements Filter {
             categoria = "general";
         }
 
-        // Obtener o crear la lista de timestamps para esta IP en esta categoría
-        List<Long> timestamps = requestTimestamps.computeIfAbsent(clientIp + "|" + categoria,
-                k -> new CopyOnWriteArrayList<>());
+        // Obtener o crear la cola de timestamps para esta IP en esta categoría
+        Deque<Long> timestamps = requestTimestamps.computeIfAbsent(clientIp + "|" + categoria,
+                k -> new ArrayDeque<>());
 
-        long now = System.currentTimeMillis();
+        // Limpiar, verificar y registrar en un solo paso: el panel manda varias peticiones a la vez
+        // y, si se hace por separado, dos hilos pueden duplicar la lista y bloquear antes del límite
+        boolean excedido;
+        synchronized (timestamps) {
+            long now = System.currentTimeMillis();
+            descartarVencidos(timestamps, now);
+            excedido = timestamps.size() >= maxRequests;
+            if (!excedido) {
+                timestamps.addLast(now);
+            }
+        }
 
-        // Limpiar timestamps más antiguos que la ventana de 1 minuto
-        List<Long> recentTimestamps = timestamps.stream()
-                .filter(ts -> (now - ts) < WINDOW_MS)
-                .collect(Collectors.toList());
-        timestamps.clear();
-        timestamps.addAll(recentTimestamps);
-
-        // Verificar si se excede el límite
-        if (timestamps.size() >= maxRequests) {
+        if (excedido) {
             response.setStatus(429);
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write(
@@ -87,9 +94,17 @@ public class RateLimitingFilter implements Filter {
             return;
         }
 
-        // Registrar esta petición y continuar
-        timestamps.add(now);
         chain.doFilter(request, response);
+    }
+
+    /**
+     * Quita del frente de la cola los timestamps que ya salieron de la ventana de 1 minuto.
+     * Debe llamarse con la cola sincronizada.
+     */
+    private static void descartarVencidos(Deque<Long> timestamps, long now) {
+        while (!timestamps.isEmpty() && now - timestamps.peekFirst() >= WINDOW_MS) {
+            timestamps.pollFirst();
+        }
     }
 
     /**
@@ -105,14 +120,17 @@ public class RateLimitingFilter implements Filter {
 
     /**
      * Limpieza periódica del mapa cada 5 minutos.
-     * Elimina IPs que no han hecho peticiones en los últimos 5 minutos.
+     * Elimina las claves (IP y categoría) que no tuvieron peticiones en el último minuto.
      */
     @Scheduled(fixedRate = 300_000)
     public void cleanupStaleEntries() {
         long now = System.currentTimeMillis();
         requestTimestamps.entrySet().removeIf(entry -> {
-            entry.getValue().removeIf(ts -> (now - ts) >= WINDOW_MS);
-            return entry.getValue().isEmpty();
+            Deque<Long> timestamps = entry.getValue();
+            synchronized (timestamps) {
+                descartarVencidos(timestamps, now);
+                return timestamps.isEmpty();
+            }
         });
     }
 }
