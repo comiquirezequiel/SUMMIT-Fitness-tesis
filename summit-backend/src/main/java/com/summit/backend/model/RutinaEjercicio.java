@@ -28,7 +28,10 @@ public class RutinaEjercicio {
     private Ejercicio ejercicio;
 
     @Column(name = "dia_numero")
-    private Integer diaNumero; // Ej: Día 1, Día 2
+    private Integer diaNumero; // Día 1 a 7. Las rutinas armadas antes de los días lo tienen vacío: cuenta como día 1
+
+    @Column(name = "orden")
+    private Integer orden; // Posición dentro del día (1, 2, 3...)
 
     @Column(name = "series")
     private Integer series;
@@ -41,4 +44,7 @@ public class RutinaEjercicio {
 
     @Column(name = "descanso_segundos")
     private Integer descansoSegundos;
+
+    @Column(name = "observaciones", length = 300)
+    private String observaciones;
 }

@@ -1,6 +1,6 @@
 package com.summit.backend.controller;
 
-import com.summit.backend.model.Ejercicio;
+import com.summit.backend.dto.EjercicioDTO;
 import com.summit.backend.model.GrupoMuscular;
 import com.summit.backend.service.EjercicioService;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +14,8 @@ import java.util.Map;
 /**
  * Controller de ejercicios.
  * Filtrado por grupo muscular para el modelo 2D interactivo.
+ * Consulta cualquier usuario autenticado; alta y edición, ADMIN y PROFESOR (SecurityConfig).
+ * Los errores (404 / 400 con {"error"}) los arma EntrenamientoExceptionHandler.
  */
 @RestController
 @RequestMapping("/api/ejercicios")
@@ -40,24 +42,16 @@ public class EjercicioController {
 
     @GetMapping("/{id}")
     public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(ejercicioService.buscarPorId(id));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(ejercicioService.buscarPorId(id));
     }
 
     @PostMapping
-    public ResponseEntity<?> crear(@RequestBody Ejercicio ejercicio) {
+    public ResponseEntity<?> crear(@RequestBody EjercicioDTO ejercicio) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ejercicioService.crear(ejercicio));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> actualizar(@PathVariable Long id, @RequestBody Ejercicio data) {
-        try {
-            return ResponseEntity.ok(ejercicioService.actualizar(id, data));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<?> actualizar(@PathVariable Long id, @RequestBody EjercicioDTO data) {
+        return ResponseEntity.ok(ejercicioService.actualizar(id, data));
     }
 }

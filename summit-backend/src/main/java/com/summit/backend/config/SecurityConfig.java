@@ -105,10 +105,16 @@ public class SecurityConfig {
                 .requestMatchers("/api/asistencia/**").hasAnyRole("ADMIN", "RECEPCION")
                 .requestMatchers("/api/dashboard/**").hasAnyRole("ADMIN", "RECEPCION")
 
-                // Rutinas: ADMIN y PROFESOR
-                .requestMatchers(HttpMethod.POST, "/api/rutinas/**").hasAnyRole("ADMIN", "PROFESOR")
-                .requestMatchers(HttpMethod.PUT, "/api/rutinas/**").hasAnyRole("ADMIN", "PROFESOR")
+                // Rutinas: las arman ADMIN y PROFESOR. El cruce con las patologías del socio es dato de salud.
+                // Consulta: cualquier usuario autenticado (un socio solo ve la suya: lo controla RutinaController)
+                .requestMatchers(HttpMethod.GET, "/api/rutinas/validar-ejercicio").hasAnyRole("ADMIN", "PROFESOR")
                 .requestMatchers(HttpMethod.GET, "/api/rutinas/**").authenticated()
+                .requestMatchers("/api/rutinas/**").hasAnyRole("ADMIN", "PROFESOR")
+
+                // Entrenamientos (peso y RPE): RECEPCION solo consulta; el socio ve y carga solo lo suyo
+                // (lo controla EntrenamientoController)
+                .requestMatchers(HttpMethod.GET, "/api/entrenamientos/**").hasAnyRole("ADMIN", "RECEPCION", "PROFESOR", "SOCIO")
+                .requestMatchers("/api/entrenamientos/**").hasAnyRole("ADMIN", "PROFESOR", "SOCIO")
 
                 // Catálogo de ejercicios: lo mantienen ADMIN y PROFESOR
                 .requestMatchers(HttpMethod.POST, "/api/ejercicios/**").hasAnyRole("ADMIN", "PROFESOR")
