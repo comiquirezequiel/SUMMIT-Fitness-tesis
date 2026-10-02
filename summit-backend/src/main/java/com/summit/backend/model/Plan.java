@@ -32,6 +32,9 @@ public class Plan {
     @Column(name = "duracion_dias", nullable = false)
     private Integer duracionDias; // e.g. 30 días para plan mensual
 
+    @Column(name = "veces_por_semana")
+    private Integer vecesPorSemana; // null = pase libre; 1 a 7 = días de acceso por semana
+
     @Column(name = "activo", nullable = false)
     private Boolean activo;
 

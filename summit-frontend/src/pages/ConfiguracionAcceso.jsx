@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Settings, Info, AlertTriangle, CheckCircle } from 'lucide-react';
+import { apiFetch } from '../services/api';
 
 const ConfiguracionAcceso = () => {
   const [config, setConfig] = useState({
@@ -19,10 +20,7 @@ const ConfiguracionAcceso = () => {
 
   const fetchConfig = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/api/configuracion/acceso', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await apiFetch('/configuracion/acceso');
       if (response.ok) {
         const data = await response.json();
         setConfig(data);
@@ -38,22 +36,18 @@ const ConfiguracionAcceso = () => {
     setSaving(true);
     setMessage({ text: '', type: '' });
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/api/configuracion/acceso', {
+      const response = await apiFetch('/configuracion/acceso', {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify(config)
       });
-      
-      if (!response.ok) throw new Error('Error al guardar');
-      
+
+      if (response.status === 403) throw new Error('Solo un administrador puede modificar las reglas de acceso.');
+      if (!response.ok) throw new Error('Error al guardar la configuración.');
+
       setMessage({ text: 'Configuración guardada exitosamente.', type: 'success' });
       setTimeout(() => setMessage({ text: '', type: '' }), 3000);
     } catch (err) {
-      setMessage({ text: 'Error al guardar la configuración.', type: 'error' });
+      setMessage({ text: err.message, type: 'error' });
     } finally {
       setSaving(false);
     }

@@ -9,6 +9,7 @@ target/
 # Entorno local
 .env
 .env.*
+!.env.example
 
 # Editores / SO
 .idea/

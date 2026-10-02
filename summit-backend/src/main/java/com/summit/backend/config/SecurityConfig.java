@@ -74,6 +74,9 @@ public class SecurityConfig {
                 // Página de error interna de Spring: si queda protegida, un 403 se convierte en 401
                 .requestMatchers("/error").permitAll()
 
+                // Alta de personal: solo ADMIN
+                .requestMatchers(HttpMethod.POST, "/api/usuarios/**").hasRole("ADMIN")
+
                 // Gestión de usuarios/socios: solo ADMIN y RECEPCION
                 .requestMatchers("/api/usuarios/**").hasAnyRole("ADMIN", "RECEPCION")
 

@@ -1,5 +1,6 @@
 package com.summit.backend.service;
 
+import com.summit.backend.dto.StaffRequestDTO;
 import com.summit.backend.model.EstadoUsuario;
 import com.summit.backend.model.Rol;
 import com.summit.backend.model.Usuario;
@@ -7,6 +8,7 @@ import com.summit.backend.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 /**
@@ -18,6 +20,40 @@ import org.springframework.stereotype.Service;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    /**
+     * Alta de personal (ADMIN, RECEPCION o PROFESOR).
+     * Los socios se crean desde SocioService; el registro público solo crea socios.
+     */
+    public Usuario crearStaff(StaffRequestDTO request) {
+        Rol rol;
+        try {
+            rol = Rol.valueOf(request.getRol().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Rol inválido: " + request.getRol());
+        }
+        if (rol == Rol.SOCIO) {
+            throw new RuntimeException("Los socios se dan de alta desde /api/socios");
+        }
+        if (usuarioRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("El email ya se encuentra registrado");
+        }
+        if (usuarioRepository.existsByDni(request.getDni())) {
+            throw new RuntimeException("El DNI ya se encuentra registrado");
+        }
+
+        Usuario usuario = Usuario.builder()
+                .dni(request.getDni())
+                .nombreCompleto(request.getNombreCompleto())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .telefono(request.getTelefono())
+                .rol(rol)
+                .estado(EstadoUsuario.ACTIVO)
+                .build();
+        return usuarioRepository.save(usuario);
+    }
 
     /**
      * Lista todos los usuarios con paginación defensiva.

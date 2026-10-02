@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, Mail } from 'lucide-react';
+import { apiFetch } from '../services/api';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -8,6 +9,8 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sesionExpirada = searchParams.get('sesion') === 'expirada';
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -15,11 +18,8 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8080/api/auth/login', {
+      const response = await apiFetch('/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ email, password }),
       });
 
@@ -59,6 +59,12 @@ export default function Login() {
         {error && (
           <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm text-center">
             {error}
+          </div>
+        )}
+
+        {sesionExpirada && !error && (
+          <div className="bg-amber-50 text-amber-700 p-3 rounded-lg mb-6 text-sm text-center">
+            Tu sesión expiró. Volvé a iniciar sesión.
           </div>
         )}
 

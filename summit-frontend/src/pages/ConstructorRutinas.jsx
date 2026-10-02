@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, User, FileText, AlertTriangle, CheckCircle, Save, Plus, ChevronRight, Info } from 'lucide-react';
+import { apiFetch } from '../services/api';
 
 const ConstructorRutinas = () => {
   const [socios, setSocios] = useState([]);
@@ -32,9 +33,7 @@ const ConstructorRutinas = () => {
 
   const fetchSocios = async () => {
     try {
-      const res = await fetch('http://localhost:8080/api/socios', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
+      const res = await apiFetch('/socios');
       if (res.ok) setSocios(await res.json());
     } catch (e) {
       console.error(e);
@@ -44,9 +43,7 @@ const ConstructorRutinas = () => {
   const fetchEjercicios = async () => {
     try {
       // El backend devuelve una página de Spring ({ content: [...] }); 50 es el máximo permitido
-      const res = await fetch('http://localhost:8080/api/ejercicios?size=50&sort=nombre', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
+      const res = await apiFetch('/ejercicios?size=50&sort=nombre');
       if (res.ok) {
         const data = await res.json();
         setEjercicios(Array.isArray(data) ? data : (data.content || []));
@@ -68,9 +65,7 @@ const ConstructorRutinas = () => {
 
   const fetchFichaMedica = async (idSocio) => {
     try {
-      const res = await fetch(`http://localhost:8080/api/socios/${idSocio}/certificados/actual`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
+      const res = await apiFetch(`/socios/${idSocio}/certificados/actual`);
       if (res.ok) {
         const cert = await res.json();
         if (cert && cert.observacionesPatologias) {
@@ -78,6 +73,9 @@ const ConstructorRutinas = () => {
         } else {
           setPatologias([]);
         }
+      } else {
+        // Sin certificado (404): no arrastrar las patologías del socio anterior
+        setPatologias([]);
       }
     } catch (e) {
       setPatologias([]);
@@ -96,9 +94,7 @@ const ConstructorRutinas = () => {
 
   const validarEjercicio = async (idEjercicio) => {
     try {
-      const res = await fetch(`http://localhost:8080/api/rutinas/validar-ejercicio?idSocio=${selectedSocio.idSocio}&idEjercicio=${idEjercicio}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
+      const res = await apiFetch(`/rutinas/validar-ejercicio?idSocio=${selectedSocio.idSocio}&idEjercicio=${idEjercicio}`);
       if (res.ok) {
         const data = await res.json();
         setRiesgosActuales(data.riesgos || []);
@@ -135,12 +131,8 @@ const ConstructorRutinas = () => {
   const handleGuardarRutina = async () => {
     try {
       // 1. Crear Rutina
-      const resRutina = await fetch('http://localhost:8080/api/rutinas', {
+      const resRutina = await apiFetch('/rutinas', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify({
           nombre: rutinaNombre,
           objetivo: rutinaObjetivo,
@@ -154,12 +146,8 @@ const ConstructorRutinas = () => {
       // 2. Agregar Ejercicios (se registran los que el backend rechace)
       const rechazados = [];
       for (const item of ejerciciosRutina) {
-        const resEj = await fetch(`http://localhost:8080/api/rutinas/${rutinaData.idRutina}/ejercicios?forzar=${item.riesgoAsumido}`, {
+        const resEj = await apiFetch(`/rutinas/${rutinaData.idRutina}/ejercicios?forzar=${item.riesgoAsumido}`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          },
           body: JSON.stringify({
             ejercicio: { idEjercicio: item.ejercicio.idEjercicio },
             series: item.series,

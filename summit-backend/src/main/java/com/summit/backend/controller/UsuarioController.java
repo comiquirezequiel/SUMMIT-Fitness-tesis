@@ -1,11 +1,14 @@
 package com.summit.backend.controller;
 
+import com.summit.backend.dto.StaffRequestDTO;
 import com.summit.backend.model.Rol;
 import com.summit.backend.model.Usuario;
 import com.summit.backend.service.UsuarioService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,6 +29,18 @@ public class UsuarioController {
     @GetMapping
     public ResponseEntity<Page<Usuario>> listar(Pageable pageable) {
         return ResponseEntity.ok(usuarioService.listarTodos(pageable));
+    }
+
+    /**
+     * Alta de personal (ADMIN, RECEPCION o PROFESOR). Solo ADMIN (ver SecurityConfig).
+     */
+    @PostMapping
+    public ResponseEntity<?> crearStaff(@Valid @RequestBody StaffRequestDTO request) {
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.crearStaff(request));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @GetMapping("/rol/{rol}")

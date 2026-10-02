@@ -3,12 +3,14 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './pages/Login';
 import ConfiguracionAcceso from './pages/ConfiguracionAcceso';
 import ConstructorRutinas from './pages/ConstructorRutinas';
+import { sesionVigente, limpiarSesion } from './services/auth';
 
-// Basic Protected Route wrapper
+// Rutas protegidas: sin token, o con el token vencido, vuelve al login
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    return <Navigate to="/login" replace />;
+  if (!sesionVigente()) {
+    const habiaSesion = !!localStorage.getItem('token');
+    limpiarSesion();
+    return <Navigate to={habiaSesion ? '/login?sesion=expirada' : '/login'} replace />;
   }
   return children;
 };

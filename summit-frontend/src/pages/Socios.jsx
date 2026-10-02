@@ -6,6 +6,7 @@ import {
   ArrowUp, ArrowDown, Eye, Link2, Edit2, MoreVertical, ChevronLeft, ChevronRight, Activity, Wallet, X
 } from 'lucide-react';
 import StatCard from '../components/StatCard';
+import { apiFetch } from '../services/api';
 
 const Socios = () => {
   const navigate = useNavigate();
@@ -25,10 +26,7 @@ const Socios = () => {
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/api/socios', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await apiFetch('/socios');
       if (!response.ok) throw new Error('Error al obtener los socios');
       const data = await response.json();
       setSocios(data);
@@ -41,10 +39,7 @@ const Socios = () => {
 
   const fetchPlanes = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/api/planes', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await apiFetch('/planes');
       if (response.ok) {
         const data = await response.json();
         setPlanes(data);
@@ -75,13 +70,8 @@ const Socios = () => {
     e.preventDefault();
     setProcesandoPago(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/api/pagos', {
+      const response = await apiFetch('/pagos', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify({
           idUsuario: selectedSocio.idSocio,
           idPlan: pagoData.idPlan,

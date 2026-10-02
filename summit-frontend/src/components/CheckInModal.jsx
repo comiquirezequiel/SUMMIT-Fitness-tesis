@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { QrCode, Search, ScanLine, X, ShieldCheck, XCircle, AlertTriangle } from 'lucide-react';
+import { apiFetch } from '../services/api';
 
 const CheckInModal = ({ isOpen, onClose }) => {
   const [dni, setDni] = useState('');
@@ -28,13 +29,8 @@ const CheckInModal = ({ isOpen, onClose }) => {
     setNombreSocio('');
     
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/api/asistencia/molinete/verificar', {
+      const response = await apiFetch('/asistencia/molinete/verificar', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify({ dni })
       });
       
