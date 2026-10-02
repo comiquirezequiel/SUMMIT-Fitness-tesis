@@ -1,0 +1,708 @@
+/* --- CONFIGURACIÓN BASE --- */
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Inter:wght@300;400;500&display=swap');
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: #0d0d14;
+    color: #ffffff;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+/* ─────────────────────────────────────────────
+   LAYOUT PRINCIPAL — DESKTOP
+───────────────────────────────────────────── */
+.contenedor-catalogo {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    gap: 0;
+}
+
+/* ─────────────────────────────────────────────
+   COLUMNA VISUAL
+───────────────────────────────────────────── */
+.columna-visual {
+    position: relative;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #0d0d14;
+    overflow: hidden;
+    transition: flex 0.6s cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+.columna-visual.con-panel {
+    flex: 1.4;
+}
+
+/* ─────────────────────────────────────────────
+   MODELO PRINCIPAL
+───────────────────────────────────────────── */
+#modelo-interactivo {
+    width: 100%;
+    height: 90%;
+    transition: opacity 0.45s ease, transform 0.45s ease, filter 0.45s ease;
+}
+
+#modelo-interactivo.oculto {
+    opacity: 0;
+    transform: scale(0.92);
+    filter: blur(10px);
+    pointer-events: none;
+}
+
+
+#modelo-interactivo,
+#modelo-interactivo *,
+.contenedor-detalle svg,
+.contenedor-detalle svg * {
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+}
+
+
+@keyframes pulse-glow {
+    0%   { fill: transparent; }
+    100% { fill: rgba(0, 210, 255, 0.09); }
+}
+
+.parte-modelo, .parte-modelo path {
+    cursor: pointer;
+    transition: fill 0.3s;
+    animation: pulse-glow 3s ease-in-out infinite alternate;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+}
+
+.parte-modelo:focus, .parte-modelo path:focus {
+    outline: none;
+}
+
+/* Retrasos escalonados para que no pulsen juntos */
+#brazos-frente          { animation-delay: 0s; }
+#pecho                  { animation-delay: 0.5s; }
+#abdominal              { animation-delay: 1s; }
+#piernas-frente         { animation-delay: 1.5s; }
+#brazos-trasero         { animation-delay: 0.25s; }
+#espalda                { animation-delay: 0.75s; }
+#piernas-trasera        { animation-delay: 1.25s; }
+
+/* Detener pulso cuando el modelo está oculto */
+#modelo-interactivo.oculto .parte-modelo,
+#modelo-interactivo.oculto .parte-modelo path {
+    animation: none;
+}
+
+.parte-modelo:hover, .parte-modelo:hover path {
+    fill: rgba(0, 210, 255, 0.38) !important;
+    filter: drop-shadow(0 0 20px rgba(0, 210, 255, 0.75));
+    animation: none;
+}
+
+/* ─────────────────────────────────────────────
+   TOOLTIP FLOTANTE (desktop)
+───────────────────────────────────────────── */
+#tooltip-zona {
+    position: fixed;
+    background: rgba(13, 13, 20, 0.92);
+    border: 1px solid rgba(0, 210, 255, 0.35);
+    color: #00d2ff;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    padding: 6px 14px;
+    border-radius: 6px;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+    white-space: nowrap;
+}
+
+#tooltip-zona.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ─────────────────────────────────────────────
+   BADGE — ZONA ACTIVA AL VOLVER
+───────────────────────────────────────────── */
+#badge-zona-activa {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    background: rgba(0, 210, 255, 0.12);
+    border: 1px solid rgba(0, 210, 255, 0.3);
+    color: #00d2ff;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border-radius: 20px;
+    opacity: 0;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    pointer-events: none;
+    z-index: 5;
+    backdrop-filter: blur(8px);
+}
+
+#badge-zona-activa.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ─────────────────────────────────────────────
+   BOTÓN VOLVER
+───────────────────────────────────────────── */
+.btn-volver {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(45, 45, 63, 0.88);
+    color: #ccd0e0;
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 7px 14px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s;
+    z-index: 10;
+    backdrop-filter: blur(8px);
+}
+
+.btn-volver.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.btn-volver:hover {
+    background: #00d2ff;
+    color: #0d0d14;
+    border-color: #00d2ff;
+}
+
+/* ─────────────────────────────────────────────
+   CONTENEDOR DEL DETALLE MUSCULAR
+───────────────────────────────────────────── */
+.contenedor-detalle {
+    position: absolute;
+    width: 96%;
+    height: 96%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    opacity: 0;
+    filter: blur(15px);
+    transform: scale(1.05);
+    pointer-events: none;
+    transition: opacity 0.55s ease-out, filter 0.55s ease-out, transform 0.55s ease-out;
+}
+
+.contenedor-detalle.activo {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+    pointer-events: auto;
+}
+
+/* ─────────────────────────────────────────────
+   SVG DE DETALLE
+───────────────────────────────────────────── */
+.svg-detalle {
+    display: none;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.svg-detalle.activo {
+    display: block;
+}
+
+#vista-brazos-frente   { max-width: 50%; }
+#vista-brazos-trasero  { max-width: 50%; }
+
+/* ─────────────────────────────────────────────
+   MÚSCULOS DE COLORES — PALETA CURADA
+───────────────────────────────────────────── */
+.sub-musculo {
+    cursor: pointer;
+    fill-opacity: 0.42;
+    transition: all 0.25s ease;
+    stroke: #ffffff;
+    stroke-width: 1.5px;
+    stroke-opacity: 0.5;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+}
+
+.sub-musculo:focus {
+    outline: none;
+}
+
+.sub-musculo:hover, .sub-musculo.activo {
+    fill-opacity: 0.65;
+    stroke-width: 3px;
+    stroke-opacity: 1;
+    filter: drop-shadow(0 0 10px currentColor);
+    outline: none;
+}
+
+/* PECHO */
+#pecho-superior        { fill: #22C55E; }   /* verde esmeralda */
+#pecho-medio           { fill: #F97316; }   /* naranja cálido */
+#pecho-inferior        { fill: #C026D3; }   /* violeta */
+
+/* BRAZO FRENTE */
+#deltoide-frontal      { fill: #EF4444; }   /* rojo claro */
+#deltoide-lateral      { fill: #22D3EE; }   /* cian suave */
+#cabeza-larga          { fill: #EAB308; }   /* amarillo dorado */
+#cabeza-corta          { fill: #A855F7; }   /* púrpura */
+#antebrazo-braquiorradial { fill: #EC4899; } /* rosa fuerte */
+#antebrazo-flexores    { fill: #10B981; }   /* verde teal */
+
+/* ABDOMEN */
+#recto-abdominal       { fill: #F87171; }   /* rojo suave */
+#oblicuos              { fill: #FBBF24; }   /* ámbar */
+#serrato-anterior      { fill: #38BDF8; }   /* celeste */
+
+/* ESPALDA */
+#trapecio-superior     { fill: #FB923C; }   /* naranja medio */
+#espalda-alta          { fill: #818CF8; }   /* índigo claro */
+#dorsales-anchos       { fill: #2DD4BF; }   /* teal brillante */
+#lumbar                { fill: #F472B6; }   /* rosa claro */
+
+/* BRAZO TRASERO */
+#deltoides-posterior   { fill: #FFA726; }   /* naranja ámbar */
+#triceps-larga         { fill: #AB47BC; }   /* morado medio */
+#triceps-lateral       { fill: #EC407A; }   /* rosa intenso */
+#triceps-medial        { fill: #26C6DA; }   /* cian medio */
+#antebrazo-extensores  { fill: #FF7043; }   /* coral */
+
+/* PIERNA FRENTE */
+#cuadriceps            { fill: #84CC16; }   /* lima suave */
+#aductores             { fill: #FB923C; }   /* naranja medio */
+#tibia-anterior        { fill: #38BDF8; }   /* celeste */
+
+/* PIERNA TRASERA */
+#gluteo                { fill: #6366F1; }   /* índigo */
+#isquiotibiales        { fill: #EF4444; }   /* rojo claro */
+#gemelos               { fill: #4ADE80; }   /* verde claro */
+#abductores            { fill: #FCD34D; }   /* amarillo claro */
+
+/* ─────────────────────────────────────────────
+   COLUMNA DE INFORMACIÓN — DESKTOP
+───────────────────────────────────────────── */
+.columna-lista {
+    width: 0;
+    overflow: hidden;
+    opacity: 0;
+    background: #13131f;
+    border-left: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    transition: width 0.6s cubic-bezier(0.77, 0, 0.175, 1),
+                opacity 0.5s ease 0.2s,
+                padding 0.6s ease;
+}
+
+.columna-lista.visible {
+    width: 380px;
+    min-width: 340px;
+    opacity: 1;
+    padding: 40px 32px;
+}
+
+/* ─────────────────────────────────────────────
+   CONTENIDO DEL PANEL
+───────────────────────────────────────────── */
+.panel-header {
+    margin-bottom: 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding-bottom: 20px;
+}
+
+h2 {
+    margin: 0 0 4px 0;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #00d2ff;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.panel-subtitulo {
+    font-size: 0.8rem;
+    color: #4a4a6a;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 500;
+}
+
+.info-mecanica {
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #2d2d4a transparent;
+}
+
+.info-mecanica p,
+.info-mecanica div {
+    font-size: 0.97rem;
+    line-height: 1.75;
+    color: #8888aa;
+}
+
+.info-mecanica strong {
+    color: #c0c0d8;
+    font-weight: 600;
+}
+
+/* Instrucción inicial */
+.instruccion-inicial {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    gap: 12px;
+    color: #3a3a5a;
+    font-size: 0.9rem;
+    padding: 20px;
+}
+
+.instruccion-inicial .icono {
+    font-size: 2.5rem;
+    opacity: 0.4;
+}
+
+/* ─────────────────────────────────────────────
+   LEYENDA DE COLORES
+───────────────────────────────────────────── */
+.leyenda {
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.leyenda-titulo {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #3a3a5a;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.leyenda-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 0.82rem;
+    color: #666888;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: color 0.2s;
+}
+
+.leyenda-item:hover { color: #b0b0cc; }
+
+.leyenda-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+
+/* ─────────────────────────────────────────────
+   RESPONSIVE — MÓVIL (< 768px)
+   Layout fijo: SVG fixed arriba / Sheet fixed abajo
+───────────────────────────────────────────── */
+@media (max-width: 768px) {
+
+    body { overflow: hidden; }
+    .contenedor-catalogo { flex-direction: column; }
+
+    /* ══════════════════════════════════════════
+       COLUMNA VISUAL — contenedor de fondo
+    ══════════════════════════════════════════ */
+    .columna-visual {
+        flex: none;
+        width: 100%;
+        height: 100dvh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+        transition: none; /* sin transición de height, el fixed lo maneja */
+    }
+
+    /* Modelo principal: centrado en pantalla completa */
+    #modelo-interactivo {
+        width: 86%;
+        height: 86%;
+        max-width: 100%;
+        touch-action: manipulation;
+        transition: opacity 0.45s ease, transform 0.45s ease, filter 0.45s ease;
+    }
+
+    .parte-modelo path {
+        stroke-width: 18px;
+        stroke: transparent;
+        stroke-linejoin: round;
+    }
+
+    @keyframes pulse-glow {
+        0%   { fill: transparent; }
+        100% { fill: rgba(0, 210, 255, 0.12); }
+    }
+
+    /* ── Botón Volver — fixed arriba a la izquierda ── */
+    .btn-volver {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        transform: none;
+        white-space: nowrap;
+        padding: 6px 14px;
+        font-size: 0.8rem;
+        z-index: 100;
+    }
+    .btn-volver.visible { opacity: 1; visibility: visible; }
+
+    #badge-zona-activa {
+        bottom: 12px;
+        font-size: 0.75rem;
+    }
+
+    /* ══════════════════════════════════════════
+       CONTENEDOR DETALLE — fixed en la zona superior
+       Ocupa exactamente el top 40dvh de la pantalla
+    ══════════════════════════════════════════ */
+    .contenedor-detalle {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: auto !important;
+        width: 100% !important;
+        height: 40dvh !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        padding: 0 !important;
+        background: #0d0d14;
+        z-index: 60;
+
+        opacity: 0;
+        filter: blur(15px);
+        transform: scale(1.05);
+        pointer-events: none;
+        transition: opacity 0.45s ease-out, filter 0.45s ease-out, transform 0.45s ease-out;
+    }
+
+    .contenedor-detalle.activo {
+        opacity: 1;
+        filter: blur(0);
+        transform: scale(1);
+        pointer-events: auto;
+    }
+
+    /* SVG: llena el área sin desbordarse */
+    .svg-detalle {
+        display: none;
+        width: auto;
+        height: auto;
+        max-width: 100%;
+        max-height: 40dvh;
+        object-fit: contain;
+    }
+
+    .svg-detalle.activo { display: block; }
+
+    /* Brazos: más estrechos de por sí */
+    #vista-brazos-frente,
+    #vista-brazos-trasero {
+        max-width: 55%;
+    }
+
+    /* Tooltip: deshabilitado en móvil */
+    #tooltip-zona { display: none !important; }
+
+    /* ══════════════════════════════════════════
+       BOTTOM SHEET — fixed en la zona inferior
+       Empieza en 40dvh desde arriba (ocupa 60dvh)
+    ══════════════════════════════════════════ */
+    .columna-lista {
+        width: 100% !important;
+        min-width: unset !important;
+        border-left: none;
+        border-top: none;
+
+        position: fixed !important;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        top: auto;
+        height: 0;
+
+        background: #13131f;
+        border-radius: 18px 18px 0 0;
+        padding: 0 !important;
+
+        transition: height 0.45s cubic-bezier(0.77, 0, 0.175, 1),
+                    border-radius 0.45s ease,
+                    opacity 0.35s ease 0.1s;
+
+        overflow: hidden;
+        opacity: 0;
+        z-index: 70;
+        box-shadow: 0 -6px 30px rgba(0, 0, 0, 0.7);
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Estado abierto: 60dvh desde abajo */
+    .columna-lista.visible {
+        height: 60dvh;
+        opacity: 1;
+        padding: 0 !important;
+    }
+
+    /* Estado expandido: pantalla completa */
+    .columna-lista.visible.expandido {
+        height: 100dvh;
+        border-radius: 0;
+    }
+
+    /* ── Handle del sheet ── */
+    #sheet-handle {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        padding: 10px 0 4px;
+        flex-shrink: 0;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+    }
+
+    .handle-bar {
+        width: 36px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.18);
+        border-radius: 2px;
+    }
+
+    #btn-chevron {
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.25);
+        font-size: 0.65rem;
+        padding: 0;
+        cursor: pointer;
+        line-height: 1;
+        transition: color 0.2s, transform 0.35s ease;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .columna-lista.expandido #btn-chevron {
+        transform: rotate(180deg);
+        color: rgba(255, 255, 255, 0.4);
+    }
+
+    /* ── Contenido interno del sheet ── */
+    .panel-inner {
+        padding: 4px 20px 28px;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .panel-inner::-webkit-scrollbar { display: none; }
+
+    .panel-header {
+        margin-bottom: 8px;
+        padding-bottom: 8px;
+    }
+
+    h2 {
+        font-size: 1.2rem;
+        white-space: normal;
+    }
+
+    .panel-subtitulo {
+        font-size: 0.7rem;
+    }
+
+    .info-mecanica {
+        flex: none;
+        overflow: visible;
+    }
+
+    .info-mecanica p,
+    .info-mecanica div {
+        font-size: 0.88rem;
+        line-height: 1.65;
+    }
+
+    /* Leyenda de regiones dentro del sheet */
+    #leyenda-colores {
+        margin-top: 16px;
+        padding-top: 12px;
+    }
+
+    .leyenda-item {
+        padding: 4px 0;
+        font-size: 0.78rem;
+    }
+}
+
+
+
+
+
+/* ─────────────────────────────────────────────
+   RESPONSIVE — TABLET (768px – 1024px)
+───────────────────────────────────────────── */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .columna-lista.visible {
+        width: 300px;
+        min-width: 280px;
+        padding: 28px 24px;
+    }
+    h2 { font-size: 1.3rem; }
+}

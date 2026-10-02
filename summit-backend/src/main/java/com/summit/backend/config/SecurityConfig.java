@@ -1,0 +1,117 @@
+package com.summit.backend.config;
+
+import com.summit.backend.security.CustomUserDetailsService;
+import com.summit.backend.security.JwtAuthenticationFilter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * Configuración central de Spring Security 6.
+ * Define endpoints públicos/privados, CORS, sesión stateless y filtro JWT.
+ */
+@Configuration
+@EnableWebSecurity
+@RequiredArgsConstructor
+public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomUserDetailsService customUserDetailsService;
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(customUserDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authenticationProvider(authenticationProvider())
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .authorizeHttpRequests(auth -> auth
+                // Endpoints públicos (sin token)
+                .requestMatchers("/api/auth/**", "/api/test/**").permitAll()
+
+                // Gestión de usuarios/socios: solo ADMIN y RECEPCION
+                .requestMatchers("/api/usuarios/**").hasAnyRole("ADMIN", "RECEPCION")
+
+                // Gestión de planes: solo ADMIN
+                .requestMatchers(HttpMethod.POST, "/api/planes/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/planes/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/planes/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/planes/**").authenticated()
+
+                // Suscripciones y pagos: ADMIN y RECEPCION
+                .requestMatchers("/api/suscripciones/**").hasAnyRole("ADMIN", "RECEPCION")
+                .requestMatchers("/api/pagos/**").hasAnyRole("ADMIN", "RECEPCION")
+
+                // Asistencia / Check-in: ADMIN y RECEPCION
+                .requestMatchers("/api/asistencia/**").hasAnyRole("ADMIN", "RECEPCION")
+
+                // Rutinas: ADMIN y PROFESOR
+                .requestMatchers(HttpMethod.POST, "/api/rutinas/**").hasAnyRole("ADMIN", "PROFESOR")
+                .requestMatchers(HttpMethod.PUT, "/api/rutinas/**").hasAnyRole("ADMIN", "PROFESOR")
+                .requestMatchers(HttpMethod.GET, "/api/rutinas/**").authenticated()
+
+                // Ejercicios, clases y reservas: cualquier usuario autenticado
+                .requestMatchers("/api/ejercicios/**", "/api/clases/**", "/api/reservas/**").authenticated()
+
+                // Todo lo demás requiere autenticación
+                .anyRequest().authenticated()
+            );
+
+        return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:5173",  // Vite dev server
+                "http://localhost:3000"   // Alternativa
+        ));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", configuration);
+        return source;
+    }
+}

@@ -1,0 +1,16 @@
+# Dependencias y compilados
+node_modules/
+dist/
+target/
+
+# Logs
+*.log
+
+# Entorno local
+.env
+.env.*
+
+# Editores / SO
+.idea/
+.DS_Store
+Thumbs.db
