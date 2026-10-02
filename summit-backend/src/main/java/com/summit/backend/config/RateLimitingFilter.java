@@ -108,13 +108,11 @@ public class RateLimitingFilter implements Filter {
     }
 
     /**
-     * Obtiene la IP real del cliente, considerando proxies (X-Forwarded-For).
+     * IP del cliente. No se lee X-Forwarded-For a mano: cualquiera puede mandar ese encabezado con una IP
+     * distinta en cada pedido y esquivar el límite de logins. Detrás de un proxy, Tomcat reemplaza la IP
+     * con la del encabezado solo si el pedido llega desde un proxy interno (server.forward-headers-strategy).
      */
     private String getClientIp(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
         return request.getRemoteAddr();
     }
 

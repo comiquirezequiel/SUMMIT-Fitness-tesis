@@ -9,10 +9,13 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -37,7 +40,7 @@ public class GlobalExceptionHandler {
     // Parámetro con formato inválido (ej. ?fecha=hola o un id con letras)
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Map<String, Object>> handleParametroInvalido(MethodArgumentTypeMismatchException ex) {
-        return error(HttpStatus.BAD_REQUEST, "El valor de '" + ex.getName() + "' no es válido");
+        return error(HttpStatus.BAD_REQUEST, "El parámetro " + ex.getName() + " tiene un formato inválido");
     }
 
     // Sin este manejador caía en Exception y respondía 500 como si fuera una falla del servidor
@@ -46,10 +49,27 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.BAD_REQUEST, "Falta el parámetro '" + ex.getParameterName() + "'");
     }
 
-    // JSON mal formado o con un valor que no corresponde (ej. un texto donde va un número)
+    // JSON mal formado o con un dato de otro tipo (ej. "42,5" en un número): si se sabe, se nombra el campo
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, Object>> handleCuerpoInvalido(HttpMessageNotReadableException ex) {
-        return error(HttpStatus.BAD_REQUEST, "Los datos enviados no tienen un formato válido");
+        if (ex.getCause() instanceof JsonMappingException mapeo && !mapeo.getPath().isEmpty()) {
+            String campo = mapeo.getPath().get(mapeo.getPath().size() - 1).getFieldName();
+            if (campo != null) {
+                return error(HttpStatus.BAD_REQUEST, "El campo " + campo + " tiene un formato inválido");
+            }
+        }
+        return error(HttpStatus.BAD_REQUEST, "Faltan los datos o no tienen formato JSON");
+    }
+
+    // Ruta inexistente: antes caía en Exception y respondía 500
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleRutaInexistente(NoResourceFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, "No existe el recurso pedido");
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<Map<String, Object>> handleMetodoNoSoportado(HttpRequestMethodNotSupportedException ex) {
+        return error(HttpStatus.METHOD_NOT_ALLOWED, "La operación " + ex.getMethod() + " no está permitida en esta ruta");
     }
 
     @ExceptionHandler(RuntimeException.class)
