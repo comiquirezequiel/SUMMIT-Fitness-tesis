@@ -2,6 +2,8 @@ package com.summit.backend.model;
 
 import lombok.*;
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "ejercicios")
@@ -24,6 +26,7 @@ public class Ejercicio {
     private String descripcion;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR) // texto, no ENUM de MySQL: agregar valores no rompe la base
     @Column(name = "grupo_muscular", nullable = false, length = 30)
     private GrupoMuscular grupoMuscular;
 

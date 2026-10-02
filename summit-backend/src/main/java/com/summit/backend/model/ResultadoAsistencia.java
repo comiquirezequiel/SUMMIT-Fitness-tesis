@@ -2,7 +2,9 @@ package com.summit.backend.model;
 
 public enum ResultadoAsistencia {
     PERMITIDO,
+    DENEGADO_CUENTA_INACTIVA,
     DENEGADO_CUOTA_VENCIDA,
+    DENEGADO_LIMITE_SEMANAL,
     DENEGADO_CERTIFICADO_MEDICO,
     DENEGADO_FUERA_DE_RANGO_GPS
 }

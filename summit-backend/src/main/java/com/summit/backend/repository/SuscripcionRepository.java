@@ -13,4 +13,5 @@ public interface SuscripcionRepository extends JpaRepository<Suscripcion, Long> 
     Optional<Suscripcion> findFirstByUsuarioIdUsuarioAndActivaTrueOrderByFechaVencimientoDesc(Long idUsuario);
     List<Suscripcion> findByUsuarioIdUsuario(Long idUsuario);
     List<Suscripcion> findByFechaVencimientoBeforeAndActivaTrue(LocalDate fecha);
+    long countByActivaTrueAndFechaVencimientoBetween(LocalDate desde, LocalDate hasta);
 }

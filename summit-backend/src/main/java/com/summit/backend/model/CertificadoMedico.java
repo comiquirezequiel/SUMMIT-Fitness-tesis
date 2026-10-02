@@ -2,6 +2,8 @@ package com.summit.backend.model;
 
 import lombok.*;
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.LocalDate;
 
 @Entity
@@ -32,6 +34,7 @@ public class CertificadoMedico {
     private LocalDate fechaVencimiento;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR) // texto, no ENUM de MySQL: agregar valores no rompe la base
     @Column(name = "estado_legal", nullable = false, length = 20)
     private EstadoLegalCertificado estadoLegal;
 

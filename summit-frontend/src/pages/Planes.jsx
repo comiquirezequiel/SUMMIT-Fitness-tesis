@@ -42,10 +42,10 @@ const Planes = () => {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total planes" value="10" icon="credit-card" iconColor="text-blue-600" iconBg="bg-blue-50" />
-        <StatCard title="Planes activos" value="9" icon="tag" iconColor="text-emerald-600" iconBg="bg-emerald-50" />
-        <StatCard title="Promocionales" value="1" icon="sparkles" iconColor="text-purple-600" iconBg="bg-purple-50" />
-        <StatCard title="Membresías Activas" value="1" icon="users" iconColor="text-rose-600" iconBg="bg-rose-50" />
+        <StatCard title="Total planes" value="10" icon={CreditCard} iconColor="text-blue-600" iconBg="bg-blue-50" />
+        <StatCard title="Planes activos" value="9" icon={Tag} iconColor="text-emerald-600" iconBg="bg-emerald-50" />
+        <StatCard title="Promocionales" value="1" icon={Sparkles} iconColor="text-purple-600" iconBg="bg-purple-50" />
+        <StatCard title="Membresías Activas" value="1" icon={Users} iconColor="text-rose-600" iconBg="bg-rose-50" />
       </div>
 
       {/* Barra de búsqueda */}

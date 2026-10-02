@@ -3,6 +3,8 @@ package com.summit.backend.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.LocalTime;
 
 @Entity
@@ -25,6 +27,7 @@ public class ClaseHorario {
     private Clase clase;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR) // texto, no ENUM de MySQL: agregar valores no rompe la base
     @Column(name = "dia_semana", nullable = false, length = 15)
     private DiaSemana diaSemana;
 

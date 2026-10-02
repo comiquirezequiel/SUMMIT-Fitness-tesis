@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
-import { 
-  QrCode, Building2, Users, UserPlus, AlertTriangle, Calendar, 
-  DollarSign, CalendarCheck, ChevronLeft, ChevronRight, CalendarDays,
-  Activity, Search, Clock, CheckCircle, XCircle
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Building2, Users, UserPlus, UserX, AlertTriangle, Calendar,
+  DollarSign, CalendarCheck, Activity, Search, Clock, CheckCircle, XCircle
 } from 'lucide-react';
 import StatCard from '../components/StatCard';
+import ControlAcceso from '../components/ControlAcceso';
+import { apiFetch } from '../services/api';
+import { formatHora, usuarioActual } from '../utils/formato';
 
 const QuickAction = ({ icon: Icon, text, onClick }) => (
-  <button onClick={onClick} className="flex-1 bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3 hover:bg-slate-50 hover:border-blue-200 transition-colors">
+  <button onClick={onClick} className="flex-1 min-w-[150px] bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3 hover:bg-slate-50 hover:border-blue-200 transition-colors">
     <Icon className="w-5 h-5 text-blue-500" />
     <span className="font-medium text-slate-700 text-sm">{text}</span>
   </button>
@@ -32,96 +35,167 @@ const ActivityStat = ({ title, value, icon: Icon, color }) => {
   );
 };
 
-import CheckInModal from '../components/CheckInModal';
+// Etiqueta corta de cada resultado de ingreso para la tabla de actividad
+const RESULTADOS = {
+  PERMITIDO: { texto: 'Permitido', clase: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  DENEGADO_CUENTA_INACTIVA: { texto: 'Cuenta inactiva', clase: 'bg-rose-50 text-rose-700 border-rose-200' },
+  DENEGADO_CUOTA_VENCIDA: { texto: 'Cuota vencida', clase: 'bg-rose-50 text-rose-700 border-rose-200' },
+  DENEGADO_LIMITE_SEMANAL: { texto: 'Límite semanal', clase: 'bg-rose-50 text-rose-700 border-rose-200' },
+  DENEGADO_CERTIFICADO_MEDICO: { texto: 'Apto médico', clase: 'bg-rose-50 text-rose-700 border-rose-200' },
+  DENEGADO_FUERA_DE_RANGO_GPS: { texto: 'Fuera de rango', clase: 'bg-rose-50 text-rose-700 border-rose-200' },
+};
+
+const ACTUALIZAR_CADA_MS = 30000;
 
 const Dashboard = () => {
-  const [isCheckInModalOpen, setCheckInModalOpen] = useState(false);
+  const navigate = useNavigate();
+  const usuario = usuarioActual();
+  const [resumen, setResumen] = useState(null);
+  const [ingresos, setIngresos] = useState([]);
+  const [busqueda, setBusqueda] = useState('');
+  const [error, setError] = useState('');
+
+  const cargarDatos = useCallback(async () => {
+    try {
+      const [resResumen, resIngresos] = await Promise.all([
+        apiFetch('/dashboard/resumen'),
+        apiFetch('/dashboard/ingresos-hoy'),
+      ]);
+      if (!resResumen.ok || !resIngresos.ok) throw new Error();
+      setResumen(await resResumen.json());
+      setIngresos(await resIngresos.json());
+      setError('');
+    } catch {
+      setError('No se pudieron cargar los datos del tablero.');
+    }
+  }, []);
+
+  useEffect(() => {
+    cargarDatos();
+    const intervalo = setInterval(cargarDatos, ACTUALIZAR_CADA_MS);
+    return () => clearInterval(intervalo);
+  }, [cargarDatos]);
+
+  const enfocarControlAcceso = () => {
+    const input = document.getElementById('control-acceso-dni');
+    input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    input?.focus();
+  };
+
+  const filtro = busqueda.trim().toLowerCase();
+  const ingresosFiltrados = ingresos.filter(i =>
+    !filtro || i.nombre.toLowerCase().includes(filtro) || i.dni.includes(filtro));
+
+  const valor = (campo) => (resumen ? resumen[campo].toString() : '—');
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-3 mb-2">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 mb-1">Dashboard</h1>
-          <p className="text-sm text-slate-500">Bienvenido, Test</p>
+          <p className="text-sm text-slate-500">Bienvenido, {usuario?.nombreCompleto || 'equipo'}</p>
         </div>
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => setCheckInModalOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm"
-          >
-            <QrCode className="w-4 h-4" /> Escanear QR
-          </button>
-          <div className="flex items-center gap-2 bg-blue-50/80 px-3 py-2 rounded-lg border border-blue-100">
-            <Building2 className="w-4 h-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-900">Summit Fitness</span>
-            <span className="bg-blue-200 text-blue-800 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider ml-1">ADMIN</span>
-          </div>
+        <div className="flex items-center gap-2 bg-blue-50/80 px-3 py-2 rounded-lg border border-blue-100 self-start">
+          <Building2 className="w-4 h-4 text-blue-600" />
+          <span className="text-sm font-medium text-blue-900">Summit Fitness</span>
+          {usuario?.rol && (
+            <span className="bg-blue-200 text-blue-800 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider ml-1">{usuario.rol}</span>
+          )}
         </div>
       </div>
 
+      <ControlAcceso onIngreso={cargarDatos} />
+
+      {error && (
+        <div className="p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Socios activos" value="1" subtitle="120 total" icon="users" iconColor="text-emerald-500" iconBg="bg-emerald-50" />
-        <StatCard title="Nuevos este mes" value="1" subtitle={<span className="flex gap-2 text-slate-500">Este mes <a href="#" className="text-blue-500 hover:underline">Ver detalle</a></span>} icon="user-plus" iconColor="text-blue-500" iconBg="bg-blue-50" />
-        <StatCard title="Solicitudes de Baja" value="0" subtitle="Requieren seguimiento" icon="alert-triangle" iconColor="text-amber-500" iconBg="bg-amber-50" />
-        <StatCard title="Asistencia hoy" value="0" subtitle="Check-ins hoy" icon="calendar" iconColor="text-blue-500" iconBg="bg-blue-50" />
+        <StatCard title="Socios activos" value={valor('sociosActivos')} subtitle={resumen ? `${resumen.sociosTotal} en total` : ''} icon={Users} iconColor="text-emerald-500" iconBg="bg-emerald-50" />
+        <StatCard title="Nuevos este mes" value={valor('nuevosEsteMes')} subtitle="Altas del mes" icon={UserPlus} iconColor="text-blue-500" iconBg="bg-blue-50" />
+        <StatCard title="Membresías por vencer" value={valor('membresiasPorVencer')} subtitle="En los próximos 7 días" icon={AlertTriangle} iconColor="text-amber-500" iconBg="bg-amber-50" />
+        <StatCard title="Socios inactivos" value={valor('sociosInactivos')} subtitle="Bajas, suspendidos o pendientes" icon={UserX} iconColor="text-slate-500" iconBg="bg-slate-100" />
       </div>
 
       <div>
         <h2 className="text-sm font-semibold text-slate-700 mb-3">Acciones rápidas</h2>
-        <div className="flex gap-4">
-          <QuickAction icon={UserPlus} text="Nuevo socio" onClick={() => {}} />
-          <QuickAction icon={DollarSign} text="Registrar Pago" onClick={() => {}} />
-          <QuickAction icon={CalendarCheck} text="Check-in" onClick={() => setCheckInModalOpen(true)} />
+        <div className="flex flex-wrap gap-4">
+          <QuickAction icon={UserPlus} text="Nuevo socio" onClick={() => navigate('/socios/nuevo')} />
+          <QuickAction icon={DollarSign} text="Registrar pago" onClick={() => navigate('/socios')} />
+          <QuickAction icon={CalendarCheck} text="Registrar ingreso" onClick={enfocarControlAcceso} />
         </div>
-      </div>
-
-      <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between shadow-sm relative">
-        <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors"><ChevronLeft className="w-5 h-5 text-slate-500" /></button>
-        <div className="flex items-center gap-3">
-          <div className="text-center">
-            <p className="font-semibold text-slate-800 flex items-center gap-2 justify-center text-sm">
-              <Calendar className="w-4 h-4 text-slate-500" /> Hoy
-            </p>
-            <p className="text-xs text-emerald-500 font-medium flex items-center gap-1.5 justify-center mt-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> En vivo
-            </p>
-          </div>
-          <button className="p-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-500 transition-colors">
-            <CalendarDays className="w-4 h-4" />
-          </button>
-        </div>
-        <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors"><ChevronRight className="w-5 h-5 text-slate-500" /></button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <ActivityStat title="Total Hoy" value="0" icon={Users} color="blue" />
-        <ActivityStat title="Permitidos" value="0" icon={CheckCircle} color="green" />
-        <ActivityStat title="Denegados" value="0" icon={XCircle} color="red" />
-        <ActivityStat title="Esta hora" value="0" icon={Clock} color="blue" />
+        <ActivityStat title="Ingresos hoy" value={valor('ingresosHoy')} icon={Users} color="blue" />
+        <ActivityStat title="Permitidos" value={valor('permitidosHoy')} icon={CheckCircle} color="green" />
+        <ActivityStat title="Denegados" value={valor('denegadosHoy')} icon={XCircle} color="red" />
+        <ActivityStat title="Última hora" value={valor('ingresosUltimaHora')} icon={Clock} color="blue" />
       </div>
 
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden min-h-[300px] flex flex-col shadow-sm">
-        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-3 justify-between sm:items-center bg-slate-50/50">
           <h3 className="font-semibold text-slate-700 flex items-center gap-2">
-            <Activity className="w-4 h-4 text-slate-500" /> 
-            Actividad en Vivo
+            <Activity className="w-4 h-4 text-slate-500" />
+            Actividad en vivo
             <span className="w-2 h-2 rounded-full bg-emerald-500 ml-1"></span>
+            <span className="text-xs font-normal text-slate-400">hoy · se actualiza cada 30 s</span>
           </h3>
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-            <input 
-              type="text" 
-              placeholder="Buscar socio..." 
-              className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 w-[300px] transition-shadow"
+            <input
+              type="text"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar socio o DNI..."
+              className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 w-full sm:w-[300px] transition-shadow"
             />
           </div>
         </div>
-        <div className="flex-1 flex flex-col items-center justify-center p-8">
-          <Calendar className="w-12 h-12 text-slate-300 mb-3" />
-          <p className="text-slate-500 text-sm font-medium">No hay check-ins</p>
-        </div>
+
+        {ingresosFiltrados.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-8">
+            <Calendar className="w-12 h-12 text-slate-300 mb-3" />
+            <p className="text-slate-500 text-sm font-medium">
+              {ingresos.length === 0 ? 'Todavía no hubo ingresos hoy' : 'Ningún ingreso coincide con la búsqueda'}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
+                <tr>
+                  <th className="px-6 py-3 font-medium">Hora</th>
+                  <th className="px-6 py-3 font-medium">Socio</th>
+                  <th className="px-6 py-3 font-medium">DNI</th>
+                  <th className="px-6 py-3 font-medium">Resultado</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {ingresosFiltrados.map(ingreso => {
+                  const res = RESULTADOS[ingreso.resultado] || { texto: ingreso.resultado, clase: 'bg-slate-50 text-slate-600 border-slate-200' };
+                  return (
+                    <tr key={ingreso.idLog} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-3 text-slate-600 font-medium">{formatHora(ingreso.fechaHora)}</td>
+                      <td className="px-6 py-3 text-slate-800 font-medium">
+                        {ingreso.nombre}
+                        {ingreso.rol !== 'SOCIO' && <span className="ml-2 text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">PERSONAL</span>}
+                      </td>
+                      <td className="px-6 py-3 text-slate-500">{ingreso.dni}</td>
+                      <td className="px-6 py-3">
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold border ${res.clase}`}>
+                          {ingreso.resultado === 'PERMITIDO' ? <CheckCircle className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
+                          {res.texto}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
-      <CheckInModal isOpen={isCheckInModalOpen} onClose={() => setCheckInModalOpen(false)} />
     </div>
   );
 };

@@ -98,8 +98,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/suscripciones/**").hasAnyRole("ADMIN", "RECEPCION")
                 .requestMatchers("/api/pagos/**").hasAnyRole("ADMIN", "RECEPCION")
 
-                // Asistencia / Check-in: ADMIN y RECEPCION
+                // Asistencia / Check-in y tablero de recepción: ADMIN y RECEPCION
                 .requestMatchers("/api/asistencia/**").hasAnyRole("ADMIN", "RECEPCION")
+                .requestMatchers("/api/dashboard/**").hasAnyRole("ADMIN", "RECEPCION")
 
                 // Rutinas: ADMIN y PROFESOR
                 .requestMatchers(HttpMethod.POST, "/api/rutinas/**").hasAnyRole("ADMIN", "PROFESOR")

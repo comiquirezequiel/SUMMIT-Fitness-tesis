@@ -105,10 +105,10 @@ const Socios = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total" value={socios.length.toString()} icon="users" iconColor="text-blue-500" iconBg="bg-blue-50" />
-        <StatCard title="Activos" value={socios.filter(s => s.estado === 'ACTIVO').length.toString()} icon="check-circle" iconColor="text-emerald-500" iconBg="bg-emerald-50" />
-        <StatCard title="Al Día" value={socios.filter(s => s.membresiaAlDia).length.toString()} icon="layers" iconColor="text-blue-500" iconBg="bg-blue-50" />
-        <StatCard title="Apto Vencido" value={socios.filter(s => !s.aptoMedicoVigente).length.toString()} icon="alert-triangle" iconColor="text-amber-500" iconBg="bg-amber-50" />
+        <StatCard title="Total" value={socios.length.toString()} icon={Users} iconColor="text-blue-500" iconBg="bg-blue-50" />
+        <StatCard title="Activos" value={socios.filter(s => s.estado === 'ACTIVO').length.toString()} icon={CheckCircle} iconColor="text-emerald-500" iconBg="bg-emerald-50" />
+        <StatCard title="Al Día" value={socios.filter(s => s.membresiaAlDia).length.toString()} icon={Layers} iconColor="text-blue-500" iconBg="bg-blue-50" />
+        <StatCard title="Apto Vencido" value={socios.filter(s => !s.aptoMedicoVigente).length.toString()} icon={AlertTriangle} iconColor="text-amber-500" iconBg="bg-amber-50" />
       </div>
 
       <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">

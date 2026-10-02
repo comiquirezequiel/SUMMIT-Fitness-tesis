@@ -1,16 +1,9 @@
 import React from 'react';
 import { Info } from 'lucide-react';
-import { icons } from 'lucide-react';
 
-const DynamicIcon = ({ name, className }) => {
-  // Convert 'user-plus' to 'UserPlus'
-  const iconName = name.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('');
-  const LucideIcon = icons[iconName];
-  if (!LucideIcon) return <div className={className} />;
-  return <LucideIcon className={className} />;
-};
-
-const StatCard = ({ title, value, subtitle, icon, iconColor, iconBg }) => {
+// icon: componente de lucide-react (ej. Users). Se pasa el componente y no un nombre
+// para no incluir todos los íconos de la librería en el bundle.
+const StatCard = ({ title, value, subtitle, icon: Icon, iconColor, iconBg }) => {
   return (
     <div className="bg-white p-6 rounded-xl border border-slate-200 flex justify-between items-start shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] transition-all hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.1)] hover:-translate-y-0.5">
       <div className="flex flex-col">
@@ -21,7 +14,7 @@ const StatCard = ({ title, value, subtitle, icon, iconColor, iconBg }) => {
         {subtitle && <p className="text-xs text-slate-500 mt-2 font-medium">{subtitle}</p>}
       </div>
       <div className={`w-12 h-12 rounded-full flex items-center justify-center ${iconBg}`}>
-        <DynamicIcon name={icon} className={`w-5 h-5 ${iconColor}`} />
+        {Icon && <Icon className={`w-5 h-5 ${iconColor}`} />}
       </div>
     </div>
   );

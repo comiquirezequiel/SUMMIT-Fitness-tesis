@@ -2,6 +2,8 @@ package com.summit.backend.model;
 
 import lombok.*;
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -34,6 +36,7 @@ public class PagoHistorial {
     private LocalDateTime fechaPago;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR) // texto, no ENUM de MySQL: agregar valores no rompe la base
     @Column(name = "metodo_pago", nullable = false, length = 30)
     private MetodoPago metodoPago;
 

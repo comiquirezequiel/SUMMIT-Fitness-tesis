@@ -2,6 +2,8 @@ package com.summit.backend.model;
 
 import lombok.*;
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 
 @Entity
@@ -26,10 +28,12 @@ public class LogAsistencia {
     private LocalDateTime fechaHora;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR) // texto, no ENUM de MySQL: agregar valores no rompe la base
     @Column(name = "tipo_evento", nullable = false, length = 20)
     private TipoEventoAsistencia tipoEvento;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR) // texto, no ENUM de MySQL: agregar valores no rompe la base
     @Column(name = "resultado", nullable = false, length = 35)
     private ResultadoAsistencia resultado;
 
