@@ -17,6 +17,9 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AnalisisCertificadoDTO {
+    private String pacienteNombre;         // a quién se le hizo el certificado (según lo que se lee)
+    private String pacienteDni;            // solo números; null si no figura
+    private List<String> advertencias;     // otro DNI, no apto, vencido o fecha ilegible: revisar antes de guardar
     private Boolean apto;                  // null si el certificado no lo dice
     private LocalDate fechaEmision;        // null si no figura o no se pudo leer
     private List<String> patologias;       // condiciones mencionadas, en pocas palabras

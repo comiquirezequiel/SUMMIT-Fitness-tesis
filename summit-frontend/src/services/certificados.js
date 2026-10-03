@@ -14,11 +14,12 @@ export const validarArchivoApto = (archivo) => {
 /**
  * Sube un certificado médico. Devuelve { ok, error }.
  */
-export const subirCertificado = async (idSocio, archivo, fechaEmision, patologias) => {
+export const subirCertificado = async (idSocio, archivo, fechaEmision, patologias, resumenIa) => {
   const datos = new FormData();
   datos.append('archivo', archivo);
   datos.append('fechaEmision', fechaEmision);
   if (patologias?.trim()) datos.append('observacionesPatologias', patologias.trim());
+  if (resumenIa?.trim()) datos.append('resumenIa', resumenIa.trim()); // resumen del asistente de IA, ya revisado
 
   const res = await apiFetch(`/socios/${idSocio}/certificados`, { method: 'POST', body: datos });
   if (res.ok) return { ok: true, certificado: await res.json() };

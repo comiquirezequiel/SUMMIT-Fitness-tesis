@@ -34,8 +34,9 @@ public class IaController {
      * Lee un certificado ANTES de subirlo (alta de socio o carga nueva) para precargar el formulario.
      */
     @PostMapping(value = "/certificados/analizar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> analizarArchivo(@RequestParam(value = "archivo", required = false) MultipartFile archivo) {
-        return responder(() -> asistente.analizarArchivo(archivo));
+    public ResponseEntity<?> analizarArchivo(@RequestParam(value = "archivo", required = false) MultipartFile archivo,
+                                             @RequestParam(value = "dni", required = false) String dni) {
+        return responder(() -> asistente.analizarArchivo(archivo, dni));
     }
 
     /**

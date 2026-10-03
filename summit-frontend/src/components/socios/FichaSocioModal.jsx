@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FileText, Upload, HeartPulse, Wallet, User, LogIn } from 'lucide-react';
+import { FileText, Upload, HeartPulse, Wallet, User, LogIn, Sparkles } from 'lucide-react';
 import Modal from '../Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../Campo';
 import { apiFetch } from '../../services/api';
 import { subirCertificado, validarArchivoApto, verArchivoCertificado } from '../../services/certificados';
+import { analizarArchivo, analizarCertificado, guardarObservaciones } from '../../services/ia';
+import { useEstadoIa, BotonIa, ResultadoAnalisis, AvisoIaNoDisponible } from '../ia/AsistenteIa';
 import { formatFecha, formatFechaHora, textoVencimiento, diasHasta, edad, hoyIso } from '../../utils/formato';
 
 const Dato = ({ label, valor }) => (
@@ -28,9 +30,14 @@ const Seccion = ({ icon: Icon, titulo, children }) => (
 const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
   const [certificados, setCertificados] = useState([]);
   const [ingresos, setIngresos] = useState([]);
-  const [nuevoApto, setNuevoApto] = useState({ archivo: null, fechaEmision: '', patologias: '' });
+  const [nuevoApto, setNuevoApto] = useState({ archivo: null, fechaEmision: '', patologias: '', resumenIa: '' });
   const [subiendo, setSubiendo] = useState(false);
   const [mensaje, setMensaje] = useState(null);
+  // Asistente de IA: { clave: idCertificado o 'nuevo', datos, patologias (editables antes de guardar) }
+  const estadoIa = useEstadoIa();
+  const [analisis, setAnalisis] = useState(null);
+  const [analizando, setAnalizando] = useState(null); // clave del certificado que se está leyendo
+  const [errorIa, setErrorIa] = useState(null);       // { clave, texto }
 
   const cargar = useCallback(async () => {
     const [resCert, resIngresos] = await Promise.all([
@@ -42,6 +49,52 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
   }, [socio.idSocio, puedeEditar]);
 
   useEffect(() => { cargar(); }, [cargar]);
+
+  const analizar = async (clave) => {
+    setAnalisis(null);
+    setErrorIa(null);
+    setAnalizando(clave);
+    const r = clave === 'nuevo'
+      ? await analizarArchivo(nuevoApto.archivo, socio.dni)
+      : await analizarCertificado(socio.idSocio, clave);
+    setAnalizando(null);
+    if (r.ok) setAnalisis({ clave, datos: r.datos, patologias: r.datos.observacionesSugeridas || '' });
+    else setErrorIa({ clave, texto: r.error });
+  };
+
+  // Confirma en un certificado ya cargado lo que leyó la IA (con las patologías revisadas)
+  const guardarAnalisis = async () => {
+    const r = await guardarObservaciones(socio.idSocio, analisis.clave, analisis.patologias, analisis.datos.resumen);
+    if (r.ok) {
+      setAnalisis(null);
+      setMensaje({ tipo: 'ok', texto: 'Ficha médica actualizada con la lectura de la IA' });
+      cargar();
+      onActualizado();
+    } else {
+      setErrorIa({ clave: analisis.clave, texto: r.error });
+    }
+  };
+
+  // En la carga nueva, la lectura completa el formulario (se guarda al subir el certificado)
+  const usarEnCargaNueva = () => {
+    setNuevoApto(prev => ({ ...prev, fechaEmision: analisis.datos.fechaEmision || prev.fechaEmision,
+      patologias: analisis.patologias, resumenIa: analisis.datos.resumen || '' }));
+    setAnalisis(null);
+  };
+
+  const errorDe = (clave) => (errorIa?.clave === clave ? <p className="text-sm text-rose-600">{errorIa.texto}</p> : null);
+
+  const resultadoDe = (clave) => (analisis?.clave === clave ? (
+    <ResultadoAnalisis analisis={analisis.datos} acciones={<>
+      <Campo label="Patologías a guardar (separadas por coma)" className="w-full">
+        <input value={analisis.patologias} onChange={e => setAnalisis({ ...analisis, patologias: e.target.value })} className={inputClass} />
+      </Campo>
+      <button type="button" onClick={() => setAnalisis(null)} className={botonSecundario}>Descartar</button>
+      {clave === 'nuevo'
+        ? <button type="button" onClick={usarEnCargaNueva} className={botonPrimario}>Usar estos datos</button>
+        : <button type="button" onClick={guardarAnalisis} className={botonPrimario}>Guardar en la ficha</button>}
+    </>} />
+  ) : null);
 
   const verArchivo = async (idCertificado) => {
     try {
@@ -59,10 +112,11 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
 
     setSubiendo(true);
     setMensaje(null);
-    const resultado = await subirCertificado(socio.idSocio, nuevoApto.archivo, nuevoApto.fechaEmision, nuevoApto.patologias);
+    const resultado = await subirCertificado(socio.idSocio, nuevoApto.archivo, nuevoApto.fechaEmision,
+      nuevoApto.patologias, nuevoApto.resumenIa);
     setSubiendo(false);
     if (resultado.ok) {
-      setNuevoApto({ archivo: null, fechaEmision: '', patologias: '' });
+      setNuevoApto({ archivo: null, fechaEmision: '', patologias: '', resumenIa: '' });
       setMensaje({ tipo: 'ok', texto: `Certificado cargado: vence el ${formatFecha(resultado.certificado.fechaVencimiento)}` });
       cargar();
       onActualizado();
@@ -103,7 +157,8 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
           ) : (
             <ul className="divide-y divide-slate-100 border border-slate-200 rounded-lg">
               {certificados.map((c, i) => (
-                <li key={c.idCertificado} className="p-3 flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
+                <li key={c.idCertificado} className="p-3 space-y-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
                   <div className="text-sm">
                     <p className="font-semibold text-slate-800">
                       Emitido {formatFecha(c.fechaEmision)} · vence {formatFecha(c.fechaVencimiento)}
@@ -112,16 +167,33 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
                     <p className="text-slate-500">
                       {textoVencimiento(diasHasta(c.fechaVencimiento))} · Patologías: {c.observacionesPatologias || 'ninguna'}
                     </p>
+                    {c.resumenIa && (
+                      <p className="text-slate-600 mt-1 flex items-start gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 mt-0.5 text-violet-500 shrink-0" /> {c.resumenIa}
+                      </p>
+                    )}
                   </div>
-                  <button onClick={() => verArchivo(c.idCertificado)}
-                    className="self-start sm:self-auto px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5" /> Ver archivo
-                  </button>
+                  <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+                    {puedeEditar && (
+                      <BotonIa estado={estadoIa} cargando={analizando === c.idCertificado} className="!px-3 !py-1.5 !text-xs"
+                        onClick={() => analizar(c.idCertificado)}>
+                        Analizar con IA
+                      </BotonIa>
+                    )}
+                    <button onClick={() => verArchivo(c.idCertificado)}
+                      className="px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5" /> Ver archivo
+                    </button>
+                  </div>
+                  </div>
+                  {errorDe(c.idCertificado)}
+                  {resultadoDe(c.idCertificado)}
                 </li>
               ))}
             </ul>
           )}
 
+          {puedeEditar && <AvisoIaNoDisponible estado={estadoIa} />}
           {puedeEditar && (
             <form onSubmit={cargarApto} className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
               <p className="text-sm font-semibold text-slate-700">Cargar nuevo certificado</p>
@@ -131,9 +203,21 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
                     <Upload className="w-4 h-4 text-slate-400" />
                     <span className="text-sm text-slate-600 truncate">{nuevoApto.archivo ? nuevoApto.archivo.name : 'Seleccionar archivo...'}</span>
                     <input type="file" accept=".pdf,image/jpeg,image/png,image/webp" className="hidden"
-                      onChange={e => setNuevoApto({ ...nuevoApto, archivo: e.target.files[0] || null })} />
+                      onChange={e => { setNuevoApto({ ...nuevoApto, archivo: e.target.files[0] || null, resumenIa: '' }); setAnalisis(null); }} />
                   </label>
                 </Campo>
+                {nuevoApto.archivo && (
+                  <div className="md:col-span-3 space-y-2">
+                    <BotonIa estado={estadoIa} cargando={analizando === 'nuevo'} onClick={() => analizar('nuevo')}>
+                      Leer el certificado con IA
+                    </BotonIa>
+                    {errorDe('nuevo')}
+                    {resultadoDe('nuevo')}
+                    {nuevoApto.resumenIa && analisis?.clave !== 'nuevo' && (
+                      <p className="text-xs text-violet-700">Se va a guardar el resumen de la IA: {nuevoApto.resumenIa}</p>
+                    )}
+                  </div>
+                )}
                 <Campo label="Fecha de emisión">
                   <input type="date" max={hoyIso()} value={nuevoApto.fechaEmision}
                     onChange={e => setNuevoApto({ ...nuevoApto, fechaEmision: e.target.value })} className={inputClass} />

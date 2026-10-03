@@ -70,13 +70,15 @@ public class AsistenteIaService {
 
     /**
      * Analiza un certificado antes de subirlo (no guarda nada).
+     *
+     * @param dniEsperado DNI del socio (si se conoce) para avisar si el certificado es de otra persona
      */
-    public AnalisisCertificadoDTO analizarArchivo(MultipartFile archivo) {
+    public AnalisisCertificadoDTO analizarArchivo(MultipartFile archivo, String dniEsperado) {
         if (archivo == null || archivo.isEmpty()) {
             throw new IllegalArgumentException("Adjuntá el certificado (PDF o imagen)");
         }
         try {
-            return analizar(archivo.getBytes());
+            return analizar(archivo.getBytes(), dniEsperado);
         } catch (IOException e) {
             throw new IllegalArgumentException("No se pudo leer el archivo");
         }
@@ -88,10 +90,10 @@ public class AsistenteIaService {
     @Transactional(readOnly = true)
     public AnalisisCertificadoDTO analizarGuardado(Long idSocio, Long idCertificado) {
         CertificadoMedico certificado = certificadoMedicoService.buscarDelSocio(idSocio, idCertificado);
-        return analizar(archivoService.leer(certificado.getArchivoUrl()));
+        return analizar(archivoService.leer(certificado.getArchivoUrl()), certificado.getUsuario().getDni());
     }
 
-    private AnalisisCertificadoDTO analizar(byte[] contenido) {
+    private AnalisisCertificadoDTO analizar(byte[] contenido, String dniEsperado) {
         String tipo = ArchivoService.tipoDe(Arrays.copyOf(contenido, Math.min(12, contenido.length)));
         if (tipo == null) {
             throw new IllegalArgumentException("Formato no permitido: subí un PDF, JPG, PNG o WEBP");
@@ -128,11 +130,18 @@ public class AsistenteIaService {
         JsonNode r = ollama.generarJson(promptCertificado(texto, etiquetas), imagenes, esquemaCertificado(etiquetas));
 
         List<String> patologias = lista(r.path("patologias"), 10, 80);
+        Boolean apto = r.path("apto").isBoolean() ? r.path("apto").asBoolean() : null;
+        LocalDate fechaEmision = fecha(r.path("fechaEmision").asText(null));
+        String pacienteNombre = recortar(r.path("pacienteNombre").asText(""), 100);
+        String pacienteDni = r.path("pacienteDni").asText("").replaceAll("\\D", "");
         List<String> etiquetasDetectadas = lista(r.path("etiquetas"), 10, 30).stream()
                 .map(AsistenteIaService::normalizar).filter(etiquetas::contains).distinct().toList();
         return AnalisisCertificadoDTO.builder()
-                .apto(r.path("apto").isBoolean() ? r.path("apto").asBoolean() : null)
-                .fechaEmision(fecha(r.path("fechaEmision").asText(null)))
+                .pacienteNombre(pacienteNombre.isEmpty() ? null : pacienteNombre)
+                .pacienteDni(pacienteDni.isEmpty() ? null : pacienteDni)
+                .advertencias(advertencias(dniEsperado, pacienteNombre, pacienteDni, apto, fechaEmision))
+                .apto(apto)
+                .fechaEmision(fechaEmision)
                 .patologias(patologias)
                 .etiquetas(etiquetasDetectadas)
                 .restricciones(lista(r.path("restricciones"), 10, 150))
@@ -215,6 +224,8 @@ public class AsistenteIaService {
         StringBuilder p = new StringBuilder("""
                 Sos un asistente de un gimnasio. %s
                 Extraé los datos en JSON, en español:
+                - pacienteNombre: nombre de la persona a la que se le hizo el certificado, o null si no figura.
+                - pacienteDni: su DNI (solo los números), o null si no figura.
                 - apto: true si el médico autoriza la actividad física, false si no la autoriza, null si no lo dice.
                 - fechaEmision: la fecha del certificado con formato año-mes-día (por ejemplo 2026-03-21), o null si no figura.
                 - patologias: cada condición médica mencionada, en pocas palabras (por ejemplo "Hernia de disco L4-L5").
@@ -238,6 +249,8 @@ public class AsistenteIaService {
     private static Map<String, Object> esquemaCertificado(List<String> etiquetas) {
         Map<String, Object> textos = Map.of("type", "array", "items", Map.of("type", "string"));
         Map<String, Object> props = new LinkedHashMap<>();
+        props.put("pacienteNombre", Map.of("type", List.of("string", "null")));
+        props.put("pacienteDni", Map.of("type", List.of("string", "null")));
         props.put("apto", Map.of("type", List.of("boolean", "null")));
         props.put("fechaEmision", Map.of("type", List.of("string", "null")));
         props.put("patologias", textos);
@@ -292,6 +305,30 @@ public class AsistenteIaService {
     }
 
     // ---------- Utilidades ----------
+
+    /**
+     * Lo que recepción tiene que mirar antes de guardar: un certificado de otra persona (el error más común
+     * al subir archivos), uno que dice "no apto", uno vencido o sin fecha legible.
+     */
+    static List<String> advertencias(String dniEsperado, String pacienteNombre, String pacienteDni,
+                                     Boolean apto, LocalDate fechaEmision) {
+        List<String> avisos = new ArrayList<>();
+        String esperado = dniEsperado == null ? "" : dniEsperado.replaceAll("\\D", "");
+        if (!esperado.isEmpty() && !pacienteDni.isEmpty() && !esperado.equals(pacienteDni)) {
+            avisos.add("El certificado parece ser de otra persona: figura "
+                    + (pacienteNombre.isEmpty() ? "" : pacienteNombre + ", ") + "DNI " + pacienteDni
+                    + " (el socio tiene DNI " + esperado + ")");
+        }
+        if (Boolean.FALSE.equals(apto)) {
+            avisos.add("El certificado indica que NO está apto para la actividad física");
+        }
+        if (fechaEmision == null) {
+            avisos.add("No se pudo leer la fecha de emisión: completala a mano");
+        } else if (fechaEmision.plusDays(365).isBefore(LocalDate.now())) {
+            avisos.add("El certificado tiene más de un año: está vencido");
+        }
+        return avisos;
+    }
 
     // Zonas y condiciones que usan las contraindicaciones del catálogo (HOMBRO, RODILLA, LUMBAR...)
     private List<String> etiquetasDelCatalogo() {

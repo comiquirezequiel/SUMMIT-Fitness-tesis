@@ -86,7 +86,7 @@ export const cargarPatologias = async (idSocio) => {
   try {
     const cert = await obtenerJson(`/socios/${idSocio}/certificados/actual`);
     const patologias = (cert?.observacionesPatologias || '').split(',').map((p) => p.trim()).filter(Boolean);
-    return { estado: 'ok', patologias };
+    return { estado: 'ok', patologias, resumenIa: cert?.resumenIa || '' };
   } catch (e) {
     return e.status === 404 ? { estado: 'sin-certificado', patologias: [] } : { estado: 'error', patologias: [], error: e.message };
   }

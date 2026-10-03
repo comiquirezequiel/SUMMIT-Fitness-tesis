@@ -2,8 +2,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   User, FileText, AlertTriangle, CheckCircle, Save, Plus, Trash2, ArrowUp, ArrowDown, Pencil, ArrowLeft,
-  ShieldAlert, Loader2, Dumbbell, CalendarPlus,
+  ShieldAlert, Loader2, Dumbbell, CalendarPlus, Sparkles,
 } from 'lucide-react';
+import SugerenciasEjercicios from '../components/ia/SugerenciasEjercicios';
 import Modal from '../components/Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../components/Campo';
 import BuscadorSocio from '../components/entrenamiento/BuscadorSocio';
@@ -51,6 +52,8 @@ const Constructor = () => {
   const [diaActivo, setDiaActivo] = useState(1);
 
   const [ficha, setFicha] = useState({ estado: 'inicial', patologias: [] });
+  // Ejercicios que conviene evitar según el asistente de IA: idEjercicio -> { motivo, origen }
+  const [sugerenciasIa, setSugerenciasIa] = useState(() => new Map());
   const [rutinaVigente, setRutinaVigente] = useState(null);
   const [alta, setAlta] = useState({ idEjercicio: '', ...PARAMETROS_INICIALES });
   const [validacion, setValidacion] = useState({ idEjercicio: '', cargando: false, riesgos: [] });
@@ -502,6 +505,14 @@ const Constructor = () => {
                   <CheckCircle className="w-4 h-4" /> Sin patologías declaradas
                 </div>
               )}
+              {ficha.estado === 'ok' && ficha.resumenIa && (
+                <p className="text-sm text-slate-600 mt-3 flex items-start gap-1.5">
+                  <Sparkles className="w-4 h-4 mt-0.5 text-violet-500 shrink-0" /> {ficha.resumenIa}
+                </p>
+              )}
+              {socio && puedeEditar && ficha.estado === 'ok' && (ficha.patologias.length > 0 || ficha.resumenIa) && (
+                <SugerenciasEjercicios idSocio={idSocio} onSugerencias={setSugerenciasIa} />
+              )}
               {socio?.aptoMedicoVigente === false && <p className="text-xs text-amber-700 mt-3">Atención: el apto médico no está vigente.</p>}
             </div>
 
@@ -612,7 +623,8 @@ const Constructor = () => {
                           <optgroup key={grupo} label={nombreGrupo(grupo)}>
                             {ejercicios.map((e) => (
                               <option key={e.idEjercicio} value={e.idEjercicio}>
-                                {e.nombre}{riesgosDe(e.idEjercicio).length > 0 ? ' ⚠ contraindicado' : ''}
+                                {e.nombre}{riesgosDe(e.idEjercicio).length > 0 ? ' ⚠ contraindicado'
+                                  : sugerenciasIa.has(e.idEjercicio) ? ' ✦ la IA sugiere evitarlo' : ''}
                               </option>
                             ))}
                           </optgroup>
@@ -635,6 +647,12 @@ const Constructor = () => {
                           </div>
                         </div>
                       </div>
+                    )}
+                    {riesgosAlta.length === 0 && sugerenciasIa.has(Number(alta.idEjercicio)) && (
+                      <p className="p-3 text-sm bg-violet-50 border border-violet-200 rounded-xl text-violet-800 flex items-start gap-2">
+                        <Sparkles className="w-4 h-4 mt-0.5 shrink-0" />
+                        <span><b>La IA sugiere evitarlo:</b> {sugerenciasIa.get(Number(alta.idEjercicio)).motivo} (no bloquea: decidís vos).</span>
+                      </p>
                     )}
                     {errorAlta && <p className="text-sm text-rose-600" role="alert">{errorAlta}</p>}
 

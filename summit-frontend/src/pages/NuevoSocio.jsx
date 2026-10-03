@@ -4,9 +4,11 @@ import {
   UserPlus, ChevronRight, ChevronLeft, User, Mail, Phone, CreditCard,
   MapPin, FileText, Check, X, KeyRound, HeartPulse, Upload, CheckCircle2, XCircle, AlertTriangle
 } from 'lucide-react';
-import Campo, { inputClass } from '../components/Campo';
+import Campo, { inputClass, botonPrimario, botonSecundario } from '../components/Campo';
+import { useEstadoIa, BotonIa, ResultadoAnalisis, AvisoIaNoDisponible } from '../components/ia/AsistenteIa';
 import { apiFetch } from '../services/api';
 import { subirCertificado, validarArchivoApto } from '../services/certificados';
+import { analizarArchivo } from '../services/ia';
 import { formatFecha, formatMoneda, hoyIso, diasHasta } from '../utils/formato';
 import { GENEROS, OBJETIVOS, METODOS_PAGO, textoMetodoPago } from '../utils/constantes';
 
@@ -16,7 +18,7 @@ const FORM_INICIAL = {
   nombre: '', apellido: '', dni: '', fechaNacimiento: '', genero: '', objetivo: '',
   email: '', telefono: '', domicilio: '', ciudad: '', password: '',
   idPlan: '', monto: '', metodoPago: 'EFECTIVO', comprobante: '',
-  archivoApto: null, fechaEmisionApto: '', patologias: '', observaciones: '',
+  archivoApto: null, fechaEmisionApto: '', patologias: '', resumenIa: '', observaciones: '',
 };
 
 // Contraseña inicial para la app del socio (sin caracteres que se confunden: 0/O, 1/l)
@@ -68,6 +70,11 @@ const NuevoSocio = () => {
   const [enviando, setEnviando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState('');
   const [resultado, setResultado] = useState(null); // { socio, cobro, apto }
+  // Asistente de IA: lee el certificado elegido y propone fecha, patologías y un resumen
+  const estadoIa = useEstadoIa();
+  const [analisisIa, setAnalisisIa] = useState(null);
+  const [analizandoIa, setAnalizandoIa] = useState(false);
+  const [errorIa, setErrorIa] = useState('');
 
   useEffect(() => {
     apiFetch('/planes')
@@ -79,6 +86,31 @@ const NuevoSocio = () => {
   const update = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
     setErrores(prev => ({ ...prev, [field]: undefined }));
+  };
+
+  // Otro archivo: lo que la IA leyó del anterior ya no vale
+  const elegirArchivoApto = (archivo) => {
+    update('archivoApto', archivo);
+    update('resumenIa', '');
+    setAnalisisIa(null);
+    setErrorIa('');
+  };
+
+  const leerCertificadoConIa = async () => {
+    setErrorIa('');
+    setAnalisisIa(null);
+    setAnalizandoIa(true);
+    const r = await analizarArchivo(form.archivoApto, form.dni);
+    setAnalizandoIa(false);
+    if (r.ok) setAnalisisIa(r.datos);
+    else setErrorIa(r.error);
+  };
+
+  const usarAnalisisIa = () => {
+    if (analisisIa.fechaEmision) update('fechaEmisionApto', analisisIa.fechaEmision);
+    update('patologias', analisisIa.observacionesSugeridas || '');
+    update('resumenIa', analisisIa.resumen || '');
+    setAnalisisIa(null);
   };
 
   const elegirPlan = (idPlan) => {
@@ -143,7 +175,7 @@ const NuevoSocio = () => {
       // 3. Certificado médico (opcional)
       let apto = null;
       if (form.archivoApto) {
-        apto = await subirCertificado(datosSocio.idSocio, form.archivoApto, form.fechaEmisionApto, form.patologias);
+        apto = await subirCertificado(datosSocio.idSocio, form.archivoApto, form.fechaEmisionApto, form.patologias, form.resumenIa);
       }
 
       setResultado({ socio: datosSocio, cobro, apto });
@@ -391,9 +423,27 @@ const NuevoSocio = () => {
                       {form.archivoApto ? form.archivoApto.name : 'Seleccionar archivo...'}
                     </span>
                     <input type="file" accept=".pdf,image/jpeg,image/png,image/webp" className="hidden"
-                      onChange={e => update('archivoApto', e.target.files[0] || null)} />
+                      onChange={e => elegirArchivoApto(e.target.files[0] || null)} />
                   </label>
                 </Campo>
+                {form.archivoApto && (
+                  <div className="md:col-span-2 space-y-2">
+                    <BotonIa estado={estadoIa} cargando={analizandoIa} onClick={leerCertificadoConIa}>
+                      Leer el certificado con IA
+                    </BotonIa>
+                    <AvisoIaNoDisponible estado={estadoIa} />
+                    {errorIa && <p className="text-sm text-rose-600">{errorIa}</p>}
+                    {analisisIa && (
+                      <ResultadoAnalisis analisis={analisisIa} acciones={<>
+                        <button type="button" onClick={() => setAnalisisIa(null)} className={botonSecundario}>Descartar</button>
+                        <button type="button" onClick={usarAnalisisIa} className={botonPrimario}>Usar estos datos</button>
+                      </>} />
+                    )}
+                    {form.resumenIa && !analisisIa && (
+                      <p className="text-xs text-violet-700">Se va a guardar el resumen de la IA junto con el certificado: {form.resumenIa}</p>
+                    )}
+                  </div>
+                )}
                 {form.archivoApto && (
                   <>
                     <Campo label="Fecha de emisión" required error={errores.fechaEmisionApto}>
@@ -444,6 +494,7 @@ const NuevoSocio = () => {
                 {planElegido && <FilaResumen label="Cobro" valor={`${formatMoneda(form.monto)} · ${textoMetodoPago(form.metodoPago)}`} />}
                 <FilaResumen label="Certificado médico" valor={form.archivoApto ? `${form.archivoApto.name} (emitido ${formatFecha(form.fechaEmisionApto)})` : 'Pendiente'} />
                 {form.patologias && <FilaResumen label="Patologías" valor={form.patologias} />}
+                {form.resumenIa && <FilaResumen label="Resumen (IA)" valor={form.resumenIa} />}
               </div>
             </div>
 
