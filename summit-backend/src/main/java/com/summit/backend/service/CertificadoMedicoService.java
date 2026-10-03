@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
@@ -75,14 +76,16 @@ public class CertificadoMedicoService {
      * Registra un nuevo certificado médico (PDF o imagen) para un socio.
      * La fecha de vencimiento se calcula automáticamente a 365 días desde la emisión.
      */
-    public CertificadoMedico registrarCertificado(Long idUsuario, MultipartFile archivo,
-                                                  LocalDate fechaEmision, String observacionesPatologias) {
+    public CertificadoMedico registrarCertificado(Long idUsuario, MultipartFile archivo, LocalDate fechaEmision,
+                                                  String observacionesPatologias, String resumenIa) {
         Usuario socio = usuarioRepository.findById(idUsuario)
                 .filter(u -> u.getRol() == Rol.SOCIO)
                 .orElseThrow(() -> new RuntimeException("Socio no encontrado"));
 
-        // Primero se validan las fechas, así un certificado inválido no deja archivos guardados
+        // Primero se validan las fechas y los textos, así un certificado inválido no deja archivos guardados
         LocalDate fechaVencimiento = calcularVencimiento(fechaEmision);
+        String patologias = textoOpcional(observacionesPatologias, 500, "Las patologías");
+        String resumen = textoOpcional(resumenIa, 1000, "El resumen");
         String rutaArchivo = archivoService.guardar(archivo, "certificados", "socio-" + idUsuario);
 
         try {
@@ -92,14 +95,38 @@ public class CertificadoMedicoService {
                     .fechaEmision(fechaEmision)
                     .fechaVencimiento(fechaVencimiento)
                     .estadoLegal(EstadoLegalCertificado.VIGENTE)
-                    .observacionesPatologias(observacionesPatologias == null || observacionesPatologias.isBlank()
-                            ? null : observacionesPatologias.trim())
+                    .observacionesPatologias(patologias)
+                    .resumenIa(resumen)
                     .build();
             return certificadoRepository.save(certificado);
         } catch (RuntimeException e) {
             archivoService.eliminar(rutaArchivo);
             throw e;
         }
+    }
+
+    /**
+     * Corrige las patologías y el resumen de un certificado (por ejemplo, al confirmar lo que propuso
+     * el asistente de IA). Reemplaza los dos campos: vacío los borra.
+     */
+    @Transactional
+    public CertificadoMedico actualizarObservaciones(Long idSocio, Long idCertificado,
+                                                     String observacionesPatologias, String resumenIa) {
+        CertificadoMedico certificado = buscarDelSocio(idSocio, idCertificado);
+        certificado.setObservacionesPatologias(textoOpcional(observacionesPatologias, 500, "Las patologías"));
+        certificado.setResumenIa(textoOpcional(resumenIa, 1000, "El resumen"));
+        return certificadoRepository.save(certificado);
+    }
+
+    private static String textoOpcional(String texto, int maximo, String campo) {
+        if (texto == null || texto.isBlank()) {
+            return null;
+        }
+        String limpio = texto.trim();
+        if (limpio.length() > maximo) {
+            throw new IllegalArgumentException(campo + " no pueden superar los " + maximo + " caracteres");
+        }
+        return limpio;
     }
 
     private LocalDate calcularVencimiento(LocalDate fechaEmision) {

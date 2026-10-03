@@ -103,6 +103,9 @@ public class SecurityConfig {
 
                 // Asistencia / Check-in y tablero de recepción: ADMIN y RECEPCION
                 .requestMatchers("/api/asistencia/**").hasAnyRole("ADMIN", "RECEPCION")
+
+                // Asistente de IA (lee certificados y sugiere ejercicios): solo el personal
+                .requestMatchers("/api/ia/**").hasAnyRole("ADMIN", "RECEPCION", "PROFESOR")
                 .requestMatchers("/api/dashboard/**").hasAnyRole("ADMIN", "RECEPCION")
 
                 // Rutinas: las arman ADMIN y PROFESOR. El cruce con las patologías del socio es dato de salud.

@@ -43,4 +43,8 @@ public class CertificadoMedico {
 
     @Column(name = "observaciones_patologias", length = 500)
     private String observacionesPatologias;
+
+    // Resumen de la condición del socio que propuso el asistente de IA y confirmó el personal
+    @Column(name = "resumen_ia", length = 1000)
+    private String resumenIa;
 }

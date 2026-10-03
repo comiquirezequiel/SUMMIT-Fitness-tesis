@@ -37,13 +37,28 @@ public class CertificadoMedicoController {
             @RequestParam(value = "archivo", required = false) MultipartFile archivo,
             @RequestParam(value = "fechaEmision", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaEmision,
-            @RequestParam(value = "observacionesPatologias", required = false) String observacionesPatologias) {
+            @RequestParam(value = "observacionesPatologias", required = false) String observacionesPatologias,
+            @RequestParam(value = "resumenIa", required = false) String resumenIa) {
         try {
             CertificadoMedico certificado = certificadoMedicoService.registrarCertificado(
-                    idSocio, archivo, fechaEmision, observacionesPatologias);
+                    idSocio, archivo, fechaEmision, observacionesPatologias, resumenIa);
             return ResponseEntity.status(HttpStatus.CREATED).body(certificado);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Corrige las patologías y el resumen del certificado: body {"observacionesPatologias": "...", "resumenIa": "..."}.
+     */
+    @PatchMapping("/{idCertificado}")
+    public ResponseEntity<?> actualizar(@PathVariable Long idSocio, @PathVariable Long idCertificado,
+                                        @RequestBody Map<String, String> datos) {
+        try {
+            return ResponseEntity.ok(certificadoMedicoService.actualizarObservaciones(
+                    idSocio, idCertificado, datos.get("observacionesPatologias"), datos.get("resumenIa")));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", String.valueOf(e.getMessage())));
         }
     }
 

@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -435,15 +436,40 @@ public class RutinaService {
      * Compara las patologías del último certificado médico del socio con las contraindicaciones del
      * ejercicio, sin distinguir mayúsculas ni tildes ("Hernia de disco" coincide con "HERNIA").
      */
+    /**
+     * Ejercicios del catálogo contraindicados para el socio según la regla firme (patologías de su
+     * certificado contra las contraindicaciones de cada ejercicio): idEjercicio -> patologías en riesgo.
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, List<String>> contraindicadosPorRegla(Long idSocio) {
+        String patologias = patologiasDelSocio(idSocio);
+        Map<Long, List<String>> resultado = new LinkedHashMap<>();
+        for (Ejercicio ejercicio : ejercicioRepository.findAll()) {
+            List<String> riesgos = riesgos(patologias, ejercicio.getPatologiasContraindicadas());
+            if (!riesgos.isEmpty()) {
+                resultado.put(ejercicio.getIdEjercicio(), riesgos);
+            }
+        }
+        return resultado;
+    }
+
     private List<String> riesgosDelSocio(Long idSocio, Ejercicio ejercicio) {
         String contraindicadas = ejercicio.getPatologiasContraindicadas();
         if (contraindicadas == null || contraindicadas.isBlank()) {
             return List.of();
         }
-        String patologias = certificadoMedicoRepository.findFirstByUsuarioIdUsuarioOrderByFechaVencimientoDesc(idSocio)
+        return riesgos(patologiasDelSocio(idSocio), contraindicadas);
+    }
+
+    private String patologiasDelSocio(Long idSocio) {
+        return certificadoMedicoRepository.findFirstByUsuarioIdUsuarioOrderByFechaVencimientoDesc(idSocio)
                 .map(CertificadoMedico::getObservacionesPatologias)
                 .orElse(null);
-        if (patologias == null || patologias.isBlank()) {
+    }
+
+    // Una patología del socio está en riesgo si menciona alguna contraindicación del ejercicio (sin tildes ni mayúsculas)
+    private static List<String> riesgos(String patologias, String contraindicadas) {
+        if (patologias == null || patologias.isBlank() || contraindicadas == null || contraindicadas.isBlank()) {
             return List.of();
         }
 

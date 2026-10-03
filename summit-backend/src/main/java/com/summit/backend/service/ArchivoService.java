@@ -89,6 +89,21 @@ public class ArchivoService {
         return ruta;
     }
 
+    /**
+     * Contenido completo de un archivo guardado (por ejemplo, para que el asistente de IA lea un certificado).
+     */
+    public byte[] leer(String rutaRelativa) {
+        Path ruta = resolver(rutaRelativa);
+        if (!Files.isRegularFile(ruta)) {
+            throw new IllegalStateException("El archivo no está disponible");
+        }
+        try {
+            return Files.readAllBytes(ruta);
+        } catch (IOException e) {
+            throw new RuntimeException("No se pudo leer el archivo", e);
+        }
+    }
+
     // Se revisa la firma del contenido, no la extensión ni el tipo que declara el navegador
     private String detectarTipo(MultipartFile archivo) {
         byte[] c = new byte[12];
@@ -98,6 +113,18 @@ public class ArchivoService {
         } catch (IOException e) {
             throw new RuntimeException("No se pudo leer el archivo", e);
         }
+        String tipo = tipoDe(java.util.Arrays.copyOf(c, leidos));
+        if (tipo == null) {
+            throw new IllegalArgumentException("Formato no permitido: subí un PDF, JPG, PNG o WEBP");
+        }
+        return tipo;
+    }
+
+    /**
+     * Tipo real (PDF, JPG, PNG o WEBP) según los primeros bytes del contenido; null si no es ninguno.
+     */
+    public static String tipoDe(byte[] c) {
+        int leidos = c.length;
         if (leidos >= 4 && c[0] == '%' && c[1] == 'P' && c[2] == 'D' && c[3] == 'F') {
             return "application/pdf";
         }
@@ -111,6 +138,6 @@ public class ArchivoService {
                 && c[8] == 'W' && c[9] == 'E' && c[10] == 'B' && c[11] == 'P') {
             return "image/webp";
         }
-        throw new IllegalArgumentException("Formato no permitido: subí un PDF, JPG, PNG o WEBP");
+        return null;
     }
 }
