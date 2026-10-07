@@ -34,6 +34,9 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
   const [subiendo, setSubiendo] = useState(false);
   const [mensaje, setMensaje] = useState(null);
   // Asistente de IA: { clave: idCertificado o 'nuevo', datos, patologias (editables antes de guardar) }
+  // Un solo estado sirve para todas las filas: "clave" indica a qué certificado pertenece la lectura
+  // (el id de un certificado guardado, o 'nuevo' para el archivo del formulario de carga). Así se muestra
+  // la tarjeta debajo del certificado correcto y nunca dos lecturas a la vez.
   const estadoIa = useEstadoIa();
   const [analisis, setAnalisis] = useState(null);
   const [analizando, setAnalizando] = useState(null); // clave del certificado que se está leyendo
@@ -50,6 +53,8 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
 
   useEffect(() => { cargar(); }, [cargar]);
 
+  // Pide la lectura: si es 'nuevo' manda el archivo elegido (con el DNI del socio para el control de identidad);
+  // si es un id, el backend lee el certificado ya guardado.
   const analizar = async (clave) => {
     setAnalisis(null);
     setErrorIa(null);
@@ -82,6 +87,8 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
     setAnalisis(null);
   };
 
+  // Muestran el error o la tarjeta de lectura solo debajo del certificado que corresponde a la "clave".
+  // La tarjeta incluye un campo para CORREGIR las patologías antes de guardarlas (supervisión humana).
   const errorDe = (clave) => (errorIa?.clave === clave ? <p className="text-sm text-rose-600">{errorIa.texto}</p> : null);
 
   const resultadoDe = (clave) => (analisis?.clave === clave ? (

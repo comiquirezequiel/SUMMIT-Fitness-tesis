@@ -71,6 +71,8 @@ const NuevoSocio = () => {
   const [errorEnvio, setErrorEnvio] = useState('');
   const [resultado, setResultado] = useState(null); // { socio, cobro, apto }
   // Asistente de IA: lee el certificado elegido y propone fecha, patologías y un resumen
+  // estadoIa: si Ollama está disponible (habilita el botón); analisisIa: la lectura recibida (null = sin lectura);
+  // analizandoIa: consulta en curso (cronómetro); errorIa: mensaje si falló (ej. "Ollama no está corriendo").
   const estadoIa = useEstadoIa();
   const [analisisIa, setAnalisisIa] = useState(null);
   const [analizandoIa, setAnalizandoIa] = useState(false);
@@ -96,6 +98,8 @@ const NuevoSocio = () => {
     setErrorIa('');
   };
 
+  // Envía el archivo elegido + el DNI cargado en el paso 1 (para detectar un certificado de otra persona).
+  // No guarda nada: solo muestra la lectura para revisarla.
   const leerCertificadoConIa = async () => {
     setErrorIa('');
     setAnalisisIa(null);
@@ -106,6 +110,8 @@ const NuevoSocio = () => {
     else setErrorIa(r.error);
   };
 
+  // "Usar estos datos": copia la lectura al formulario (fecha, patologías listas para la regla del Constructor
+  // y resumen). El usuario todavía puede corregir los campos; todo se guarda recién al registrar el socio.
   const usarAnalisisIa = () => {
     if (analisisIa.fechaEmision) update('fechaEmisionApto', analisisIa.fechaEmision);
     update('patologias', analisisIa.observacionesSugeridas || '');

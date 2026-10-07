@@ -86,6 +86,8 @@ export const cargarPatologias = async (idSocio) => {
   try {
     const cert = await obtenerJson(`/socios/${idSocio}/certificados/actual`);
     const patologias = (cert?.observacionesPatologias || '').split(',').map((p) => p.trim()).filter(Boolean);
+    // resumenIa: el resumen de la condición del socio que leyó la IA y confirmó recepción.
+    // El Constructor lo muestra en la tarjeta "Ficha médica" para que el profe lo tenga a la vista.
     return { estado: 'ok', patologias, resumenIa: cert?.resumenIa || '' };
   } catch (e) {
     return e.status === 404 ? { estado: 'sin-certificado', patologias: [] } : { estado: 'error', patologias: [], error: e.message };

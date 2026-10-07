@@ -105,6 +105,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/asistencia/**").hasAnyRole("ADMIN", "RECEPCION")
 
                 // Asistente de IA (lee certificados y sugiere ejercicios): solo el personal
+                // (un socio recibe 403: maneja datos de salud de otros socios y consume la GPU del gimnasio)
                 .requestMatchers("/api/ia/**").hasAnyRole("ADMIN", "RECEPCION", "PROFESOR")
                 .requestMatchers("/api/dashboard/**").hasAnyRole("ADMIN", "RECEPCION")
 

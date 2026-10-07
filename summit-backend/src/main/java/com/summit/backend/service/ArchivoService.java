@@ -91,6 +91,10 @@ public class ArchivoService {
 
     /**
      * Contenido completo de un archivo guardado (por ejemplo, para que el asistente de IA lea un certificado).
+     *
+     * <p>Agregado para la IA: AsistenteIaService.analizarGuardado(...) necesita los bytes del certificado que ya
+     * está en uploads/certificados para enviárselos al modelo. Usa resolver(...), que impide rutas con "../"
+     * (path traversal), así nadie puede leer archivos fuera de la carpeta de subidas.</p>
      */
     public byte[] leer(String rutaRelativa) {
         Path ruta = resolver(rutaRelativa);
@@ -122,6 +126,11 @@ public class ArchivoService {
 
     /**
      * Tipo real (PDF, JPG, PNG o WEBP) según los primeros bytes del contenido; null si no es ninguno.
+     *
+     * <p>Cada formato empieza con una "firma" fija (magic bytes): un PDF con "%PDF", un JPG con FF D8 FF,
+     * un PNG con 89 "PNG" y un WEBP con "RIFF....WEBP". Se mira el contenido y no la extensión del nombre,
+     * que se puede cambiar a mano. Es "public static" para que también lo use el asistente de IA
+     * (antes era una parte privada de la validación de subidas).</p>
      */
     public static String tipoDe(byte[] c) {
         int leidos = c.length;

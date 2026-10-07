@@ -439,6 +439,10 @@ public class RutinaService {
     /**
      * Ejercicios del catálogo contraindicados para el socio según la regla firme (patologías de su
      * certificado contra las contraindicaciones de cada ejercicio): idEjercicio -> patologías en riesgo.
+     *
+     * <p>Agregado para la IA: AsistenteIaService.ejerciciosAEvitar(...) combina este resultado (determinístico,
+     * siempre igual para los mismos datos) con lo que sugiere el modelo, y marca cada ejercicio como REGLA,
+     * IA o AMBOS. Lee el certificado UNA sola vez y recorre todo el catálogo (en lugar de una consulta por ejercicio).</p>
      */
     @Transactional(readOnly = true)
     public Map<Long, List<String>> contraindicadosPorRegla(Long idSocio) {
@@ -461,6 +465,8 @@ public class RutinaService {
         return riesgos(patologiasDelSocio(idSocio), contraindicadas);
     }
 
+    // Patologías del certificado actual (el de vencimiento más lejano). Separado en un método para que lo usen
+    // tanto la validación de un ejercicio como el recorrido de todo el catálogo.
     private String patologiasDelSocio(Long idSocio) {
         return certificadoMedicoRepository.findFirstByUsuarioIdUsuarioOrderByFechaVencimientoDesc(idSocio)
                 .map(CertificadoMedico::getObservacionesPatologias)
@@ -468,6 +474,9 @@ public class RutinaService {
     }
 
     // Una patología del socio está en riesgo si menciona alguna contraindicación del ejercicio (sin tildes ni mayúsculas)
+    // Ej.: "Condromalacia rotuliana en rodilla izquierda" CONTIENE "RODILLA" → la sentadilla queda marcada.
+    // Por eso la IA agrega etiquetas como LUMBAR al guardar las patologías: alimenta esta comparación.
+    // Es "static" (sin estado) para poder usarse con un certificado ya leído.
     private static List<String> riesgos(String patologias, String contraindicadas) {
         if (patologias == null || patologias.isBlank() || contraindicadas == null || contraindicadas.isBlank()) {
             return List.of();

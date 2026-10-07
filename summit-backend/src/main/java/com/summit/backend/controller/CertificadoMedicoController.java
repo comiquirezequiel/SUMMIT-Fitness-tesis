@@ -38,6 +38,7 @@ public class CertificadoMedicoController {
             @RequestParam(value = "fechaEmision", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaEmision,
             @RequestParam(value = "observacionesPatologias", required = false) String observacionesPatologias,
+            // Opcional: resumen de la IA que el usuario revisó en el alta o en "Cargar nuevo certificado".
             @RequestParam(value = "resumenIa", required = false) String resumenIa) {
         try {
             CertificadoMedico certificado = certificadoMedicoService.registrarCertificado(
@@ -50,6 +51,10 @@ public class CertificadoMedicoController {
 
     /**
      * Corrige las patologías y el resumen del certificado: body {"observacionesPatologias": "...", "resumenIa": "..."}.
+     *
+     * <p>Lo usa la ficha del socio al confirmar "Analizar con IA" → "Guardar en la ficha". PATCH (y no PUT)
+     * porque modifica solo dos campos del certificado. Por la regla de SecurityConfig para /api/socios/**,
+     * solo ADMIN y RECEPCION pueden usarlo: el profesor consulta la ficha médica pero no la edita.</p>
      */
     @PatchMapping("/{idCertificado}")
     public ResponseEntity<?> actualizar(@PathVariable Long idSocio, @PathVariable Long idCertificado,

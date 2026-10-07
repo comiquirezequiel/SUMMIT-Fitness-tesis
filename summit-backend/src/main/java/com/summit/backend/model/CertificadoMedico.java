@@ -45,6 +45,9 @@ public class CertificadoMedico {
     private String observacionesPatologias;
 
     // Resumen de la condición del socio que propuso el asistente de IA y confirmó el personal
+    // Columna nueva resumen_ia (VARCHAR(1000), puede ser NULL): Hibernate la creó sola al arrancar
+    // (ddl-auto=update), sin borrar ni modificar los datos existentes. Se guarda SOLO cuando una persona
+    // confirma la lectura (al subir el certificado o con el PATCH del controlador).
     @Column(name = "resumen_ia", length = 1000)
     private String resumenIa;
 }

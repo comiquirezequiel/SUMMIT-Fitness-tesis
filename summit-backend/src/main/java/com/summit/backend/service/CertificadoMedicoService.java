@@ -108,6 +108,10 @@ public class CertificadoMedicoService {
     /**
      * Corrige las patologías y el resumen de un certificado (por ejemplo, al confirmar lo que propuso
      * el asistente de IA). Reemplaza los dos campos: vacío los borra.
+     *
+     * <p>Este es el ÚNICO punto donde lo que leyó la IA llega a la base de datos, y solo se llama cuando una
+     * persona toca "Guardar en la ficha" (supervisión humana). @Transactional: la lectura y el guardado ocurren
+     * en una misma transacción. buscarDelSocio(...) garantiza que el certificado sea de ese socio.</p>
      */
     @Transactional
     public CertificadoMedico actualizarObservaciones(Long idSocio, Long idCertificado,
@@ -118,6 +122,8 @@ public class CertificadoMedicoService {
         return certificadoRepository.save(certificado);
     }
 
+    // Texto opcional: vacío → null (no se guardan cadenas vacías); más largo que la columna → error claro (400)
+    // en lugar de que la base de datos falle con un error técnico.
     private static String textoOpcional(String texto, int maximo, String campo) {
         if (texto == null || texto.isBlank()) {
             return null;

@@ -19,6 +19,8 @@ export const subirCertificado = async (idSocio, archivo, fechaEmision, patologia
   datos.append('archivo', archivo);
   datos.append('fechaEmision', fechaEmision);
   if (patologias?.trim()) datos.append('observacionesPatologias', patologias.trim());
+  // resumen del asistente de IA, ya revisado: solo viaja si el usuario tocó "Usar estos datos" en la lectura.
+  // El backend lo guarda en la columna resumen_ia del certificado junto con el archivo.
   if (resumenIa?.trim()) datos.append('resumenIa', resumenIa.trim()); // resumen del asistente de IA, ya revisado
 
   const res = await apiFetch(`/socios/${idSocio}/certificados`, { method: 'POST', body: datos });

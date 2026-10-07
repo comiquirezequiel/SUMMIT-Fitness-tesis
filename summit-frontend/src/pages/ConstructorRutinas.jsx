@@ -53,6 +53,8 @@ const Constructor = () => {
 
   const [ficha, setFicha] = useState({ estado: 'inicial', patologias: [] });
   // Ejercicios que conviene evitar según el asistente de IA: idEjercicio -> { motivo, origen }
+  // Lo completa el panel SugerenciasEjercicios. Es un Map para buscar rápido por id al dibujar el desplegable.
+  // Importante: estas marcas NO bloquean; lo que bloquea (con "Agregar igual") sigue siendo la regla firme (riesgosDe).
   const [sugerenciasIa, setSugerenciasIa] = useState(() => new Map());
   const [rutinaVigente, setRutinaVigente] = useState(null);
   const [alta, setAlta] = useState({ idEjercicio: '', ...PARAMETROS_INICIALES });
@@ -510,6 +512,8 @@ const Constructor = () => {
                   <Sparkles className="w-4 h-4 mt-0.5 text-violet-500 shrink-0" /> {ficha.resumenIa}
                 </p>
               )}
+              {/* El panel de la IA aparece solo para el personal que edita rutinas y si el socio tiene algo que analizar
+                  (patologías o resumen): sin patologías no hay ejercicios que evitar. */}
               {socio && puedeEditar && ficha.estado === 'ok' && (ficha.patologias.length > 0 || ficha.resumenIa) && (
                 <SugerenciasEjercicios idSocio={idSocio} onSugerencias={setSugerenciasIa} />
               )}
@@ -623,6 +627,8 @@ const Constructor = () => {
                           <optgroup key={grupo} label={nombreGrupo(grupo)}>
                             {ejercicios.map((e) => (
                               <option key={e.idEjercicio} value={e.idEjercicio}>
+                                {/* ⚠ = regla firme (bloquea y pide confirmación); ✦ = solo lo sugiere la IA (informativo).
+                                    Si un ejercicio tiene las dos marcas, se muestra ⚠ porque es la que manda. */}
                                 {e.nombre}{riesgosDe(e.idEjercicio).length > 0 ? ' ⚠ contraindicado'
                                   : sugerenciasIa.has(e.idEjercicio) ? ' ✦ la IA sugiere evitarlo' : ''}
                               </option>
@@ -648,6 +654,8 @@ const Constructor = () => {
                         </div>
                       </div>
                     )}
+                    {/* Si el ejercicio elegido solo lo marcó la IA, se muestra su motivo como nota violeta (no bloquea).
+                        Number(...) porque el valor del <select> llega como texto y las claves del Map son números. */}
                     {riesgosAlta.length === 0 && sugerenciasIa.has(Number(alta.idEjercicio)) && (
                       <p className="p-3 text-sm bg-violet-50 border border-violet-200 rounded-xl text-violet-800 flex items-start gap-2">
                         <Sparkles className="w-4 h-4 mt-0.5 shrink-0" />
