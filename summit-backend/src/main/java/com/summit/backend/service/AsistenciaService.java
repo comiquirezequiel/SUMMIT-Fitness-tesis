@@ -226,7 +226,7 @@ public class AsistenciaService {
                 .findFirstByUsuarioIdUsuarioAndActivaTrueOrderByFechaVencimientoDesc(usuario.getIdUsuario())
                 .orElse(null);
         CertificadoMedico certificado = certificadoMedicoRepository
-                .findFirstByUsuarioIdUsuarioOrderByFechaVencimientoDesc(usuario.getIdUsuario())
+                .certificadoQueRige(usuario.getIdUsuario())
                 .orElse(null);
         SortedSet<LocalDate> diasConIngreso = diasConIngresoEnLaSemana(usuario.getIdUsuario(), hoy);
 

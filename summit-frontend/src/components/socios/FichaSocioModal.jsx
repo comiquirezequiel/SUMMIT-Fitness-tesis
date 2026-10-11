@@ -42,6 +42,37 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
   const [analisis, setAnalisis] = useState(null);
   const [analizando, setAnalizando] = useState(null); // clave del certificado que se está leyendo
   const [errorIa, setErrorIa] = useState(null);       // { clave, texto }
+  const [rechazo, setRechazo] = useState(null);       // { id, motivo, error } mientras se rechaza un certificado
+
+  // Rechazar (con motivo) o volver a aprobar un certificado: queda registrado quién lo revisó
+  const cambiarEstadoCertificado = async (idCertificado, estado, motivo) => {
+    const res = await apiFetch(`/socios/${socio.idSocio}/certificados/${idCertificado}/estado`, {
+      method: 'PATCH',
+      body: JSON.stringify({ estado, motivo }),
+    });
+    const datos = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(datos.error || 'No se pudo actualizar el certificado');
+    setCertificados(lista => lista.map(c => (c.idCertificado === idCertificado ? datos : c)));
+    onActualizado?.();
+  };
+
+  const confirmarRechazo = async () => {
+    try {
+      await cambiarEstadoCertificado(rechazo.id, 'RECHAZADO', rechazo.motivo);
+      setRechazo(null);
+    } catch (err) {
+      setRechazo(r => ({ ...r, error: err.message }));
+    }
+  };
+
+  const reaprobar = async (c) => {
+    if (!window.confirm('¿Volver a aprobar este certificado? Vuelve a habilitar el ingreso hasta su vencimiento.')) return;
+    try {
+      await cambiarEstadoCertificado(c.idCertificado, 'VIGENTE');
+    } catch (err) {
+      window.alert(err.message);
+    }
+  };
 
   const cargar = useCallback(async () => {
     const [resCert, resIngresos] = await Promise.all([
@@ -135,6 +166,11 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
 
   const anios = edad(socio.fechaNacimiento);
 
+  // El certificado que rige para el ingreso: el de vencimiento más lejano que no fue rechazado (igual que el backend)
+  const idQueRige = certificados
+    .filter(c => c.estadoLegal !== 'RECHAZADO')
+    .reduce((mejor, c) => (!mejor || c.fechaVencimiento > mejor.fechaVencimiento ? c : mejor), null)?.idCertificado;
+
   return (
     <Modal titulo={socio.nombreCompleto} subtitulo={`DNI ${socio.dni} · socio desde ${formatFecha(socio.fechaCreacion)}`}
       onClose={onClose} ancho="max-w-3xl" pie={<button onClick={onClose} className={botonSecundario}>Cerrar</button>}>
@@ -171,8 +207,14 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
                   <div className="text-sm">
                     <p className="font-semibold text-slate-800">
                       Emitido {formatFecha(c.fechaEmision)} · vence {formatFecha(c.fechaVencimiento)}
-                      {i === 0 && <span className="ml-2 text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">ACTUAL</span>}
+                      {c.idCertificado === idQueRige && <span className="ml-2 text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">ACTUAL</span>}
+                      {c.estadoLegal === 'RECHAZADO' && <span className="ml-2 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">RECHAZADO</span>}
                     </p>
+                    {c.estadoLegal === 'RECHAZADO' && (
+                      <p className="text-rose-700 text-xs mt-0.5">
+                        Motivo: {c.motivoRechazo}{c.revisadoPorNombre ? ` · revisó ${c.revisadoPorNombre}` : ''}{c.fechaRevision ? ` el ${formatFecha(c.fechaRevision)}` : ''}
+                      </p>
+                    )}
                     <p className="text-slate-500">
                       {textoVencimiento(diasHasta(c.fechaVencimiento))} · Patologías: {c.observacionesPatologias || 'ninguna'}
                     </p>
@@ -193,8 +235,40 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
                       className="px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 flex items-center gap-1.5">
                       <FileText className="w-3.5 h-3.5" /> Ver archivo
                     </button>
+                    {puedeEditar && c.estadoLegal !== 'RECHAZADO' && (
+                      <button onClick={() => setRechazo({ id: c.idCertificado, motivo: '', error: '' })}
+                        className="px-3 py-1.5 text-xs font-semibold text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-50">
+                        Rechazar
+                      </button>
+                    )}
+                    {puedeEditar && c.estadoLegal === 'RECHAZADO' && (
+                      <button onClick={() => reaprobar(c)}
+                        className="px-3 py-1.5 text-xs font-semibold text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-50">
+                        Volver a aprobar
+                      </button>
+                    )}
                   </div>
                   </div>
+                  {rechazo?.id === c.idCertificado && (
+                    <div className="p-3 rounded-lg border border-rose-200 bg-rose-50/50 space-y-2">
+                      <p className="text-xs font-semibold text-slate-700">
+                        ¿Por qué se rechaza? Deja de habilitar el ingreso (si tiene otro certificado vigente, sigue entrando con ese).
+                      </p>
+                      <input autoFocus value={rechazo.motivo} maxLength={200} placeholder="Ej.: ilegible, no corresponde al socio, sin firma del médico"
+                        onChange={e => setRechazo({ ...rechazo, motivo: e.target.value })} className={inputClass} />
+                      <div className="flex gap-2">
+                        <button onClick={confirmarRechazo} disabled={rechazo.motivo.trim().length < 5}
+                          className="px-3 py-1.5 text-xs font-semibold text-white bg-rose-600 rounded-lg hover:bg-rose-700 disabled:opacity-50">
+                          Confirmar rechazo
+                        </button>
+                        <button onClick={() => setRechazo(null)}
+                          className="px-3 py-1.5 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-white">
+                          Cancelar
+                        </button>
+                      </div>
+                      {rechazo.error && <p className="text-xs text-rose-600 font-medium">{rechazo.error}</p>}
+                    </div>
+                  )}
                   {errorDe(c.idCertificado)}
                   {resultadoDe(c.idCertificado)}
                 </li>

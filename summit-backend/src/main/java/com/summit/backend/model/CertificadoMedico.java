@@ -1,11 +1,13 @@
 package com.summit.backend.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import jakarta.persistence.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "certificados_medicos")
@@ -50,4 +52,22 @@ public class CertificadoMedico {
     // confirma la lectura (al subir el certificado o con el PATCH del controlador).
     @Column(name = "resumen_ia", length = 1000)
     private String resumenIa;
+
+    // Revisión manual: por qué se rechazó (ilegible, no es del socio, falso...) y quién lo revisó, y cuándo.
+    // Un certificado rechazado deja de habilitar el ingreso aunque no esté vencido.
+    @Column(name = "motivo_rechazo", length = 200)
+    private String motivoRechazo;
+
+    @JsonIgnore // en la ficha solo sale el nombre (ver revisadoPorNombre), no la cuenta completa del empleado
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "revisado_por_id")
+    private Usuario revisadoPor;
+
+    @Column(name = "fecha_revision")
+    private LocalDateTime fechaRevision;
+
+    @JsonProperty("revisadoPorNombre")
+    public String nombreRevisadoPor() {
+        return revisadoPor != null ? revisadoPor.getNombreCompleto() : null;
+    }
 }

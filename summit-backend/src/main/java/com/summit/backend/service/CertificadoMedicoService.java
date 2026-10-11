@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -56,7 +57,7 @@ public class CertificadoMedicoService {
     }
 
     public Optional<CertificadoMedico> obtenerCertificadoActual(Long idUsuario) {
-        return certificadoRepository.findFirstByUsuarioIdUsuarioOrderByFechaVencimientoDesc(idUsuario);
+        return certificadoRepository.certificadoQueRige(idUsuario);
     }
 
     public List<CertificadoMedico> listarPorSocio(Long idUsuario) {
@@ -119,6 +120,49 @@ public class CertificadoMedicoService {
         CertificadoMedico certificado = buscarDelSocio(idSocio, idCertificado);
         certificado.setObservacionesPatologias(textoOpcional(observacionesPatologias, 500, "Las patologías"));
         certificado.setResumenIa(textoOpcional(resumenIa, 1000, "El resumen"));
+        return certificadoRepository.save(certificado);
+    }
+
+    /**
+     * Revisión manual de un certificado (ADMIN o RECEPCION).
+     * <ul>
+     *   <li>RECHAZADO (con motivo): deja de habilitar el ingreso aunque no esté vencido (ilegible, no es del socio,
+     *       datos que no coinciden...). Si el socio tiene otro certificado vigente, sigue entrando con ese.</li>
+     *   <li>VIGENTE: vuelve a aprobar uno rechazado por error. El vencimiento se recalcula desde la emisión
+     *       y no se puede si ya pasaron 365 días.</li>
+     * </ul>
+     * Queda registrado quién lo revisó y cuándo.
+     */
+    @Transactional
+    public CertificadoMedico cambiarEstado(Long idSocio, Long idCertificado, EstadoLegalCertificado nuevoEstado,
+                                           String motivo, String emailRevisor) {
+        CertificadoMedico certificado = buscarDelSocio(idSocio, idCertificado);
+        if (nuevoEstado == EstadoLegalCertificado.RECHAZADO) {
+            if (certificado.getEstadoLegal() == EstadoLegalCertificado.RECHAZADO) {
+                throw new IllegalStateException("El certificado ya está rechazado");
+            }
+            String motivoLimpio = motivo == null ? "" : motivo.trim();
+            if (motivoLimpio.length() < 5) {
+                throw new IllegalArgumentException("Escribí el motivo del rechazo (queda registrado)");
+            }
+            if (motivoLimpio.length() > 200) {
+                throw new IllegalArgumentException("El motivo no puede superar los 200 caracteres");
+            }
+            certificado.setEstadoLegal(EstadoLegalCertificado.RECHAZADO);
+            certificado.setMotivoRechazo(motivoLimpio);
+        } else if (nuevoEstado == EstadoLegalCertificado.VIGENTE) {
+            if (certificado.getEstadoLegal() != EstadoLegalCertificado.RECHAZADO) {
+                throw new IllegalStateException("Solo se puede volver a aprobar un certificado rechazado");
+            }
+            // Si ya pasaron 365 días desde la emisión, calcularVencimiento lo impide con un mensaje claro
+            certificado.setFechaVencimiento(calcularVencimiento(certificado.getFechaEmision()));
+            certificado.setEstadoLegal(EstadoLegalCertificado.VIGENTE);
+            certificado.setMotivoRechazo(null);
+        } else {
+            throw new IllegalArgumentException("El estado solo puede ser RECHAZADO o VIGENTE");
+        }
+        certificado.setRevisadoPor(emailRevisor == null ? null : usuarioRepository.findByEmail(emailRevisor).orElse(null));
+        certificado.setFechaRevision(LocalDateTime.now());
         return certificadoRepository.save(certificado);
     }
 

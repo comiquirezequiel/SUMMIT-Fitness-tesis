@@ -1,6 +1,7 @@
 package com.summit.backend.controller;
 
 import com.summit.backend.model.CertificadoMedico;
+import com.summit.backend.model.EstadoLegalCertificado;
 import com.summit.backend.service.ArchivoService;
 import com.summit.backend.service.CertificadoMedicoService;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -62,6 +64,27 @@ public class CertificadoMedicoController {
         try {
             return ResponseEntity.ok(certificadoMedicoService.actualizarObservaciones(
                     idSocio, idCertificado, datos.get("observacionesPatologias"), datos.get("resumenIa")));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", String.valueOf(e.getMessage())));
+        }
+    }
+
+    /**
+     * Rechaza (con motivo) o vuelve a aprobar un certificado: body {"estado": "RECHAZADO" | "VIGENTE", "motivo": "..."}.
+     * Quién lo revisó sale del token. Solo ADMIN y RECEPCION (regla de SecurityConfig para /api/socios/**).
+     */
+    @PatchMapping("/{idCertificado}/estado")
+    public ResponseEntity<?> cambiarEstado(@PathVariable Long idSocio, @PathVariable Long idCertificado,
+                                           @RequestBody Map<String, String> datos, Authentication auth) {
+        try {
+            EstadoLegalCertificado estado = EstadoLegalCertificado.valueOf(String.valueOf(datos.get("estado")).toUpperCase());
+            return ResponseEntity.ok(certificadoMedicoService.cambiarEstado(
+                    idSocio, idCertificado, estado, datos.get("motivo"), auth.getName()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", String.valueOf(e.getMessage())));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() != null && e.getMessage().startsWith("No enum")
+                    ? "El estado solo puede ser RECHAZADO o VIGENTE" : String.valueOf(e.getMessage())));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", String.valueOf(e.getMessage())));
         }

@@ -1,6 +1,7 @@
 package com.summit.backend.repository;
 
 import com.summit.backend.model.CertificadoMedico;
+import com.summit.backend.model.EstadoLegalCertificado;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -10,7 +11,21 @@ import java.util.Optional;
 @Repository
 public interface CertificadoMedicoRepository extends JpaRepository<CertificadoMedico, Long> {
     Optional<CertificadoMedico> findFirstByUsuarioIdUsuarioOrderByFechaVencimientoDesc(Long idUsuario);
+
+    Optional<CertificadoMedico> findFirstByUsuarioIdUsuarioAndEstadoLegalNotOrderByFechaVencimientoDesc(
+            Long idUsuario, EstadoLegalCertificado estadoLegal);
+
+    /**
+     * El certificado que rige para el ingreso: el de vencimiento más lejano que no fue rechazado.
+     * Así, rechazar un certificado nuevo (ej. ilegible) no le quita el ingreso a quien tiene otro vigente.
+     * Si todos fueron rechazados, devuelve el último (y el control de acceso bloquea por "rechazado").
+     */
+    default Optional<CertificadoMedico> certificadoQueRige(Long idUsuario) {
+        return findFirstByUsuarioIdUsuarioAndEstadoLegalNotOrderByFechaVencimientoDesc(idUsuario, EstadoLegalCertificado.RECHAZADO)
+                .or(() -> findFirstByUsuarioIdUsuarioOrderByFechaVencimientoDesc(idUsuario));
+    }
+
     List<CertificadoMedico> findByUsuarioIdUsuario(Long idUsuario);
     List<CertificadoMedico> findByUsuarioIdUsuarioOrderByFechaEmisionDesc(Long idUsuario);
-    List<CertificadoMedico> findByEstadoLegalAndFechaVencimientoBefore(com.summit.backend.model.EstadoLegalCertificado estado, java.time.LocalDate date);
+    List<CertificadoMedico> findByEstadoLegalAndFechaVencimientoBefore(EstadoLegalCertificado estado, java.time.LocalDate date);
 }
