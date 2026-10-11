@@ -5,6 +5,7 @@ import com.summit.backend.repository.PlanRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -15,6 +16,7 @@ import java.util.List;
 public class PlanService {
 
     private final PlanRepository planRepository;
+    private final DebitoAutomaticoService debitoAutomaticoService;
 
     public List<Plan> listar() {
         return planRepository.findAll();
@@ -36,6 +38,7 @@ public class PlanService {
      */
     public Plan actualizar(Long id, Plan planData) {
         Plan plan = buscarPorId(id);
+        BigDecimal precioAnterior = plan.getPrecioBase();
         if (planData.getNombrePlan() != null) plan.setNombrePlan(planData.getNombrePlan());
         if (planData.getDescripcion() != null) plan.setDescripcion(planData.getDescripcion());
         if (planData.getPrecioBase() != null) plan.setPrecioBase(planData.getPrecioBase());
@@ -44,7 +47,13 @@ public class PlanService {
             plan.setVecesPorSemana(normalizarVecesPorSemana(planData.getVecesPorSemana()));
         }
         if (planData.getActivo() != null) plan.setActivo(planData.getActivo()); // permite reactivar un plan
-        return planRepository.save(plan);
+        Plan guardado = planRepository.save(plan);
+        // Nuevo precio: los socios con débito automático en este plan lo pagan desde el próximo cobro
+        if (guardado.getPrecioBase() != null
+                && (precioAnterior == null || guardado.getPrecioBase().compareTo(precioAnterior) != 0)) {
+            debitoAutomaticoService.actualizarMontoDelPlan(guardado.getIdPlan(), guardado.getPrecioBase());
+        }
+        return guardado;
     }
 
     /**

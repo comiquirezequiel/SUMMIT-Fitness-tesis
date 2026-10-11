@@ -70,7 +70,7 @@ const PlanModal = ({ plan, onClose, onGuardado }) => {
         <Campo label="Descripción" className="col-span-2">
           <input maxLength={255} value={datos.descripcion} onChange={e => set('descripcion', e.target.value)} className={inputClass} />
         </Campo>
-        <Campo label="Precio ($)" required>
+        <Campo label="Precio ($)" required ayuda={plan ? 'Los débitos automáticos de este plan pasan al nuevo precio desde el próximo cobro' : undefined}>
           <input type="number" required min="0" step="0.01" value={datos.precioBase} onChange={e => set('precioBase', e.target.value)} className={inputClass} />
         </Campo>
         <Campo label="Duración (días)" required ayuda="Cuánto extiende la membresía cada cobro">

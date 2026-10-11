@@ -6,7 +6,7 @@ import {
   Dumbbell, CalendarCheck, History, ClipboardList, ListChecks,
   Calendar, CalendarDays, BookOpen, Settings,
   LogOut, LayoutDashboard, ChevronDown, ChevronUp, GitBranch, Clipboard,
-  MessageCircle, CheckSquare, UserX, Home, ScanLine
+  MessageCircle, CheckSquare, UserX, Home, ScanLine, Repeat
 } from 'lucide-react';
 import { usuarioActual } from '../utils/formato';
 
@@ -35,6 +35,7 @@ const MENU_ITEMS = [
     subItems: [
       { icon: Tag, text: "Planes", path: "/planes", roles: STAFF },
       { icon: AlertTriangle, text: "Estado de Membresías", path: "/membresias/estado", roles: STAFF },
+      { icon: Repeat, text: "Débitos automáticos", path: "/membresias/debitos", roles: STAFF },
       { icon: TrendingUp, text: "Métricas de Planes", path: "/membresias/metricas", roles: ['ADMIN'], demo: true },
     ]
   },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Users, CheckCircle, AlertTriangle, UserPlus,
   Search, Filter, ChevronDown, Download, RefreshCw, Layers,
@@ -26,7 +26,8 @@ const Socios = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [busqueda, setBusqueda] = useState('');
+  const [parametros] = useSearchParams();
+  const [busqueda, setBusqueda] = useState(parametros.get('buscar') || ''); // ?buscar=DNI (desde Débitos automáticos)
   const [filtroEstado, setFiltroEstado] = useState('TODOS');
   const [menuEstadoAbierto, setMenuEstadoAbierto] = useState(false);
   const menuRef = useRef(null);

@@ -1,5 +1,6 @@
 package com.summit.backend.config;
 
+import com.summit.backend.service.MercadoPagoClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -70,6 +71,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<Map<String, Object>> handleMetodoNoSoportado(HttpRequestMethodNotSupportedException ex) {
         return error(HttpStatus.METHOD_NOT_ALLOWED, "La operación " + ex.getMethod() + " no está permitida en esta ruta");
+    }
+
+    // Mercado Pago no disponible (sin credencial, sin internet, demora): el resto del sistema sigue funcionando
+    @ExceptionHandler(MercadoPagoClient.MercadoPagoNoDisponibleException.class)
+    public ResponseEntity<Map<String, Object>> handleMercadoPago(MercadoPagoClient.MercadoPagoNoDisponibleException ex) {
+        return error(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
     }
 
     @ExceptionHandler(RuntimeException.class)

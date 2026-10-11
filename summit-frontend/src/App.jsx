@@ -48,6 +48,7 @@ import Clases from './pages/Clases';
 import Planes from './pages/Planes';
 import EstadoMembresias from './pages/EstadoMembresias';
 import MetricasPlanes from './pages/MetricasPlanes';
+import DebitosAutomaticos from './pages/DebitosAutomaticos';
 import Caja from './pages/Caja';
 import AjustesGeneral from './pages/AjustesGeneral';
 import AjustesTablas from './pages/AjustesTablas';
@@ -90,6 +91,7 @@ function App() {
           <Route path="planes" element={<Planes />} />
           <Route path="membresias/metricas" element={<MetricasPlanes />} />
           <Route path="membresias/estado" element={<EstadoMembresias />} />
+          <Route path="membresias/debitos" element={<DebitosAutomaticos />} />
           
           {/* Entrenamiento */}
           <Route path="entrenamiento/hoy" element={<Diferida><EntrenamientoHoy /></Diferida>} />

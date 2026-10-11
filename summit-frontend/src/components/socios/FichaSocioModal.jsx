@@ -3,6 +3,7 @@ import { FileText, Upload, HeartPulse, Wallet, User, LogIn, Sparkles } from 'luc
 import Modal from '../Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../Campo';
 import { apiFetch } from '../../services/api';
+import DebitoSocio from '../debito/DebitoSocio';
 import { subirCertificado, validarArchivoApto, verArchivoCertificado } from '../../services/certificados';
 import { analizarArchivo, analizarCertificado, guardarObservaciones } from '../../services/ia';
 import { useEstadoIa, BotonIa, ResultadoAnalisis, AvisoIaNoDisponible } from '../ia/AsistenteIa';
@@ -156,6 +157,7 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
             <Dato label="Vencimiento" valor={socio.vencimientoMembresia && `${formatFecha(socio.vencimientoMembresia)} (${textoVencimiento(diasHasta(socio.vencimientoMembresia))})`} />
             <Dato label="Estado" valor={socio.membresiaAlDia ? 'Al día' : 'Vencida o sin plan'} />
           </div>
+          {puedeEditar && <DebitoSocio socio={socio} />}
         </Seccion>
 
         <Seccion icon={HeartPulse} titulo="Certificados médicos">

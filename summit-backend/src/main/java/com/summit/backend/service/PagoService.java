@@ -105,6 +105,31 @@ public class PagoService {
     }
 
     /**
+     * Cobro mensual confirmado por Mercado Pago (débito automático): entra APROBADO y extiende la membresía.
+     * El id de Mercado Pago es único: si ese cobro ya se registró, no hace nada y devuelve false
+     * (la sincronización puede ver el mismo cobro muchas veces).
+     */
+    @Transactional
+    public boolean registrarCobroAutomatico(Usuario usuario, Plan plan, BigDecimal monto, String mpPaymentId,
+                                            LocalDateTime fechaCobro) {
+        if (pagoHistorialRepository.existsByMpPaymentId(mpPaymentId)) {
+            return false;
+        }
+        pagoHistorialRepository.save(PagoHistorial.builder()
+                .usuario(usuario)
+                .plan(plan)
+                .montoAbonado(monto)
+                .metodoPago(MetodoPago.DEBITO_AUTOMATICO)
+                .comprobanteNro("MP " + mpPaymentId)
+                .estadoPago(EstadoPago.APROBADO)
+                .mpPaymentId(mpPaymentId)
+                .fechaPago(fechaCobro)
+                .build());
+        suscripcionService.extenderOcrearSuscripcion(usuario, plan);
+        return true;
+    }
+
+    /**
      * Historial de pagos de un socio ordenado por fecha descendente.
      */
     @Transactional(readOnly = true)

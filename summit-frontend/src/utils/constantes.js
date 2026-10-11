@@ -24,6 +24,28 @@ export const textoMetodoPago = (valor) => TEXTO_METODO[valor] || valor;
 // Métodos en los que la plata puede no verse acreditada en el momento: pueden quedar "a verificar"
 export const METODOS_VERIFICABLES = ['TRANSFERENCIA', 'MERCADO_PAGO'];
 
+// Débito automático mensual (Mercado Pago Suscripciones)
+export const ESTADOS_DEBITO = {
+  PENDIENTE_AUTORIZACION: { texto: 'Esperando autorización', clase: 'bg-amber-50 text-amber-700 border-amber-200' },
+  ACTIVO: { texto: 'Activo', clase: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  PAUSADO: { texto: 'Pausado', clase: 'bg-slate-100 text-slate-600 border-slate-200' },
+  CANCELADO: { texto: 'De baja', clase: 'bg-rose-50 text-rose-700 border-rose-200' },
+};
+
+// Medio con el que el socio autorizó el débito (código que informa Mercado Pago)
+const MEDIOS_MP = {
+  account_money: 'Dinero en cuenta de Mercado Pago',
+  visa: 'Visa crédito', debvisa: 'Visa débito',
+  master: 'Mastercard crédito', debmaster: 'Mastercard débito', maestro: 'Maestro',
+  amex: 'American Express', naranja: 'Naranja', cabal: 'Cabal crédito', debcabal: 'Cabal débito',
+  cencosud: 'Cencosud', argencard: 'Argencard',
+};
+
+export const textoMedioPago = (codigo) => (codigo ? MEDIOS_MP[codigo] || codigo : 'Se elige al autorizar');
+
+// Mercado Pago cobra cada N meses: solo sirven los planes de 30 días o múltiplos
+export const planAptoDebito = (plan) => plan.activo && plan.duracionDias > 0 && plan.duracionDias % 30 === 0;
+
 export const ESTADOS_PAGO = {
   APROBADO: { texto: 'Aprobado', clase: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   PENDIENTE: { texto: 'A verificar', clase: 'bg-amber-50 text-amber-700 border-amber-200' },

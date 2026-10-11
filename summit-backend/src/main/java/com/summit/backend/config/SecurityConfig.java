@@ -102,6 +102,8 @@ public class SecurityConfig {
                 // Un pago "a verificar" lo confirma o rechaza solo el ADMIN (no quien lo cobró)
                 .requestMatchers(HttpMethod.POST, "/api/pagos/*/verificar").hasRole("ADMIN")
                 .requestMatchers("/api/pagos/**").hasAnyRole("ADMIN", "RECEPCION")
+                // Débito automático desde recepción (el socio usa /api/portal/debito)
+                .requestMatchers("/api/debitos/**").hasAnyRole("ADMIN", "RECEPCION")
 
                 // Asistencia / Check-in y tablero de recepción: ADMIN y RECEPCION
                 .requestMatchers("/api/asistencia/**").hasAnyRole("ADMIN", "RECEPCION")
