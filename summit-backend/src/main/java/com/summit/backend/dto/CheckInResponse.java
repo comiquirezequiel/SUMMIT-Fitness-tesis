@@ -43,4 +43,6 @@ public class CheckInResponse {
     private Long diasParaVencerCuota;
     private LocalDate vencimientoApto;
     private Long diasParaVencerApto;
+    // true si recepción puede dejarlo pasar por excepción (solo cuota vencida o límite semanal; nunca el apto médico)
+    private boolean excepcionPosible;
 }

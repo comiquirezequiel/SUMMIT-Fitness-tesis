@@ -339,6 +339,7 @@ public class AsistenciaService {
         }
 
         respuesta.setPermitido(ev.permitido());
+        respuesta.setExcepcionPosible(admiteExcepcion(ev));
         respuesta.setResultado(ev.resultado().name());
         respuesta.setMensaje(ev.permitido() ? "Acceso permitido" : String.join(" · ", respuesta.getFaltas()));
         return respuesta;
@@ -408,6 +409,75 @@ public class AsistenciaService {
         if (ev.permitido() && ev.yaIngresoHoy()) {
             respuesta.getAvisos().add("Ya había ingresado hoy: no descuenta otro día");
         }
+    }
+
+    /**
+     * Ingreso por excepción: recepción deja pasar a un socio con la cuota vencida o sin días de su plan esta semana
+     * (ej. "pagó por transferencia y todavía no se acreditó"). Queda registrado quién lo autorizó y por qué.
+     *
+     * <p>Nunca se puede con el apto médico vencido o faltante (es una exigencia legal) ni con la cuenta inactiva,
+     * suspendida o dada de baja. El registro queda como PERMITIDO: cuenta como visita y como día usado de la
+     * semana, igual que cualquier ingreso.</p>
+     */
+    @Transactional
+    public CheckInResponse registrarIngresoExcepcion(String dni, String motivo, String emailAutorizante) {
+        if (dni == null || dni.isBlank()) {
+            throw new IllegalArgumentException("Debe proporcionar un DNI");
+        }
+        String motivoLimpio = motivo == null ? "" : motivo.trim();
+        if (motivoLimpio.length() < 5) {
+            throw new IllegalArgumentException("Escribí el motivo de la excepción (queda registrado)");
+        }
+        if (motivoLimpio.length() > 200) {
+            throw new IllegalArgumentException("El motivo no puede superar los 200 caracteres");
+        }
+        Usuario socio = usuarioRepository.findByDni(dni.trim())
+                .orElseThrow(() -> new RuntimeException("No se encontró ningún socio con DNI " + dni.trim()));
+
+        EvaluacionAcceso evaluacion = evaluarAcceso(socio);
+        if (evaluacion.permitido()) {
+            throw new IllegalStateException("El socio puede ingresar normalmente: no hace falta una excepción");
+        }
+        if (!admiteExcepcion(evaluacion)) {
+            String motivoRechazo;
+            if (evaluacion.motivos().contains(ResultadoAsistencia.DENEGADO_CERTIFICADO_MEDICO)) {
+                motivoRechazo = "No se puede hacer una excepción sin apto médico vigente: es una exigencia legal";
+            } else if (evaluacion.esPersonal() || evaluacion.motivos().contains(ResultadoAsistencia.DENEGADO_CUENTA_INACTIVA)) {
+                motivoRechazo = "No se puede hacer una excepción: la cuenta del socio no está activa";
+            } else {
+                motivoRechazo = "El gimnasio no permite ingresos por excepción: se habilitan en Ajustes > Reglas de acceso";
+            }
+            throw new IllegalStateException(motivoRechazo);
+        }
+
+        Usuario autorizante = usuarioRepository.findByEmail(emailAutorizante).orElse(null);
+        logAsistenciaRepository.save(LogAsistencia.builder()
+                .usuario(socio)
+                .tipoEvento(TipoEventoAsistencia.INGRESO_EXCEPCION)
+                .resultado(ResultadoAsistencia.PERMITIDO)
+                .autorizadoPor(autorizante)
+                .motivoExcepcion(motivoLimpio)
+                .build());
+
+        CheckInResponse respuesta = fichaRecepcion(evaluacion, null);
+        // Lo que faltaba pasa a ser un aviso: el ingreso quedó permitido por excepción
+        respuesta.getAvisos().addAll(0, respuesta.getFaltas());
+        respuesta.getFaltas().clear();
+        respuesta.setPermitido(true);
+        respuesta.setExcepcionPosible(false);
+        respuesta.setResultado(ResultadoAsistencia.PERMITIDO.name());
+        respuesta.setMensaje("Ingreso por excepción autorizado por "
+                + (autorizante != null ? autorizante.getNombreCompleto() : "recepción") + ": " + motivoLimpio);
+        return respuesta;
+    }
+
+    // Faltas que recepción puede perdonar: la deuda o los días del plan. El apto médico y la cuenta, nunca.
+    // Además el admin tiene que haberlo habilitado ("Permitir ingresos por excepción" en Reglas de acceso).
+    private static boolean admiteExcepcion(EvaluacionAcceso evaluacion) {
+        return !evaluacion.permitido() && !evaluacion.esPersonal()
+                && evaluacion.config() != null && evaluacion.config().isPermitirOverrideManual()
+                && evaluacion.motivos().stream().allMatch(m -> m == ResultadoAsistencia.DENEGADO_CUOTA_VENCIDA
+                        || m == ResultadoAsistencia.DENEGADO_LIMITE_SEMANAL);
     }
 
     /**

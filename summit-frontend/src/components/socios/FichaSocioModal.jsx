@@ -255,11 +255,22 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
             ) : (
               <ul className="text-sm space-y-1">
                 {ingresos.map(i => (
-                  <li key={i.idLog} className="flex justify-between gap-4">
-                    <span className="text-slate-600">{formatFechaHora(i.fechaHora)}</span>
-                    <span className={i.resultado === 'PERMITIDO' ? 'text-emerald-600 font-medium' : 'text-rose-600 font-medium'}>
-                      {i.resultado === 'PERMITIDO' ? 'Permitido' : i.resultado.replace('DENEGADO_', '').replaceAll('_', ' ').toLowerCase()}
-                    </span>
+                  <li key={i.idLog}>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-slate-600">{formatFechaHora(i.fechaHora)}</span>
+                      {i.tipoEvento === 'INGRESO_EXCEPCION' ? (
+                        <span className="text-amber-700 font-medium">Por excepción</span>
+                      ) : (
+                        <span className={i.resultado === 'PERMITIDO' ? 'text-emerald-600 font-medium' : 'text-rose-600 font-medium'}>
+                          {i.resultado === 'PERMITIDO' ? 'Permitido' : i.resultado.replace('DENEGADO_', '').replaceAll('_', ' ').toLowerCase()}
+                        </span>
+                      )}
+                    </div>
+                    {i.tipoEvento === 'INGRESO_EXCEPCION' && (
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Autorizó {i.autorizadoPorNombre || 'recepción'}: {i.motivoExcepcion}
+                      </p>
+                    )}
                   </li>
                 ))}
               </ul>

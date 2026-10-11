@@ -32,8 +32,8 @@ public interface LogAsistenciaRepository extends JpaRepository<LogAsistencia, Lo
     @Query("SELECT COUNT(l) FROM LogAsistencia l WHERE l.fechaHora >= :desde AND l.resultado = 'PERMITIDO'")
     long countCheckinsHoy(LocalDateTime desde);
 
-    // Métricas: ingresos efectivos (permitidos, sin contar las salidas) de un rango, como filas [fechaHora, idUsuario]
-    @Query("SELECT l.fechaHora, l.usuario.idUsuario FROM LogAsistencia l "
+    // Métricas: ingresos efectivos (permitidos, sin contar las salidas) de un rango, como filas [fechaHora, idUsuario, tipoEvento]
+    @Query("SELECT l.fechaHora, l.usuario.idUsuario, l.tipoEvento FROM LogAsistencia l "
             + "WHERE l.resultado = com.summit.backend.model.ResultadoAsistencia.PERMITIDO "
             + "AND l.tipoEvento <> com.summit.backend.model.TipoEventoAsistencia.CHECKOUT "
             + "AND l.fechaHora >= :desde AND l.fechaHora < :hasta")

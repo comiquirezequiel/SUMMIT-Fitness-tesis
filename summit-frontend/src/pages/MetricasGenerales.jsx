@@ -93,6 +93,9 @@ const MetricasGenerales = () => {
                 {diaPico && diaPico.valor > 0 && <> Los <b>{DIAS_LARGOS[diaPico.clave]}</b> son los días con más gente</>}
                 {horaPico && horaPico.valor > 0 && <> y la hora más concurrida es de <b>{horaPico.clave} a {Number(horaPico.clave) + 1} h</b></>}.
                 {franjaPico && <> La franja más llena del período fue el <b>{franjaPico}</b>.</>}
+                {ind.excepciones?.valor > 0 && (
+                  <> Recepción autorizó <b>{numero(ind.excepciones.valor)} {ind.excepciones.valor === 1 ? 'ingreso' : 'ingresos'} por excepción</b>.</>
+                )}
               </p>
             </div>
           )}

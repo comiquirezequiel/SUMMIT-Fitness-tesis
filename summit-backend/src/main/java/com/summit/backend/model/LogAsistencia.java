@@ -1,5 +1,7 @@
 package com.summit.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import jakarta.persistence.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -45,6 +47,21 @@ public class LogAsistencia {
 
     @Column(name = "distancia_metros")
     private Double distanciaMetros;
+
+    // Ingreso por excepción: el empleado que lo autorizó y el motivo (auditoría).
+    // @JsonIgnore: en el historial solo sale el nombre (ver autorizadoPorNombre), no la cuenta completa del empleado
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "autorizado_por_id")
+    private Usuario autorizadoPor;
+
+    @Column(name = "motivo_excepcion", length = 200)
+    private String motivoExcepcion;
+
+    @JsonProperty("autorizadoPorNombre")
+    public String nombreAutorizadoPor() {
+        return autorizadoPor != null ? autorizadoPor.getNombreCompleto() : null;
+    }
 
     @PrePersist
     public void prePersist() {

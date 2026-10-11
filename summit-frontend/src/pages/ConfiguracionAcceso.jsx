@@ -122,8 +122,8 @@ const ConfiguracionAcceso = () => {
 
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-semibold text-slate-700">Permitir Override Manual</p>
-                <p className="text-xs text-slate-500 mt-0.5">Habilita a Recepción para autorizar un ingreso bloqueado por el sistema bajo su responsabilidad.</p>
+                <p className="font-semibold text-slate-700">Permitir ingresos por excepción</p>
+                <p className="text-xs text-slate-500 mt-0.5">Recepción puede dejar pasar a un socio con la cuota vencida o sin días de su plan, escribiendo el motivo (queda registrado quién lo autorizó). Nunca sin apto médico vigente.</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" className="sr-only peer" checked={config.permitirOverrideManual} onChange={(e) => handleChange('permitirOverrideManual', e.target.checked)} />

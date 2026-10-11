@@ -5,6 +5,7 @@ import com.summit.backend.model.EstadoDebito;
 import com.summit.backend.model.EstadoPago;
 import com.summit.backend.model.MetodoPago;
 import com.summit.backend.model.Rol;
+import com.summit.backend.model.TipoEventoAsistencia;
 import com.summit.backend.repository.DebitoAutomaticoRepository;
 import com.summit.backend.repository.LogAsistenciaRepository;
 import com.summit.backend.repository.PagoHistorialRepository;
@@ -145,6 +146,7 @@ public class MetricasService {
                 (double) membresias.bajasEntre(p.desdeAnterior(), p.hastaAnterior())));
         indicadores.put("sociosActivos", new Indicador(membresias.activosAl(p.hasta()),
                 (double) membresias.activosAl(p.hastaAnterior())));
+        indicadores.put("excepciones", new Indicador(excepciones(visitas), (double) excepciones(visitasAnteriores)));
 
         // Perfil de quienes vinieron en el período (edad y género)
         Map<String, Double> edades = categorias(RANGOS_EDAD);
@@ -294,6 +296,11 @@ public class MetricasService {
             throw new IllegalArgumentException("El período no puede superar un año");
         }
         return new Periodo(inicio, fin, dias, inicio.minusDays(dias), inicio.minusDays(1));
+    }
+
+    // Ingresos que recepción dejó pasar por excepción (cuota vencida o sin días del plan)
+    private static long excepciones(List<Object[]> visitas) {
+        return visitas.stream().filter(fila -> fila[2] == TipoEventoAsistencia.INGRESO_EXCEPCION).count();
     }
 
     private long nuevos(LocalDate desde, LocalDate hasta) {
