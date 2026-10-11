@@ -45,7 +45,8 @@ import java.util.NoSuchElementException;
 public class MercadoPagoClient {
 
     private static final Duration TIMEOUT = Duration.ofSeconds(20);
-    private static final int POR_PAGINA = 50;
+    // Mercado Pago acepta como máximo 10 resultados por página en /authorized_payments/search
+    private static final int POR_PAGINA = 10;
 
     private final ObjectMapper mapper;
     private final String url;
