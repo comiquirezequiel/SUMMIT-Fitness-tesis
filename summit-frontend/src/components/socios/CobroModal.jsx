@@ -4,13 +4,16 @@ import Modal from '../Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../Campo';
 import { apiFetch } from '../../services/api';
 import { formatMoneda } from '../../utils/formato';
-import { METODOS_PAGO } from '../../utils/constantes';
+import { METODOS_PAGO, METODOS_VERIFICABLES } from '../../utils/constantes';
 
 /**
- * Cobro manual en recepción: registra el pago y extiende la membresía del socio.
+ * Cobro presencial en recepción: registra el pago y extiende la membresía del socio.
+ * Una transferencia o un QR que todavía no se ve acreditado puede quedar "a verificar": no extiende
+ * la membresía hasta que el admin lo confirme.
  */
 const CobroModal = ({ socio, planes, onClose, onGuardado }) => {
-  const [datos, setDatos] = useState({ idPlan: '', monto: '', metodoPago: 'EFECTIVO', comprobante: '' });
+  const [datos, setDatos] = useState({ idPlan: '', monto: '', metodoPago: 'EFECTIVO', comprobante: '', aVerificar: false });
+  const verificable = METODOS_VERIFICABLES.includes(datos.metodoPago);
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState('');
 
@@ -80,16 +83,30 @@ const CobroModal = ({ socio, planes, onClose, onGuardado }) => {
               onChange={e => setDatos({ ...datos, monto: e.target.value })} className={inputClass} />
           </Campo>
           <Campo label="Método" required>
-            <select value={datos.metodoPago} onChange={e => setDatos({ ...datos, metodoPago: e.target.value })} className={inputClass}>
+            <select value={datos.metodoPago} className={inputClass}
+              onChange={e => setDatos({ ...datos, metodoPago: e.target.value, aVerificar: false })}>
               {METODOS_PAGO.map(m => <option key={m.valor} value={m.valor}>{m.texto}</option>)}
             </select>
           </Campo>
         </div>
 
         <Campo label="Nro. de comprobante">
-          <input type="text" value={datos.comprobante} placeholder="Opcional"
+          <input type="text" value={datos.comprobante} placeholder={datos.aVerificar ? 'Recomendado para verificarlo después' : 'Opcional'}
             onChange={e => setDatos({ ...datos, comprobante: e.target.value })} className={inputClass} />
         </Campo>
+
+        {verificable && (
+          <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${datos.aVerificar ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`}>
+            <input type="checkbox" checked={datos.aVerificar} className="mt-0.5 w-4 h-4 accent-amber-600"
+              onChange={e => setDatos({ ...datos, aVerificar: e.target.checked })} />
+            <span className="text-sm">
+              <span className="font-semibold text-slate-800">Todavía no se ve acreditado: dejar a verificar</span>
+              <span className="block text-xs text-slate-500 mt-0.5">
+                No extiende la membresía ni suma en la caja hasta que un administrador lo confirme.
+              </span>
+            </span>
+          </label>
+        )}
 
         {error && <p className="text-sm text-rose-600 font-medium">{error}</p>}
       </form>

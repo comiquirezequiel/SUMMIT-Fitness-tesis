@@ -99,6 +99,8 @@ public class SecurityConfig {
 
                 // Suscripciones y pagos: ADMIN y RECEPCION
                 .requestMatchers("/api/suscripciones/**").hasAnyRole("ADMIN", "RECEPCION")
+                // Un pago "a verificar" lo confirma o rechaza solo el ADMIN (no quien lo cobró)
+                .requestMatchers(HttpMethod.POST, "/api/pagos/*/verificar").hasRole("ADMIN")
                 .requestMatchers("/api/pagos/**").hasAnyRole("ADMIN", "RECEPCION")
 
                 // Asistencia / Check-in y tablero de recepción: ADMIN y RECEPCION

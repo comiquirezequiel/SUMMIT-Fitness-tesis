@@ -1,10 +1,13 @@
 package com.summit.backend.repository;
 
+import com.summit.backend.model.EstadoPago;
 import com.summit.backend.model.PagoHistorial;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -12,26 +15,52 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PagoHistorialRepository extends JpaRepository<PagoHistorial, Long> {
+
+    // Historial de un socio (ficha), con plan y personal en la misma consulta
+    @EntityGraph(attributePaths = {"plan", "registradoPor", "verificadoPor"})
     List<PagoHistorial> findByUsuarioIdUsuarioOrderByFechaPagoDesc(Long idUsuario);
 
     // Pagos de un socio con su plan en la misma consulta, del más nuevo al más viejo (portal del socio)
     @EntityGraph(attributePaths = "plan")
     List<PagoHistorial> findByUsuarioIdUsuarioOrderByFechaPagoDescIdPagoDesc(Long idUsuario);
 
-    // Trae socio y plan en la misma consulta para el listado de caja
+    // Trae socio, plan y personal en la misma consulta para el listado de caja
     @Override
-    @EntityGraph(attributePaths = {"usuario", "plan"})
+    @EntityGraph(attributePaths = {"usuario", "plan", "registradoPor", "verificadoPor"})
     Page<PagoHistorial> findAll(Pageable pageable);
 
-    @Query("SELECT COALESCE(SUM(p.montoAbonado), 0) FROM PagoHistorial p WHERE p.fechaPago >= :desde")
+    // Listado de caja filtrado por estado (ej. los "a verificar")
+    @EntityGraph(attributePaths = {"usuario", "plan", "registradoPor", "verificadoPor"})
+    Page<PagoHistorial> findByEstadoPago(EstadoPago estadoPago, Pageable pageable);
+
+    // Para confirmar un pago "a verificar": bloquea la fila para que dos personas no lo aprueben a la vez
+    // (aprobarlo dos veces extendería la membresía dos veces)
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM PagoHistorial p WHERE p.idPago = :idPago")
+    Optional<PagoHistorial> findParaActualizar(@Param("idPago") Long idPago);
+
+    boolean existsByMpPaymentId(String mpPaymentId);
+
+    // La caja suma solo lo que efectivamente entró: los pagos APROBADOS
+    @Query("SELECT COALESCE(SUM(p.montoAbonado), 0) FROM PagoHistorial p "
+            + "WHERE p.fechaPago >= :desde AND p.estadoPago = com.summit.backend.model.EstadoPago.APROBADO")
     BigDecimal sumarDesde(@Param("desde") LocalDateTime desde);
 
-    long countByFechaPagoGreaterThanEqual(LocalDateTime desde);
+    long countByEstadoPagoAndFechaPagoGreaterThanEqual(EstadoPago estadoPago, LocalDateTime desde);
 
-    // Filas [metodoPago, total] de los cobros desde una fecha
-    @Query("SELECT p.metodoPago, COALESCE(SUM(p.montoAbonado), 0) FROM PagoHistorial p WHERE p.fechaPago >= :desde GROUP BY p.metodoPago")
+    // Filas [metodoPago, total] de los cobros aprobados desde una fecha
+    @Query("SELECT p.metodoPago, COALESCE(SUM(p.montoAbonado), 0) FROM PagoHistorial p "
+            + "WHERE p.fechaPago >= :desde AND p.estadoPago = com.summit.backend.model.EstadoPago.APROBADO "
+            + "GROUP BY p.metodoPago")
     List<Object[]> sumarPorMetodoDesde(@Param("desde") LocalDateTime desde);
+
+    // Pagos "a verificar": cuántos son y cuánto suman (todavía no cuentan como ingreso)
+    long countByEstadoPago(EstadoPago estadoPago);
+
+    @Query("SELECT COALESCE(SUM(p.montoAbonado), 0) FROM PagoHistorial p WHERE p.estadoPago = :estado")
+    BigDecimal sumarPorEstado(@Param("estado") EstadoPago estado);
 }

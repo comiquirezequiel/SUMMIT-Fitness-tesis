@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * Un cobro para el listado de caja (sin exponer la entidad completa del socio).
+ * Un cobro para el listado de caja y la ficha del socio (sin exponer las entidades completas).
  */
 @Data
 @Builder
@@ -25,4 +25,8 @@ public class PagoListadoDTO {
     private BigDecimal monto;
     private String metodoPago;
     private String comprobante;
+    private String estado;          // PENDIENTE (a verificar), APROBADO o RECHAZADO
+    private String registradoPor;   // empleado que cobró (null en los débitos automáticos)
+    private String verificadoPor;   // quién confirmó o rechazó un pago a verificar
+    private LocalDateTime fechaVerificacion;
 }

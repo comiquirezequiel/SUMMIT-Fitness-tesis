@@ -10,6 +10,7 @@ import java.util.Map;
 
 /**
  * Totales de caja: ingresos de hoy (con el detalle por método de pago) y del mes.
+ * Solo cuentan los pagos aprobados; los "a verificar" se informan aparte.
  */
 @Data
 @Builder
@@ -21,4 +22,6 @@ public class CajaResumenDTO {
     private Map<String, BigDecimal> ingresosHoyPorMetodo;
     private BigDecimal ingresosMes;
     private long cobrosMes;
+    private long pendientesVerificar;
+    private BigDecimal montoPendienteVerificar;
 }
