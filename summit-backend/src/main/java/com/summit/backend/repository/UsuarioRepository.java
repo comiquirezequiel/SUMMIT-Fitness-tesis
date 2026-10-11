@@ -21,4 +21,5 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     long countByRol(Rol rol);
     long countByRolAndEstado(Rol rol, EstadoUsuario estado);
     long countByRolAndFechaCreacionGreaterThanEqual(Rol rol, LocalDateTime desde);
+    long countByRolAndFechaCreacionGreaterThanEqualAndFechaCreacionLessThan(Rol rol, LocalDateTime desde, LocalDateTime hasta);
 }

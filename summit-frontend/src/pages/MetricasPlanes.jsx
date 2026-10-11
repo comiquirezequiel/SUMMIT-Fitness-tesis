@@ -1,264 +1,144 @@
-import React from 'react';
-import { 
-  Users, TrendingDown, DollarSign, AlertTriangle, 
-  RefreshCw, TrendingUp, PieChart, Activity
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowUpRight, ArrowDownRight, Receipt, Ticket, UserCheck, Repeat, Hourglass } from 'lucide-react';
+import { apiFetch } from '../services/api';
+import { formatMoneda } from '../utils/formato';
+import { textoMetodoPago } from '../utils/constantes';
+import {
+  SERIES, numero, compactoMoneda, fechaLarga, TarjetaKpi, TarjetaGrafico, SinDatos, FiltroPeriodo, periodoInicial,
+} from '../components/graficos/base';
+import { GraficoLinea, GraficoBarras, BarraApilada } from '../components/graficos/Graficos';
 
-// Componente para barras simples de gráficos
-const BarCol = ({ height, color }) => (
-  <div className="w-8 flex flex-col justify-end items-center h-full">
-    <div className={`w-full rounded-t-sm ${color} transition-all`} style={{ height: `${height}%` }}></div>
-  </div>
-);
+// Color fijo por canal y por método. Débito automático usa el mismo color en los dos gráficos y los tramos
+// siguen el orden de la paleta (pares vecinos validados para daltonismo).
+const COLORES_CANAL = { Presencial: SERIES[0], 'Débito automático': SERIES[1] };
+const ORDEN_METODOS = ['DEBITO_AUTOMATICO', 'EFECTIVO', 'TRANSFERENCIA', 'MERCADO_PAGO', 'TARJETA_DEBITO', 'TARJETA_CREDITO'];
+const COLORES_METODO = Object.fromEntries(ORDEN_METODOS.map((m, i) => [textoMetodoPago(m), SERIES[i + 1]]));
 
-// Componente para el punto de una línea en un gráfico
-const LinePoint = ({ x, y }) => (
-  <div 
-    className="absolute w-2 h-2 rounded-full bg-blue-500 border-2 border-white shadow-sm -ml-1 -mt-1"
-    style={{ left: `${x}%`, bottom: `${y}%` }}
-  />
-);
-
+/**
+ * Métricas de Planes (solo administración): ingresos aprobados, ticket promedio, planes que más facturan,
+ * socios por plan y cómo se cobra (presencial o débito automático, y por método).
+ */
 const MetricasPlanes = () => {
+  const [periodo, setPeriodo] = useState(periodoInicial);
+  const [datos, setDatos] = useState(null);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let vigente = true;
+    setCargando(true);
+    apiFetch(`/metricas/ingresos?desde=${periodo.desde}&hasta=${periodo.hasta}`)
+      .then(async (res) => {
+        const json = await res.json().catch(() => ({}));
+        if (res.status === 403) throw new Error('Estas métricas son solo para administración.');
+        if (!res.ok) throw new Error(json.error || 'No se pudieron cargar las métricas');
+        if (vigente) { setDatos(json); setError(''); }
+      })
+      .catch(err => vigente && setError(err.message))
+      .finally(() => vigente && setCargando(false));
+    return () => { vigente = false; };
+  }, [periodo.desde, periodo.hasta]);
+
+  const ind = datos?.indicadores || {};
+  const ingresos = ind.ingresos?.valor || 0;
+  const variacion = ind.ingresos?.anterior ? Math.round(((ingresos - ind.ingresos.anterior) / ind.ingresos.anterior) * 100) : null;
+
+  const metodos = datos
+    ? ORDEN_METODOS.map(m => ({ clave: textoMetodoPago(m), valor: datos.ingresosPorMetodo.find(p => p.clave === m)?.valor || 0 }))
+    : [];
+
   return (
-    <div className="space-y-6 pb-10">
-      {/* Header */}
-      <div className="flex justify-between items-start">
+    <div className="space-y-6">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Estadísticas de Membresías</h1>
-          <p className="text-sm text-slate-500 mt-1">Análisis de evolución y tendencias</p>
+          <h1 className="text-2xl font-bold text-slate-800">Métricas de Planes</h1>
+          <p className="text-sm text-slate-500">
+            Ingresos aprobados, planes y formas de cobro
+            {datos && ` · ${fechaLarga(datos.periodo.desde)} al ${fechaLarga(datos.periodo.hasta)}`}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <select className="bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg px-4 py-2 focus:outline-none focus:border-blue-400 shadow-sm">
-            <option>Últimos 12 meses</option>
-            <option>Este año</option>
-            <option>Mes actual</option>
-          </select>
-          <button className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 shadow-sm transition-colors">
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
+        <FiltroPeriodo valor={periodo} onChange={setPeriodo} />
       </div>
 
-      {/* KPIs Principales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        {/* KPI 1: Activas */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-36">
-          <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
-            <Users className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-3xl font-bold text-slate-800">1</p>
-            <p className="text-sm text-slate-500 font-medium">Membresías Activas</p>
-          </div>
-        </div>
+      {error && <div className="p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>}
 
-        {/* KPI 2: Crecimiento Neto */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-36 relative">
-          <div className="flex justify-between items-start">
-            <div className="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
-              <TrendingDown className="w-5 h-5" />
+      {!datos ? (
+        <div className="h-64 flex items-center justify-center text-slate-400 text-sm">{cargando ? 'Cargando métricas…' : ''}</div>
+      ) : (
+        <div className={`space-y-6 transition-opacity ${cargando ? 'opacity-60' : ''}`}>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <TarjetaGrafico className="lg:col-span-2" titulo="Ingresos aprobados"
+              subtitulo={datos.agrupacion === 'MES' ? 'Por mes' : 'Por día'}
+              tabla={{ columnas: ['Fecha', 'Ingresos'], filas: datos.ingresosEnElTiempo.map(d => [fechaLarga(d.clave), formatMoneda(d.valor)]) }}
+              destacado={(
+                <div className="flex flex-wrap items-end gap-x-4 gap-y-1">
+                  <p className="text-5xl font-semibold text-slate-900 tracking-tight">{formatMoneda(ingresos)}</p>
+                  {variacion !== null && (
+                    <p className={`text-sm font-medium flex items-center gap-1 pb-1.5 ${variacion >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                      {variacion >= 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                      {variacion > 0 ? '+' : ''}{variacion}% vs. período anterior ({formatMoneda(ind.ingresos.anterior)})
+                    </p>
+                  )}
+                </div>
+              )}>
+              <GraficoLinea datos={datos.ingresosEnElTiempo} alto={240} descripcion="Ingresos aprobados en el tiempo"
+                formatoValor={formatMoneda} formatoEje={compactoMoneda} />
+            </TarjetaGrafico>
+            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4">
+              <TarjetaKpi titulo="Cobros aprobados" icon={Receipt} valor={ind.cobros.valor} anterior={ind.cobros.anterior} />
+              <TarjetaKpi titulo="Ticket promedio" icon={Ticket} valor={ind.ticketPromedio.valor} anterior={ind.ticketPromedio.anterior}
+                formato={formatMoneda} />
+              <TarjetaKpi titulo="Socios activos" icon={UserCheck} valor={ind.sociosActivos.valor} anterior={ind.sociosActivos.anterior}
+                detalle="Con la membresía al día" />
             </div>
-            <span className="text-xs font-semibold text-rose-600 flex items-center gap-1">
-              <TrendingDown className="w-3 h-3" /> -76 en 12 meses
-            </span>
           </div>
-          <div>
-            <p className="text-3xl font-bold text-slate-800">-76</p>
-            <p className="text-sm text-slate-500 font-medium">Crecimiento Neto</p>
-            <p className="text-xs text-slate-400 mt-1">+231 nuevas, -307 bajas</p>
-          </div>
-        </div>
 
-        {/* KPI 3: Ingresos */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-36">
-          <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
-            <DollarSign className="w-5 h-5" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TarjetaGrafico titulo="Ingresos por plan" subtitulo="Qué planes facturan más en el período"
+              tabla={{ columnas: ['Plan', 'Ingresos'], filas: datos.ingresosPorPlan.map(d => [d.clave, formatMoneda(d.valor)]) }}>
+              {datos.ingresosPorPlan.length ? (
+                <GraficoBarras datos={datos.ingresosPorPlan} formatoValor={compactoMoneda} descripcion="Ingresos por plan" />
+              ) : <SinDatos texto="No hubo cobros aprobados en este período." />}
+            </TarjetaGrafico>
+            <TarjetaGrafico titulo="Socios activos por plan" subtitulo="Membresías al día hoy"
+              tabla={{ columnas: ['Plan', 'Socios'], filas: datos.sociosPorPlan.map(d => [d.clave, numero(d.valor)]) }}>
+              {datos.sociosPorPlan.length ? (
+                <GraficoBarras datos={datos.sociosPorPlan} color={SERIES[0]} formatoValor={numero} descripcion="Socios activos por plan" />
+              ) : <SinDatos texto="Todavía no hay socios con la membresía al día." />}
+            </TarjetaGrafico>
           </div>
-          <div>
-            <p className="text-3xl font-bold text-slate-800">$ 5.502.100</p>
-            <p className="text-sm text-slate-500 font-medium">Ingresos Total</p>
-            <p className="text-xs text-slate-400 mt-1">Promedio mensual: $ 458.508</p>
-          </div>
-        </div>
 
-        {/* KPI 4: En Riesgo */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between h-36">
-          <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center mb-4">
-            <AlertTriangle className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-3xl font-bold text-slate-800">0</p>
-            <p className="text-sm text-slate-500 font-medium">En Riesgo</p>
-            <p className="text-xs text-slate-400 mt-1">0 críticos (7 días o menos)</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Gráficos Fila 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        
-        {/* Evolución de Membresías */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-slate-400" /> Evolución de Membresías
-          </h3>
-          <div className="relative h-48 border-b border-l border-slate-100 flex items-end justify-between px-2 pb-2">
-            {/* Ejes Y mockeados */}
-            <div className="absolute -left-6 top-0 bottom-0 flex flex-col justify-between text-[10px] text-slate-400 py-2">
-              <span>300</span><span>225</span><span>150</span><span>75</span><span>0</span>
-            </div>
-            
-            {/* Barras y línea */}
-            <div className="w-full h-full relative flex items-end justify-between gap-1">
-              <BarCol height={20} color="bg-emerald-400" />
-              <BarCol height={22} color="bg-emerald-400" />
-              <BarCol height={30} color="bg-emerald-400" />
-              
-              {/* Barra gigante roja mock */}
-              <div className="w-8 flex flex-col justify-end h-full">
-                <div className="w-full bg-rose-500 rounded-t-sm" style={{ height: '90%' }}></div>
+          <TarjetaGrafico titulo="Cómo se cobra" subtitulo="Presencial en recepción o débito automático mensual"
+            tabla={{
+              columnas: ['Canal / método', 'Ingresos'],
+              filas: [...datos.ingresosPorCanal, ...metodos].map(d => [d.clave, formatMoneda(d.valor)]),
+            }}>
+            {ingresos > 0 ? (
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                <div className="xl:col-span-2 space-y-8">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Por canal</p>
+                    <BarraApilada datos={datos.ingresosPorCanal} colores={COLORES_CANAL} formatoValor={formatMoneda}
+                      descripcion="Ingresos presenciales y por débito automático" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Por método de pago</p>
+                    <BarraApilada datos={metodos} colores={COLORES_METODO} formatoValor={formatMoneda}
+                      descripcion="Ingresos por método de pago" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-1 gap-4 content-start">
+                  <TarjetaKpi titulo="Débitos automáticos activos" icon={Repeat} valor={ind.debitosActivos.valor} anterior={null} />
+                  <TarjetaKpi titulo="Cobro recurrente" icon={Repeat} valor={ind.cobroRecurrente.valor} anterior={null}
+                    formato={formatMoneda} detalle="Lo que entra solo cada mes" />
+                  <TarjetaKpi titulo="Pagos a verificar" icon={Hourglass} valor={ind.pendientesVerificar.valor} anterior={null}
+                    detalle={ind.pendientesVerificar.valor > 0 ? `${formatMoneda(ind.montoPendiente.valor)} sin confirmar en Caja` : 'Nada pendiente'} />
+                </div>
               </div>
-              
-              <BarCol height={2} color="bg-emerald-400" />
-              <BarCol height={0} color="bg-emerald-400" />
-              <BarCol height={0} color="bg-emerald-400" />
-              <BarCol height={1} color="bg-rose-500" />
-              <BarCol height={0} color="bg-emerald-400" />
-              <BarCol height={0} color="bg-emerald-400" />
-
-              {/* Línea azul simulada */}
-              <div className="absolute bottom-1 left-0 w-full h-[1px] bg-blue-300"></div>
-              <LinePoint x={5} y={1} />
-              <LinePoint x={15} y={2} />
-              <LinePoint x={25} y={4} />
-              <LinePoint x={35} y={1} />
-              <LinePoint x={45} y={0} />
-              <LinePoint x={55} y={0} />
-              <LinePoint x={65} y={0} />
-              <LinePoint x={75} y={0} />
-              <LinePoint x={85} y={0} />
-              <LinePoint x={95} y={0} />
-            </div>
-          </div>
-          <div className="flex justify-between mt-2 text-[10px] text-slate-400 px-2">
-            <span>Nov 2025</span>
-            <span>Jan 2026</span>
-            <span>Mar 2026</span>
-            <span>May 2026</span>
-            <span>Jul 2026</span>
-            <span>Sep 2026</span>
-          </div>
-          <div className="flex justify-center gap-4 mt-4 text-xs font-medium">
-            <span className="flex items-center gap-1.5 text-slate-600"><span className="w-2 h-2 rounded-full bg-blue-500"></span> Activas</span>
-            <span className="flex items-center gap-1.5 text-slate-600"><span className="w-2 h-2 rounded-full bg-rose-500"></span> Bajas</span>
-            <span className="flex items-center gap-1.5 text-slate-600"><span className="w-2 h-2 rounded-full bg-emerald-400"></span> Nuevas</span>
-          </div>
+            ) : <SinDatos texto="No hubo cobros aprobados en este período." />}
+          </TarjetaGrafico>
         </div>
-
-        {/* Ingresos por Mes */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-slate-400" /> Ingresos por Mes
-          </h3>
-          <div className="relative h-48 border-b border-l border-slate-100 flex items-end justify-between px-4 pb-2">
-            {/* Ejes Y mockeados */}
-            <div className="absolute -left-10 top-0 bottom-0 flex flex-col justify-between text-[10px] text-slate-400 py-2">
-              <span>$1800k</span><span>$1350k</span><span>$900k</span><span>$450k</span><span>$0k</span>
-            </div>
-            
-            <div className="w-full h-full flex items-end justify-between gap-2">
-              <div className="w-1/6 bg-emerald-400 rounded-t-sm transition-all hover:opacity-80" style={{ height: '65%' }}></div>
-              <div className="w-1/6 bg-emerald-400 rounded-t-sm transition-all hover:opacity-80" style={{ height: '75%' }}></div>
-              <div className="w-1/6 bg-emerald-400 rounded-t-sm transition-all hover:opacity-80" style={{ height: '90%' }}></div>
-              <div className="w-1/6 bg-emerald-400 rounded-t-sm transition-all hover:opacity-80" style={{ height: '70%' }}></div>
-              <div className="w-1/6 bg-emerald-400 rounded-t-sm transition-all hover:opacity-80" style={{ height: '3%' }}></div>
-              <div className="w-1/6 bg-emerald-400 rounded-t-sm transition-all hover:opacity-80" style={{ height: '4%' }}></div>
-              <div className="w-1/6 bg-emerald-400 rounded-t-sm transition-all hover:opacity-80" style={{ height: '0%' }}></div>
-              <div className="w-1/6 bg-emerald-400 rounded-t-sm transition-all hover:opacity-80" style={{ height: '0%' }}></div>
-            </div>
-          </div>
-          <div className="flex justify-between mt-2 text-[10px] text-slate-400 px-4">
-            <span>Nov 2025</span>
-            <span>Jan 2026</span>
-            <span>Mar 2026</span>
-            <span>May 2026</span>
-            <span>Jul 2026</span>
-            <span>Sep 2026</span>
-          </div>
-        </div>
-
-      </div>
-
-      {/* Gráficos Fila 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        
-        {/* Distribución por Plan */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
-          <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
-            <PieChart className="w-4 h-4 text-slate-400" /> Distribución por Plan
-          </h3>
-          <div className="flex-1 flex items-center justify-center gap-12">
-            <div className="relative w-32 h-32 rounded-full border-[24px] border-blue-500">
-              {/* Centro transparente / donut */}
-            </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between min-w-[150px]">
-                <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> catem
-                </span>
-                <span className="text-sm font-bold text-slate-800">1 (100%)</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tasa de Retención */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
-            <Activity className="w-4 h-4 text-slate-400" /> Tasa de Retención
-          </h3>
-          <div className="relative h-32 border-b border-l border-slate-100 flex items-end justify-between px-2 pb-2">
-            <div className="absolute -left-8 top-0 bottom-0 flex flex-col justify-between text-[10px] text-slate-400 py-1">
-              <span>100%</span><span>75%</span><span>50%</span><span>25%</span><span>0%</span>
-            </div>
-            
-            <div className="w-full h-full relative">
-              <div className="absolute top-[0%] left-0 w-full h-[2px] bg-purple-500"></div>
-              {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(pos => (
-                <div 
-                  key={pos}
-                  className="absolute w-2.5 h-2.5 rounded-full bg-purple-500 border-2 border-white shadow-sm -ml-1 -mt-1"
-                  style={{ left: `${pos}%`, top: `0%` }}
-                />
-              ))}
-            </div>
-          </div>
-          <div className="flex justify-between mt-2 text-[10px] text-slate-400 px-2">
-            <span>Nov 2025</span>
-            <span>Jan 2026</span>
-            <span>Mar 2026</span>
-            <span>May 2026</span>
-            <span>Jul 2026</span>
-            <span>Sep 2026</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Socios en Riesgo */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-        <h3 className="font-bold text-slate-800 mb-10 flex items-center gap-2">
-          <AlertTriangle className="w-5 h-5 text-amber-500" /> Socios en Riesgo de No Renovar
-          <span className="text-xs font-normal text-slate-400 ml-1">(Próximos 30 días)</span>
-        </h3>
-        
-        <div className="flex flex-col items-center justify-center py-10 text-slate-400">
-          <Users className="w-12 h-12 mb-3 opacity-30" />
-          <p className="text-sm font-medium">No hay socios en riesgo de no renovar</p>
-        </div>
-      </div>
-
+      )}
     </div>
   );
 };

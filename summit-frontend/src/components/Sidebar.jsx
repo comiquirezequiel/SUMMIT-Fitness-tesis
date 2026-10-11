@@ -19,6 +19,7 @@ const MENU_ITEMS = [
     subItems: [
       { icon: User, text: "Lista de Socios", path: "/socios", roles: ['ADMIN', 'RECEPCION', 'PROFESOR'] },
       { icon: Dumbbell, text: "Constructor de Rutinas", path: "/rutinas/constructor", roles: ['ADMIN', 'PROFESOR'] },
+      { icon: BarChart2, text: "Analítica de Socios", path: "/socios/metricas", roles: STAFF },
       { icon: MessageCircle, text: "Chat", path: "/socios/chat", roles: STAFF, demo: true },
       { icon: CheckSquare, text: "Tareas CRM", path: "/socios/tareas", roles: STAFF, demo: true },
       { icon: UserX, text: "Inactividad", path: "/socios/inactividad", roles: STAFF, demo: true },
@@ -36,7 +37,7 @@ const MENU_ITEMS = [
       { icon: Tag, text: "Planes", path: "/planes", roles: STAFF },
       { icon: AlertTriangle, text: "Estado de Membresías", path: "/membresias/estado", roles: STAFF },
       { icon: Repeat, text: "Débitos automáticos", path: "/membresias/debitos", roles: STAFF },
-      { icon: TrendingUp, text: "Métricas de Planes", path: "/membresias/metricas", roles: ['ADMIN'], demo: true },
+      { icon: TrendingUp, text: "Métricas de Planes", path: "/membresias/metricas", roles: ['ADMIN'] },
     ]
   },
   {

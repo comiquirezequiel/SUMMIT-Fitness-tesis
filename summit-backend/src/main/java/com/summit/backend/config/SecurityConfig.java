@@ -112,6 +112,9 @@ public class SecurityConfig {
                 // (un socio recibe 403: maneja datos de salud de otros socios y consume la GPU del gimnasio)
                 .requestMatchers("/api/ia/**").hasAnyRole("ADMIN", "RECEPCION", "PROFESOR")
                 .requestMatchers("/api/dashboard/**").hasAnyRole("ADMIN", "RECEPCION")
+                // Métricas: la asistencia la ven ADMIN y RECEPCION; los ingresos, solo ADMIN
+                .requestMatchers("/api/metricas/ingresos").hasRole("ADMIN")
+                .requestMatchers("/api/metricas/**").hasAnyRole("ADMIN", "RECEPCION")
 
                 // Rutinas: las arman ADMIN y PROFESOR. El cruce con las patologías del socio es dato de salud.
                 // Consulta: cualquier usuario autenticado (un socio solo ve la suya: lo controla RutinaController)

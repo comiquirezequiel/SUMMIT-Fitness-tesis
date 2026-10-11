@@ -2,6 +2,7 @@ package com.summit.backend.repository;
 
 import com.summit.backend.model.Suscripcion;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -14,4 +15,9 @@ public interface SuscripcionRepository extends JpaRepository<Suscripcion, Long> 
     List<Suscripcion> findByUsuarioIdUsuario(Long idUsuario);
     List<Suscripcion> findByFechaVencimientoBeforeAndActivaTrue(LocalDate fecha);
     long countByActivaTrueAndFechaVencimientoBetween(LocalDate desde, LocalDate hasta);
+
+    // Métricas: cada membresía como fila [idUsuario, nombrePlan, fechaInicio, fechaVencimiento]
+    // (socios activos en una fecha, bajas y socios por plan)
+    @Query("SELECT s.usuario.idUsuario, s.plan.nombrePlan, s.fechaInicio, s.fechaVencimiento FROM Suscripcion s")
+    List<Object[]> vencimientosConPlan();
 }

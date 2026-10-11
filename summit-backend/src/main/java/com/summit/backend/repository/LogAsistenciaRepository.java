@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -30,4 +31,11 @@ public interface LogAsistenciaRepository extends JpaRepository<LogAsistencia, Lo
     
     @Query("SELECT COUNT(l) FROM LogAsistencia l WHERE l.fechaHora >= :desde AND l.resultado = 'PERMITIDO'")
     long countCheckinsHoy(LocalDateTime desde);
+
+    // Métricas: ingresos efectivos (permitidos, sin contar las salidas) de un rango, como filas [fechaHora, idUsuario]
+    @Query("SELECT l.fechaHora, l.usuario.idUsuario FROM LogAsistencia l "
+            + "WHERE l.resultado = com.summit.backend.model.ResultadoAsistencia.PERMITIDO "
+            + "AND l.tipoEvento <> com.summit.backend.model.TipoEventoAsistencia.CHECKOUT "
+            + "AND l.fechaHora >= :desde AND l.fechaHora < :hasta")
+    List<Object[]> ingresosPermitidos(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
 }

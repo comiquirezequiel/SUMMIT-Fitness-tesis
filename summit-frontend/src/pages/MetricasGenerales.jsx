@@ -1,237 +1,156 @@
-import React, { useState } from 'react';
-import { 
-  Users, UserPlus, UserMinus, Calendar, 
-  Clock, BarChart2, TrendingUp, Filter, ChevronDown, CheckCircle, PieChart
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { LogIn, Users, Repeat, UserCheck, UserPlus, UserMinus, Sparkles } from 'lucide-react';
+import { apiFetch } from '../services/api';
+import {
+  SERIES, SIN_DATO, numero, fechaLarga, TarjetaKpi, TarjetaGrafico, SinDatos, FiltroPeriodo, periodoInicial,
+} from '../components/graficos/base';
+import { GraficoLinea, GraficoColumnas, MapaCalor, GraficoBarras, BarraApilada } from '../components/graficos/Graficos';
 
-// --- Componente de tarjeta de métrica KPI ---
-const KpiCard = ({ title, value, icon: Icon, colorClass, bgClass }) => (
-  <div className="bg-white p-6 rounded-xl border border-slate-200 flex justify-between items-start shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] transition-all hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.1)] hover:-translate-y-0.5">
-    <div className="flex flex-col">
-      <h3 className="text-slate-500 text-[13px] font-semibold flex items-center gap-1.5 mb-2">
-        {title}
-      </h3>
-      <p className="text-4xl font-extrabold text-slate-800 tracking-tight">{value}</p>
-    </div>
-    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${bgClass}`}>
-      <Icon className={`w-5 h-5 ${colorClass}`} />
-    </div>
-  </div>
-);
+const DIAS_LARGOS = { Lun: 'lunes', Mar: 'martes', Mié: 'miércoles', Jue: 'jueves', Vie: 'viernes', Sáb: 'sábados', Dom: 'domingos' };
+const DIAS_CELDA = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+// Color fijo por categoría (el color sigue a la categoría aunque cambie el período)
+const COLORES_GENERO = {
+  Masculino: SERIES[0], Femenino: SERIES[1], 'No binario': SERIES[2], 'Prefiero no decirlo': SERIES[3], 'Sin dato': SIN_DATO,
+};
 
-// --- Componente de barra para gráficos ---
-const BarChartCol = ({ label, value, max, color = "bg-blue-500" }) => (
-  <div className="flex flex-col items-center gap-2 flex-1">
-    <span className="text-xs font-semibold text-slate-600">{value}</span>
-    <div className="w-full max-w-[40px] bg-slate-100 rounded-t-md flex flex-col justify-end" style={{ height: '140px' }}>
-      <div 
-        className={`w-full ${color} rounded-t-md transition-all duration-500 hover:opacity-80`}
-        style={{ height: `${max > 0 ? (value / max) * 140 : 0}px` }}
-      />
-    </div>
-    <span className="text-[10px] sm:text-xs text-slate-500 font-medium text-center">{label}</span>
-  </div>
-);
+const decimal = (n) => Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
-const LineChartPoint = ({ label, value, max, previousValue }) => {
-  return (
-    <div className="flex flex-col items-center flex-1 relative group cursor-pointer">
-      <div className="absolute -top-8 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap">
-        {label}: {value} visitas
-      </div>
-      <div className="w-full flex justify-center items-end" style={{ height: '120px' }}>
-        <div 
-          className="w-2 bg-blue-400 rounded-full group-hover:bg-blue-600 transition-colors"
-          style={{ height: `${max > 0 ? (value / max) * 120 : 0}px` }}
-        />
-      </div>
-      <span className="text-[10px] text-slate-400 mt-2 rotate-45 sm:rotate-0">{label}</span>
-    </div>
-  );
-}
-
-const HorizontalBar = ({ label, value, max, color }) => (
-  <div className="flex items-center gap-4 py-1">
-    <span className="w-24 text-xs text-slate-500 text-right shrink-0">{label}</span>
-    <div className="flex-1 flex items-center">
-      <div 
-        className={`h-5 rounded-sm ${color} transition-all`} 
-        style={{ width: `${max > 0 ? (value / max) * 100 : 0}%` }}
-      />
-    </div>
-    <span className="w-8 text-xs font-bold text-slate-700 text-right">{value}</span>
-  </div>
-);
-
+/**
+ * Analítica de Socios: asistencia real (ingresos permitidos por el control de acceso) y perfil de quienes vienen.
+ * Todo se compara con el período anterior del mismo largo.
+ */
 const MetricasGenerales = () => {
-  const [dateRange, setDateRange] = useState({ start: '2026-09-01', end: '2026-09-30' });
-  const [preset, setPreset] = useState('Este mes');
+  const [periodo, setPeriodo] = useState(periodoInicial);
+  const [datos, setDatos] = useState(null);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
 
-  const kpis = {
-    nuevos: 12, bajas: 3, totalVisitas: 845, visitantesUnicos: 210, promVisitante: 4.02, promDiario: 28.1
-  };
+  useEffect(() => {
+    let vigente = true;
+    setCargando(true);
+    apiFetch(`/metricas/socios?desde=${periodo.desde}&hasta=${periodo.hasta}`)
+      .then(async (res) => {
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(json.error || 'No se pudieron cargar las métricas');
+        if (vigente) { setDatos(json); setError(''); }
+      })
+      .catch(err => vigente && setError(err.message))
+      .finally(() => vigente && setCargando(false));
+    return () => { vigente = false; };
+  }, [periodo.desde, periodo.hasta]);
 
-  const asistenciaPorDia = [
-    { dia: 'Lun', visitas: 145 }, { dia: 'Mar', visitas: 132 }, { dia: 'Mié', visitas: 150 },
-    { dia: 'Jue', visitas: 128 }, { dia: 'Vie', visitas: 110 }, { dia: 'Sáb', visitas: 65 }, { dia: 'Dom', visitas: 15 },
-  ];
-  const maxDia = Math.max(...asistenciaPorDia.map(d => d.visitas));
+  const ind = datos?.indicadores || {};
+  const hayVisitas = (ind.visitas?.valor || 0) > 0;
 
-  const asistenciaPorHora = [
-    { hora: '07:00', visitas: 45 }, { hora: '08:00', visitas: 60 }, { hora: '09:00', visitas: 55 },
-    { hora: '10:00', visitas: 30 }, { hora: '11:00', visitas: 25 }, { hora: '12:00', visitas: 20 },
-    { hora: '13:00', visitas: 35 }, { hora: '14:00', visitas: 40 }, { hora: '15:00', visitas: 38 },
-    { hora: '16:00', visitas: 50 }, { hora: '17:00', visitas: 85 }, { hora: '18:00', visitas: 110 },
-    { hora: '19:00', visitas: 125 }, { hora: '20:00', visitas: 90 }, { hora: '21:00', visitas: 45 },
-  ];
-  const maxHora = Math.max(...asistenciaPorHora.map(d => d.visitas));
-
-  const edadDist = [
-    { label: '0-17', value: 1, color: 'bg-blue-400' },
-    { label: '18-25', value: 12, color: 'bg-emerald-400' },
-    { label: '26-35', value: 17, color: 'bg-amber-400' },
-    { label: '36-45', value: 13, color: 'bg-rose-400' },
-    { label: '46-55', value: 12, color: 'bg-indigo-400' },
-    { label: '56-65', value: 1, color: 'bg-pink-400' },
-    { label: '65+', value: 0, color: 'bg-slate-300' },
-    { label: 'Sin datos', value: 72, color: 'bg-slate-400' }
-  ];
-  const maxEdad = Math.max(...edadDist.map(d => d.value));
-
-  const sexoDist = [
-    { label: 'Masculino', value: 68, color: 'bg-blue-500' },
-    { label: 'Femenino', value: 57, color: 'bg-emerald-400' },
-    { label: 'Sin especificar', value: 3, color: 'bg-amber-400' }
-  ];
-  const maxSexo = Math.max(...sexoDist.map(d => d.value));
+  // Lo más destacado, dicho en palabras
+  let franjaPico = null;
+  if (datos?.mapaCalor?.length) {
+    const pico = datos.mapaCalor.reduce((a, b) => (b.visitas > a.visitas ? b : a));
+    franjaPico = `${DIAS_CELDA[pico.dia]} de ${pico.hora} a ${pico.hora + 1} h`;
+  }
+  const diaPico = datos?.promedioPorDiaSemana?.reduce((a, b) => (b.valor > a.valor ? b : a));
+  const horaPico = datos?.visitasPorHora?.reduce((a, b) => (b.valor > a.valor ? b : a));
+  // Horas desde las 6 (o antes, si alguien vino más temprano): las etiquetas caen en 6, 9, 12...
+  const primeraHora = datos ? datos.visitasPorHora.findIndex(d => d.valor > 0) : -1;
+  const horasDelDia = datos ? datos.visitasPorHora.slice(Math.min(6, primeraHora < 0 ? 6 : primeraHora)) : [];
 
   return (
-    <div className="space-y-6 pb-10">
-      {/* Header y Selector de Período */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
+    <div className="space-y-6">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Analítica de Socios</h1>
-          <p className="text-sm text-slate-500">Métricas de asistencia y membresías según período</p>
+          <p className="text-sm text-slate-500">
+            Asistencia y perfil de quienes vienen al gimnasio
+            {datos && ` · ${fechaLarga(datos.periodo.desde)} al ${fechaLarga(datos.periodo.hasta)}`}
+          </p>
         </div>
-        
-        <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center pl-2 pr-4 border-r border-slate-200">
-            <Calendar className="w-4 h-4 text-slate-400 mr-2" />
-            <select 
-              value={preset} 
-              onChange={(e) => setPreset(e.target.value)}
-              className="bg-transparent text-sm font-medium text-slate-700 focus:outline-none cursor-pointer"
-            >
-              <option>Hoy</option>
-              <option>Últimos 7 días</option>
-              <option>Este mes</option>
-              <option>Mes anterior</option>
-              <option>Personalizado...</option>
-            </select>
-          </div>
-          <div className="flex items-center gap-2 px-2">
-            <input 
-              type="date" 
-              value={dateRange.start}
-              onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
-              className="text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
-            />
-            <span className="text-slate-400 text-sm">-</span>
-            <input 
-              type="date" 
-              value={dateRange.end}
-              onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
-              className="text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
-            />
-          </div>
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
-            Aplicar
-          </button>
-        </div>
+        <FiltroPeriodo valor={periodo} onChange={setPeriodo} />
       </div>
 
-      {/* Tarjetas KPI Exclusivas del Período */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <KpiCard title="Nuevos" value={kpis.nuevos} icon={UserPlus} colorClass="text-emerald-600" bgClass="bg-emerald-50" />
-        <KpiCard title="Bajas" value={kpis.bajas} icon={UserMinus} colorClass="text-rose-600" bgClass="bg-rose-50" />
-        <KpiCard title="Total Visitas" value={kpis.totalVisitas} icon={Users} colorClass="text-blue-600" bgClass="bg-blue-50" />
-        <KpiCard title="Visitantes Únicos" value={kpis.visitantesUnicos} icon={CheckCircle} colorClass="text-indigo-600" bgClass="bg-indigo-50" />
-        <KpiCard title="Prom. Visitante" value={kpis.promVisitante} icon={BarChart2} colorClass="text-amber-600" bgClass="bg-amber-50" />
-        <KpiCard title="Prom. Diario" value={kpis.promDiario} icon={TrendingUp} colorClass="text-purple-600" bgClass="bg-purple-50" />
-      </div>
+      {error && <div className="p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>}
 
-      {/* Gráficos de Asistencia */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Asistencia por día de la semana */}
-        <div className="lg:col-span-1 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-bold text-slate-800 flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-blue-500" /> Asistencia por día
-            </h2>
+      {!datos ? (
+        <div className="h-64 flex items-center justify-center text-slate-400 text-sm">{cargando ? 'Cargando métricas…' : ''}</div>
+      ) : (
+        <div className={`space-y-6 transition-opacity ${cargando ? 'opacity-60' : ''}`}>
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+            <TarjetaKpi titulo="Visitas" icon={LogIn} valor={ind.visitas.valor} anterior={ind.visitas.anterior} />
+            <TarjetaKpi titulo="Socios que vinieron" icon={Users} valor={ind.visitantesUnicos.valor} anterior={ind.visitantesUnicos.anterior} />
+            <TarjetaKpi titulo="Visitas por socio" icon={Repeat} valor={ind.promedioPorVisitante.valor}
+              anterior={ind.promedioPorVisitante.anterior} formato={decimal} />
+            <TarjetaKpi titulo="Socios activos" icon={UserCheck} valor={ind.sociosActivos.valor} anterior={ind.sociosActivos.anterior}
+              detalle="Con la membresía al día" />
+            <TarjetaKpi titulo="Socios nuevos" icon={UserPlus} valor={ind.nuevos.valor} anterior={ind.nuevos.anterior} />
+            <TarjetaKpi titulo="Bajas" icon={UserMinus} valor={ind.bajas.valor} anterior={ind.bajas.anterior} subirEsBueno={false}
+              detalle="Membresías vencidas sin renovar" />
           </div>
-          <div className="flex items-end justify-between gap-2 h-48 mt-4">
-            {asistenciaPorDia.map(d => (
-              <BarChartCol key={d.dia} label={d.dia} value={d.visitas} max={maxDia} color="bg-blue-500" />
-            ))}
+
+          {hayVisitas && (
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-white border border-blue-100 text-sm text-slate-700">
+              <Sparkles className="w-5 h-5 text-blue-500 shrink-0" />
+              <p>
+                En promedio vienen <b>{decimal(ind.promedioDiario.valor)} personas por día</b>.
+                {diaPico && diaPico.valor > 0 && <> Los <b>{DIAS_LARGOS[diaPico.clave]}</b> son los días con más gente</>}
+                {horaPico && horaPico.valor > 0 && <> y la hora más concurrida es de <b>{horaPico.clave} a {Number(horaPico.clave) + 1} h</b></>}.
+                {franjaPico && <> La franja más llena del período fue el <b>{franjaPico}</b>.</>}
+              </p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <TarjetaGrafico className="lg:col-span-2" titulo="Visitas por día"
+              subtitulo={`Promedio: ${decimal(ind.promedioDiario.valor)} por día`}
+              tabla={{ columnas: ['Fecha', 'Visitas'], filas: datos.visitasPorDia.map(d => [fechaLarga(d.clave), numero(d.valor)]) }}>
+              <GraficoLinea datos={datos.visitasPorDia} descripcion="Visitas por día"
+                formatoValor={(v) => `${numero(v)} ${v === 1 ? 'visita' : 'visitas'}`} />
+            </TarjetaGrafico>
+            <TarjetaGrafico titulo="Día de la semana" subtitulo="Promedio de visitas · destacado el día con más gente"
+              tabla={{ columnas: ['Día', 'Promedio'], filas: datos.promedioPorDiaSemana.map(d => [d.clave, decimal(d.valor)]) }}>
+              {hayVisitas ? (
+                <GraficoColumnas datos={datos.promedioPorDiaSemana} alto={260} descripcion="Promedio de visitas por día de la semana"
+                  formatoValor={(v) => `${decimal(v)} en promedio`} formatoEje={(v) => numero(v)}
+                  detalle={(d) => `Los ${DIAS_LARGOS[d.clave]}`} />
+              ) : <SinDatos />}
+            </TarjetaGrafico>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <TarjetaGrafico className="lg:col-span-2" titulo="Horarios pico" subtitulo="Visitas por día y hora: cuanto más oscuro, más gente"
+              tabla={{
+                columnas: ['Franja', 'Visitas'],
+                filas: [...datos.mapaCalor].sort((a, b) => b.visitas - a.visitas)
+                  .map(c => [`${DIAS_CELDA[c.dia]} ${c.hora} a ${c.hora + 1} h`, numero(c.visitas)]),
+              }}>
+              {hayVisitas ? <MapaCalor celdas={datos.mapaCalor} descripcion="Mapa de calor de visitas por día y hora" /> : <SinDatos />}
+            </TarjetaGrafico>
+            <TarjetaGrafico titulo="Hora del día" subtitulo="Total de visitas por hora · destacada la hora pico"
+              tabla={{ columnas: ['Hora', 'Visitas'], filas: datos.visitasPorHora.filter(d => d.valor > 0).map(d => [`${d.clave} a ${Number(d.clave) + 1} h`, numero(d.valor)]) }}>
+              {hayVisitas ? (
+                <GraficoColumnas datos={horasDelDia} alto={250} cadaCuantasEtiquetas={3}
+                  descripcion="Visitas por hora del día" formatoValor={(v) => `${numero(v)} visitas`}
+                  detalle={(d) => `De ${d.clave} a ${Number(d.clave) + 1} h`} />
+              ) : <SinDatos />}
+            </TarjetaGrafico>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TarjetaGrafico titulo="Edad de quienes vinieron" subtitulo="Socios distintos que ingresaron en el período"
+              tabla={{ columnas: ['Edad', 'Socios'], filas: datos.edades.map(d => [d.clave, numero(d.valor)]) }}>
+              {hayVisitas ? (
+                <GraficoBarras datos={datos.edades} colores={{ 'Sin dato': SIN_DATO }} descripcion="Socios por rango de edad"
+                  formatoValor={(v) => numero(v)} />
+              ) : <SinDatos />}
+            </TarjetaGrafico>
+            <TarjetaGrafico titulo="Género de quienes vinieron" subtitulo="Socios distintos que ingresaron en el período"
+              tabla={{ columnas: ['Género', 'Socios'], filas: datos.generos.map(d => [d.clave, numero(d.valor)]) }}>
+              {hayVisitas ? (
+                <BarraApilada datos={datos.generos} colores={COLORES_GENERO} descripcion="Socios por género"
+                  formatoValor={(v) => `${numero(v)} ${v === 1 ? 'socio' : 'socios'}`} />
+              ) : <SinDatos />}
+            </TarjetaGrafico>
           </div>
         </div>
-
-        {/* Asistencia por hora */}
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-bold text-slate-800 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-indigo-500" /> Asistencia por hora
-            </h2>
-            <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
-              Promedio del período
-            </span>
-          </div>
-          <div className="flex items-end justify-between gap-1 h-40 mt-4 px-2">
-            {asistenciaPorHora.map((d, i) => (
-              <LineChartPoint 
-                key={d.hora} 
-                label={d.hora} 
-                value={d.visitas} 
-                max={maxHora} 
-                previousValue={i > 0 ? asistenciaPorHora[i-1].visitas : 0} 
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Gráficos de Distribución */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Distribución por Edad */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-bold text-slate-800 flex items-center gap-2">
-              <PieChart className="w-5 h-5 text-slate-400" /> Distribución por Edad
-            </h2>
-          </div>
-          <div className="space-y-1">
-            {edadDist.map(item => (
-              <HorizontalBar key={item.label} label={item.label} value={item.value} max={maxEdad} color={item.color} />
-            ))}
-          </div>
-        </div>
-
-        {/* Distribución por Sexo */}
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-bold text-slate-800 flex items-center gap-2">
-              <Users className="w-5 h-5 text-slate-400" /> Distribución por Sexo
-            </h2>
-          </div>
-          <div className="space-y-1">
-            {sexoDist.map(item => (
-              <HorizontalBar key={item.label} label={item.label} value={item.value} max={maxSexo} color={item.color} />
-            ))}
-          </div>
-        </div>
-      </div>
-
+      )}
     </div>
   );
 };

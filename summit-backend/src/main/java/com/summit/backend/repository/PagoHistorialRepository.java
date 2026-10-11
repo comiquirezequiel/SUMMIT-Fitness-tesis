@@ -45,6 +45,11 @@ public interface PagoHistorialRepository extends JpaRepository<PagoHistorial, Lo
 
     boolean existsByMpPaymentId(String mpPaymentId);
 
+    // Métricas: cobros aprobados de un rango, como filas [fechaPago, monto, metodoPago, nombrePlan]
+    @Query("SELECT p.fechaPago, p.montoAbonado, p.metodoPago, p.plan.nombrePlan FROM PagoHistorial p "
+            + "WHERE p.estadoPago = com.summit.backend.model.EstadoPago.APROBADO AND p.fechaPago >= :desde AND p.fechaPago < :hasta")
+    List<Object[]> aprobadosEntre(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
+
     // La caja suma solo lo que efectivamente entró: los pagos APROBADOS
     @Query("SELECT COALESCE(SUM(p.montoAbonado), 0) FROM PagoHistorial p "
             + "WHERE p.fechaPago >= :desde AND p.estadoPago = com.summit.backend.model.EstadoPago.APROBADO")
