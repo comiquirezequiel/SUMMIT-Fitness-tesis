@@ -19,7 +19,7 @@ import java.util.function.Supplier;
  * Si Ollama no está corriendo responde 503 y el resto del sistema sigue funcionando.
  *
  * <p><b>Rol en la arquitectura:</b> es la "puerta de entrada" HTTP (capa Controller). Recibe los pedidos del
- * frontend, delega TODO el trabajo en {@link AsistenteIaService} y traduce los resultados y errores a
+ * frontend, delega todo el trabajo en {@link AsistenteIaService} y traduce los resultados y errores a
  * respuestas HTTP. No contiene lógica de negocio.</p>
  *
  * <p><b>Seguridad:</b> SecurityConfig restringe /api/ia/** a ADMIN, RECEPCION y PROFESOR: un socio recibe 403.
