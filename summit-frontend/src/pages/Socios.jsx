@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Users, CheckCircle, AlertTriangle, UserPlus,
   Search, Filter, ChevronDown, Download, RefreshCw, Layers,
-  Eye, Edit2, Activity, Wallet
+  Eye, Edit2, Activity, Wallet, Repeat
 } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import CobroModal from '../components/socios/CobroModal';
@@ -50,6 +50,18 @@ const Socios = () => {
     }
   };
 
+  // Socios con débito automático activo (solo admin y recepción pueden consultarlo)
+  const [conDebito, setConDebito] = useState(new Set());
+  const fetchDebitos = async () => {
+    if (!puedeEditar) return;
+    try {
+      const response = await apiFetch('/debitos?estado=ACTIVO');
+      if (response.ok) setConDebito(new Set((await response.json()).map(d => d.idSocio)));
+    } catch {
+      // Sin la marca de débito la tabla funciona igual
+    }
+  };
+
   const fetchPlanes = async () => {
     try {
       const response = await apiFetch('/planes');
@@ -62,6 +74,7 @@ const Socios = () => {
   useEffect(() => {
     fetchSocios();
     fetchPlanes();
+    fetchDebitos();
   }, []);
 
   // Cerrar el menú de estados al hacer clic afuera
@@ -217,8 +230,21 @@ const Socios = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-1">
-                          <span className="font-semibold text-slate-700">{socio.planActual}</span>
-                          {socio.membresiaAlDia ? (
+                          <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+                            {socio.planActual}
+                            {conDebito.has(socio.idSocio) && (
+                              <span title="Paga con débito automático (Mercado Pago)"
+                                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
+                                <Repeat className="w-3 h-3" /> DÉBITO
+                              </span>
+                            )}
+                          </span>
+                          {socio.membresiaAlDia && socio.estado !== 'ACTIVO' ? (
+                            // Cuota paga pero cuenta de baja, suspendida o inactiva: el control de acceso no lo deja pasar
+                            <span className="inline-flex w-max items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                              No puede ingresar {socio.vencimientoMembresia && `(Vence ${formatFecha(socio.vencimientoMembresia)})`}
+                            </span>
+                          ) : socio.membresiaAlDia ? (
                             <span className="inline-flex w-max items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
                               AL DÍA {socio.vencimientoMembresia && `(Vence ${formatFecha(socio.vencimientoMembresia)})`}
                             </span>
@@ -281,7 +307,8 @@ const Socios = () => {
         <EditarSocioModal socio={modal.socio} onClose={() => setModal(null)} onGuardado={cerrarYRefrescar} />
       )}
       {modal?.tipo === 'ficha' && (
-        <FichaSocioModal socio={modal.socio} puedeEditar={puedeEditar} onClose={() => setModal(null)} onActualizado={fetchSocios} />
+        <FichaSocioModal socio={modal.socio} puedeEditar={puedeEditar} onActualizado={fetchSocios}
+          onClose={() => { setModal(null); fetchDebitos(); }} />
       )}
     </div>
   );
