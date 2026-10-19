@@ -45,7 +45,7 @@ import java.util.TreeSet;
 /**
  * Asistente de IA para la ficha médica (modelo local con Ollama):
  * 1) lee un certificado médico (PDF con texto, PDF escaneado o foto) y propone apto, fecha, patologías,
- *    restricciones y un resumen para el profesor;
+ *    restricciones y un resumen para el profesor, y señala indicios de que el certificado podría ser falso;
  * 2) sugiere qué ejercicios del catálogo conviene evitar según las patologías del socio.
  * Solo propone: el personal confirma antes de guardar, y la regla firme del constructor (patologías contra
  * contraindicaciones del catálogo) sigue decidiendo las alertas.
@@ -56,7 +56,9 @@ import java.util.TreeSet;
  *
  * <p><b>Principio de diseño:</b> el servicio NO confía ciegamente en la IA. Todo lo que devuelve el modelo
  * se valida (largos, fechas imposibles, valores fuera de las listas) y los controles críticos
- * (DNI de otra persona, vencimiento) los calcula este código, no el modelo.</p>
+ * (DNI de otra persona, vencimiento, fecha imposible o futura, matrícula del médico) los calcula este código,
+ * no el modelo. Lo que sí es opinión del modelo (las señales de un certificado falso) viaja aparte y se
+ * muestra como tal.</p>
  *
  * <p>Ningún método de esta clase guarda datos: solo leen y devuelven propuestas. Guardar es responsabilidad
  * de CertificadoMedicoService, y solo ocurre cuando una persona confirma en la pantalla.</p>
@@ -189,8 +191,13 @@ public class AsistenteIaService {
         // r.path("campo") devuelve un nodo vacío (y no null) si el campo faltara: evita NullPointerException.
         List<String> patologias = lista(r.path("patologias"), 10, 80);            // máx. 10 patologías de 80 caracteres
         Boolean apto = r.path("apto").isBoolean() ? r.path("apto").asBoolean() : null; // solo true/false reales; si no, "no lo indica"
-        LocalDate fechaEmision = fecha(r.path("fechaEmision").asText(null));        // descarta fechas ilegibles o futuras
+        // La fecha tal como la devolvió el modelo: permite distinguir una ilegible (null) de una imposible
+        // ("2027-02-31") o futura, que son señales de un certificado adulterado.
+        String fechaLeida = r.path("fechaEmision").asText(null);
+        LocalDate fechaEmision = fecha(fechaLeida);                                  // descarta fechas ilegibles, imposibles o futuras
         String pacienteNombre = recortar(r.path("pacienteNombre").asText(""), 100);
+        String medicoNombre = recortar(r.path("medicoNombre").asText(""), 100);
+        String medicoMatricula = recortar(r.path("medicoMatricula").asText(""), 60);
         // "\\D" = cualquier caracter que NO sea dígito: "28.456.789" queda "28456789" para comparar con el DNI del socio.
         String pacienteDni = r.path("pacienteDni").asText("").replaceAll("\\D", "");
         // Las etiquetas se normalizan (mayúsculas, sin tildes) y se filtran contra el catálogo: doble seguridad
@@ -201,8 +208,14 @@ public class AsistenteIaService {
         return AnalisisCertificadoDTO.builder()
                 .pacienteNombre(pacienteNombre.isEmpty() ? null : pacienteNombre)
                 .pacienteDni(pacienteDni.isEmpty() ? null : pacienteDni)
-                // Advertencias calculadas por ESTE código (no por la IA): DNI distinto, no apto, vencido, sin fecha.
-                .advertencias(advertencias(dniEsperado, pacienteNombre, pacienteDni, apto, fechaEmision))
+                .medicoNombre(medicoNombre.isEmpty() ? null : medicoNombre)
+                .medicoMatricula(medicoMatricula.isEmpty() ? null : medicoMatricula)
+                // Advertencias calculadas por ESTE código (no por la IA): DNI distinto, no apto, vencido,
+                // fecha ilegible, imposible o futura, matrícula ausente o sin número.
+                .advertencias(advertencias(dniEsperado, pacienteNombre, pacienteDni, apto, fechaEmision,
+                        fechaLeida, medicoMatricula))
+                // Indicios de certificado falso que juzga la IA: van aparte porque son una opinión, no una regla.
+                .senalesDeAlerta(lista(r.path("senalesDeAlerta"), 6, 160))
                 .apto(apto)
                 .fechaEmision(fechaEmision)
                 .patologias(patologias)
@@ -309,6 +322,12 @@ public class AsistenteIaService {
      *   un modelo copió literalmente el patrón en lugar de leer la fecha.
      * - "No inventes nada": reduce las "alucinaciones" (datos que no están en el documento).
      * - Las etiquetas se listan explícitamente con un ejemplo de equivalencia (hernia lumbar → HERNIA y LUMBAR).
+     * - La fecha se pide "tal como figura aunque parezca imposible": si el modelo corrigiera un 31 de febrero,
+     *   advertencias(...) ya no podría avisar que la fecha no existe.
+     * - Las señales de alerta se piden con ejemplos concretos y aclarando que un certificado normal no tiene
+     *   ninguna, para que el modelo no marque como sospechoso un certificado válido.
+     * - Al modelo se le pide que NO evalúe la fecha ni la matrícula: no sabe qué día es hoy (en las pruebas marcó
+     *   como "futuras" fechas de 2026 válidas) y advertencias(...) ya controla las dos cosas con reglas exactas.
      *
      * @param texto el texto extraído del PDF, o null si el certificado va como imagen
      */
@@ -320,11 +339,14 @@ public class AsistenteIaService {
                 Extraé los datos en JSON, en español:
                 - pacienteNombre: nombre de la persona a la que se le hizo el certificado, o null si no figura.
                 - pacienteDni: su DNI (solo los números), o null si no figura.
+                - medicoNombre: nombre del médico que firma, o null si no figura.
+                - medicoMatricula: su matrícula tal como figura (por ejemplo "M.N. 12.345"), o null si no figura.
                 - apto: true si el médico autoriza la actividad física, false si no la autoriza, null si no lo dice.
-                - fechaEmision: la fecha del certificado con formato año-mes-día (por ejemplo 2026-03-21), o null si no figura.
+                - fechaEmision: la fecha del certificado con formato año-mes-día (por ejemplo 2026-03-21), tal como figura aunque parezca imposible, o null si no figura.
                 - patologias: cada condición médica mencionada, en pocas palabras (por ejemplo "Hernia de disco L4-L5").
                 - restricciones: lo que el médico indica evitar o cuidar.
                 - resumen: 2 o 3 oraciones para el profesor del gimnasio sobre la condición del socio y qué cuidar.
+                - senalesDeAlerta: indicios concretos de que el certificado podría ser falso o no válido, cada uno en una frase corta. Por ejemplo: dice que no hubo examen, lenguaje informal o de publicidad, errores de ortografía groseros, validez "de por vida", o declara apto a alguien con una condición que le impide hacer ejercicio. No evalúes la fecha ni la matrícula: las controla el sistema. Un certificado normal no tiene ninguno: lista vacía.
                 """.formatted(texto != null
                 ? "Este es el texto de un certificado médico."
                 : "La imagen es un certificado médico (puede tener partes escritas a mano)."));
@@ -334,7 +356,7 @@ public class AsistenteIaService {
                     .append("(por ejemplo, una hernia de disco lumbar corresponde a HERNIA y LUMBAR): ")
                     .append(String.join(", ", etiquetas)).append(". Si no corresponde ninguna, lista vacía.\n");
         }
-        p.append("Si el certificado no menciona ninguna patología, devolvé las listas vacías. No inventes nada que no esté en el certificado.\n");
+        p.append("Si el certificado no menciona ninguna patología, devolvé vacías patologias, etiquetas y restricciones. No inventes nada que no esté en el certificado.\n");
         // Si hay texto (PDF digital), va al final del prompt. Si es imagen, la imagen viaja aparte (campo "images").
         if (texto != null) {
             p.append("\nCERTIFICADO:\n").append(texto);
@@ -353,6 +375,8 @@ public class AsistenteIaService {
         Map<String, Object> props = new LinkedHashMap<>();   // LinkedHashMap: conserva el orden de los campos
         props.put("pacienteNombre", Map.of("type", List.of("string", "null")));
         props.put("pacienteDni", Map.of("type", List.of("string", "null")));
+        props.put("medicoNombre", Map.of("type", List.of("string", "null")));
+        props.put("medicoMatricula", Map.of("type", List.of("string", "null")));
         props.put("apto", Map.of("type", List.of("boolean", "null")));
         props.put("fechaEmision", Map.of("type", List.of("string", "null")));
         props.put("patologias", textos);
@@ -360,6 +384,9 @@ public class AsistenteIaService {
                 : Map.of("type", "array", "items", Map.of("type", "string", "enum", etiquetas)));
         props.put("restricciones", textos);
         props.put("resumen", Map.of("type", "string"));
+        // Último a propósito: el modelo completa los campos en el orden del esquema, así juzga el certificado
+        // después de haberlo leído entero.
+        props.put("senalesDeAlerta", textos);
         // List.copyOf(props.keySet()): todos los nombres de campos como obligatorios.
         return Map.of("type", "object", "properties", props, "required", List.copyOf(props.keySet()));
     }
@@ -422,13 +449,18 @@ public class AsistenteIaService {
 
     /**
      * Lo que recepción tiene que mirar antes de guardar: un certificado de otra persona (el error más común
-     * al subir archivos), uno que dice "no apto", uno vencido o sin fecha legible.
+     * al subir archivos), uno que dice "no apto", uno vencido, una fecha ilegible, imposible o futura, o un
+     * certificado sin la matrícula del médico (estas dos últimas son señales de un certificado adulterado).
      *
      * <p>Es "static" porque no usa datos de la clase (lógica pura): se puede probar de forma aislada.
      * Estas reglas se calculan en Java y no se le piden a la IA porque son críticas y deben ser exactas.</p>
+     *
+     * @param fechaLeida      la fecha tal como la devolvió el modelo (puede ser imposible, ej. "2027-02-31")
+     * @param medicoMatricula la matrícula tal como figura en el certificado ("" si no figura)
      */
     static List<String> advertencias(String dniEsperado, String pacienteNombre, String pacienteDni,
-                                     Boolean apto, LocalDate fechaEmision) {
+                                     Boolean apto, LocalDate fechaEmision, String fechaLeida,
+                                     String medicoMatricula) {
         List<String> avisos = new ArrayList<>();
         // Solo dígitos en los dos lados, así "30.000.011" y "30000011" se consideran iguales.
         String esperado = dniEsperado == null ? "" : dniEsperado.replaceAll("\\D", "");
@@ -442,13 +474,40 @@ public class AsistenteIaService {
         if (Boolean.FALSE.equals(apto)) {
             avisos.add("El certificado indica que NO está apto para la actividad física");
         }
-        if (fechaEmision == null) {
+        String leida = fechaLeida == null ? "" : fechaLeida.strip();
+        if (fechaEmision != null) {
+            if (fechaEmision.plusDays(365).isBefore(LocalDate.now())) {
+                // Misma regla que el sistema: un certificado vale 365 días (Ley 5397).
+                avisos.add("El certificado tiene más de un año: está vencido");
+            }
+        } else if (leida.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            // Tiene forma de fecha pero fecha(...) la descartó: o no existe en el calendario (31 de febrero)
+            // o es posterior a hoy. Se muestra como día/mes/año, que es como la lee recepción.
+            String mostrada = leida.substring(8) + "/" + leida.substring(5, 7) + "/" + leida.substring(0, 4);
+            avisos.add(existe(leida)
+                    ? "La fecha de emisión es posterior a hoy (" + mostrada + "): revisá el certificado original"
+                    : "La fecha de emisión no existe en el calendario (" + mostrada + "): revisá el certificado original");
+        } else {
             avisos.add("No se pudo leer la fecha de emisión: completala a mano");
-        } else if (fechaEmision.plusDays(365).isBefore(LocalDate.now())) {
-            // Misma regla que el sistema: un certificado vale 365 días (Ley 5397).
-            avisos.add("El certificado tiene más de un año: está vencido");
+        }
+        // Un certificado válido lleva la matrícula del médico que lo firma (en el sello o al pie).
+        String matricula = medicoMatricula == null ? "" : medicoMatricula.strip();
+        if (matricula.isEmpty()) {
+            avisos.add("No figura la matrícula del médico (o no se pudo leer): verificá el sello en el certificado original");
+        } else if (!matricula.matches(".*\\d.*")) {
+            avisos.add("La matrícula del médico no tiene número (figura \"" + matricula + "\"): verificá el certificado original");
         }
         return avisos;
+    }
+
+    // true si el texto "año-mes-día" es una fecha que existe en el calendario (2026-02-28 sí, 2027-02-31 no).
+    private static boolean existe(String fechaIso) {
+        try {
+            LocalDate.parse(fechaIso);
+            return true;
+        } catch (DateTimeParseException e) {
+            return false;
+        }
     }
 
     // Zonas y condiciones que usan las contraindicaciones del catálogo (HOMBRO, RODILLA, LUMBAR...)
@@ -514,8 +573,8 @@ public class AsistenteIaService {
         return valores;
     }
 
-    // Una fecha ilegible o futura se descarta: el personal la completa a mano
-    // (un certificado no puede tener fecha futura: si el modelo la devuelve, casi seguro leyó mal).
+    // Una fecha ilegible, imposible o futura se descarta: el personal la completa a mano. advertencias(...)
+    // avisa cuál de los casos fue (una fecha futura o imposible puede ser un error de lectura o un certificado adulterado).
     private static LocalDate fecha(String texto) {
         if (vacio(texto)) {
             return null;

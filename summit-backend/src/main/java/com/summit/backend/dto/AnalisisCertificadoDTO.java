@@ -28,7 +28,14 @@ import java.util.List;
 public class AnalisisCertificadoDTO {
     private String pacienteNombre;         // a quién se le hizo el certificado (según lo que se lee)
     private String pacienteDni;            // solo números; null si no figura
-    private List<String> advertencias;     // otro DNI, no apto, vencido o fecha ilegible: revisar antes de guardar
+    private String medicoNombre;           // quién firma el certificado (según lo que se lee); null si no figura
+    private String medicoMatricula;        // matrícula tal como figura (ej. "M.N. 98.765"); null si no figura
+    // Reglas exactas que calcula el backend: otro DNI, no apto, vencido, fecha ilegible/imposible/futura,
+    // matrícula ausente o sin número. Revisar antes de guardar.
+    private List<String> advertencias;
+    // Indicios de certificado falso o no válido que detectó la IA (ej. "admite que no hubo examen"). Es una
+    // opinión del modelo, no una regla exacta: por eso viaja separado de las advertencias.
+    private List<String> senalesDeAlerta;
     private Boolean apto;                  // null si el certificado no lo dice (Boolean y no boolean: admite null)
     private LocalDate fechaEmision;        // null si no figura o no se pudo leer (viaja como "AAAA-MM-DD")
     private List<String> patologias;       // condiciones mencionadas, en pocas palabras

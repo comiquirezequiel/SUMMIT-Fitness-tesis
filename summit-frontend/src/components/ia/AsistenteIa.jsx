@@ -2,7 +2,7 @@
 // después de dibujar (consultas, temporizadores) y permite limpiarlo al salir de la pantalla.
 import React, { useEffect, useState } from 'react';
 // Íconos de la librería lucide-react (Sparkles = el ícono "✦" que identifica todo lo que hace la IA).
-import { Sparkles, Loader2, CheckCircle2, XCircle, HelpCircle, Info, AlertTriangle } from 'lucide-react';
+import { Sparkles, Loader2, CheckCircle2, XCircle, HelpCircle, Info, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { estadoIa } from '../../services/ia';
 import { formatFecha } from '../../utils/formato';
 
@@ -81,9 +81,10 @@ const Apto = ({ apto }) => {
  * acciones: botones que decide quien lo usa (ej. "Usar estos datos" / "Descartar").
  *
  * Recibe el AnalisisCertificadoDTO del backend tal cual. El orden de la tarjeta es intencional:
- * 1) advertencias en rojo arriba (lo más importante: otra persona, no apto, vencido);
- * 2) de quién es el certificado; 3) apto y fecha; 4) patologías; 5) indicaciones; 6) resumen;
- * 7) el aviso de que la IA puede equivocarse; 8) los botones de la pantalla que la usa.
+ * 1) advertencias en rojo arriba (lo más importante: otra persona, no apto, vencido, fecha imposible, sin matrícula);
+ * 2) señales de un posible certificado falso, en naranja (las juzga la IA, por eso van aparte de las advertencias);
+ * 3) de quién es el certificado y quién lo firma; 4) apto y fecha; 5) patologías; 6) indicaciones; 7) resumen;
+ * 8) el aviso de que la IA puede equivocarse; 9) los botones de la pantalla que la usa.
  */
 export const ResultadoAnalisis = ({ analisis, acciones }) => (
   <div className="rounded-xl border border-violet-200 bg-violet-50/40 p-4 space-y-3 text-sm">
@@ -103,11 +104,27 @@ export const ResultadoAnalisis = ({ analisis, acciones }) => (
         ))}
       </ul>
     )}
+    {/* Señales de un posible certificado falso: las detecta la IA (es una opinión, no una regla exacta), por eso
+        van aparte de las advertencias y lo aclaran. Naranja: llaman la atención sin confundirse con el rojo. */}
+    {analisis.senalesDeAlerta?.length > 0 && (
+      <div className="rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-orange-900">
+        <p className="font-semibold flex items-center gap-1.5"><ShieldAlert className="w-4 h-4 shrink-0" /> Posible certificado falso o no válido</p>
+        <ul className="list-disc pl-6 mt-1 space-y-0.5">{analisis.senalesDeAlerta.map(s => <li key={s}>{s}</li>)}</ul>
+        <p className="text-xs mt-1.5">Lo detectó la IA: verificá el certificado original o pedile uno nuevo al socio antes de guardarlo.</p>
+      </div>
+    )}
     {/* Nombre y DNI leídos: permiten comparar a simple vista con el socio. */}
     {(analisis.pacienteNombre || analisis.pacienteDni) && (
       <p className="text-xs text-slate-500">
         Certificado de <b className="text-slate-700">{analisis.pacienteNombre || 'nombre no legible'}</b>
         {analisis.pacienteDni && <> · DNI {analisis.pacienteDni}</>}
+      </p>
+    )}
+    {/* Quién lo firma: recepción puede compararlo con el sello del certificado original. */}
+    {(analisis.medicoNombre || analisis.medicoMatricula) && (
+      <p className="text-xs text-slate-500">
+        Firmado por <b className="text-slate-700">{analisis.medicoNombre || 'médico no legible'}</b>
+        {analisis.medicoMatricula && <> · {analisis.medicoMatricula}</>}
       </p>
     )}
     <div className="grid grid-cols-2 gap-3">
