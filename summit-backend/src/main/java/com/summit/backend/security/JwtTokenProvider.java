@@ -27,6 +27,12 @@ public class JwtTokenProvider {
 
     @PostConstruct
     public void init() {
+        // La clave viene de afuera del repositorio (JWT_SECRET): si falta o es corta, se avisa al arrancar y no
+        // recién en el primer login. HS512 exige una clave de 512 bits: con 48 caracteres o más alcanza.
+        if (jwtSecret.strip().length() < 48) {
+            throw new IllegalStateException("JWT_SECRET falta o es muy corta (mínimo 48 caracteres): "
+                    + "definila en application-local.properties (ver README)");
+        }
         byte[] keyBytes = Base64.getEncoder().encode(jwtSecret.getBytes());
         this.signingKey = Keys.hmacShaKeyFor(keyBytes);
     }

@@ -13,8 +13,7 @@ asistente de IA local que lee certificados médicos.
 ## Requisitos
 
 - **JDK 21** (por ejemplo Eclipse Temurin), con `JAVA_HOME` configurado: lo necesita `mvnw.cmd`.
-- **MySQL 8** corriendo en `localhost:3306`, con usuario `root` y contraseña `root` (es lo que espera
-  `summit-backend/src/main/resources/application.properties`).
+- **MySQL 8** corriendo en `localhost:3306` (el usuario y la contraseña se cargan en el paso 2).
 - **Node.js** 20 o superior.
 - **Ollama** con `ollama pull gemma4:12b` (opcional: sin Ollama todo funciona menos los botones de IA).
 
@@ -32,7 +31,28 @@ Get-Service MySQL*
 Tiene que decir `Running`. Si dice `Stopped`, abrí *Servicios* (`Win + R` → `services.msc`), buscá el de
 MySQL y tocá *Iniciar*.
 
-**2. Arrancá el backend** (terminal 1):
+**2. Creá la configuración local (solo la primera vez en cada PC).** Las contraseñas y la clave de las
+sesiones no están en el repositorio: van en `summit-backend/src/main/resources/application-local.properties`,
+que cada PC tiene por su cuenta (está en `.gitignore`). Se crea copiando el ejemplo:
+
+```powershell
+Copy-Item summit-backend\src\main\resources\application-local.properties.example summit-backend\src\main\resources\application-local.properties
+```
+
+Abrilo en el editor y completá:
+
+- `DB_USERNAME` y `DB_PASSWORD`: el usuario y la contraseña de MySQL.
+- `JWT_SECRET`: la clave con la que el backend firma las sesiones. Generá una al azar con este comando y
+  pegá el resultado:
+
+  ```powershell
+  $b = [byte[]]::new(64); [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)
+  ```
+
+- `ADMIN_PASSWORD`: la contraseña del administrador inicial. Solo se usa la primera vez, con la base vacía.
+- `MP_ACCESS_TOKEN` (opcional): la credencial de Mercado Pago para el débito automático.
+
+**3. Arrancá el backend** (terminal 1):
 
 ```powershell
 cd summit-backend
@@ -43,7 +63,7 @@ Está listo cuando aparece `Started SummitBackendApplication in ... seconds`. La
 porque Maven descarga dependencias. `clean` borra lo compilado y lo vuelve a compilar desde cero: suma
 unos segundos pero garantiza que no quede ninguna clase vieja.
 
-**3. Arrancá el frontend** (terminal 2):
+**4. Arrancá el frontend** (terminal 2):
 
 ```powershell
 cd summit-frontend
@@ -57,8 +77,10 @@ Se escribe `npm.cmd` y no `npm` porque Windows bloquea por defecto los scripts d
 PowerShell `npm` es un script (`npm.ps1`). Si preferís escribir `npm` a secas, habilitá los scripts una
 sola vez con `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
 
-**4. Entrá a http://localhost:5173** con el administrador inicial: `admin@summit.com` / `QUITADO-DEL-HISTORIAL`
-(lo crea el backend en una base vacía; cambiá la contraseña después del primer ingreso).
+**5. Entrá a http://localhost:5173** con el administrador inicial: `admin@summit.com` y la contraseña de
+`ADMIN_PASSWORD`. El backend lo crea solo la primera vez, con la base vacía: si la base ya existía, vale la
+contraseña con la que se creó. Todavía no hay una pantalla para cambiar contraseñas, así que elegí una
+buena antes del primer arranque.
 
 **Asistente de IA:** si Ollama está abierto (ícono de la llama en la bandeja de Windows), los botones de
 IA se habilitan solos. El primer análisis tarda más porque Ollama carga el modelo en memoria.
@@ -72,13 +94,18 @@ MySQL y Ollama pueden quedar corriendo: casi no consumen nada mientras no se usa
 
 | Síntoma | Causa | Qué hacer |
 |---|---|---|
-| `No se puede cargar el archivo ...npm.ps1 porque la ejecución de scripts está deshabilitada` | Windows bloquea los scripts de PowerShell | Usá `npm.cmd` en lugar de `npm` (ver paso 3) |
+| `No se puede cargar el archivo ...npm.ps1 porque la ejecución de scripts está deshabilitada` | Windows bloquea los scripts de PowerShell | Usá `npm.cmd` en lugar de `npm` (ver paso 4) |
 | `.\mvnw.cmd : El término ... no se reconoce` | La terminal no está parada en `summit-backend` | `cd summit-backend` y volvé a intentar |
 | El backend se corta con `[ERROR] ...\Archivo.java:[42,25] ...` | Hay un error de compilación en ese archivo, línea 42, columna 25 | Corregilo y volvé a arrancar |
 | `Communications link failure` o `Connection refused` al arrancar el backend | MySQL no está corriendo | Paso 1 |
+| `Could not resolve placeholder 'JWT_SECRET'` (o `DB_USERNAME`, `DB_PASSWORD`) al arrancar el backend | Falta `application-local.properties` | Paso 2 |
+| `JWT_SECRET falta o es muy corta` al arrancar el backend | `JWT_SECRET` vacía o de menos de 48 caracteres | Generala con el comando del paso 2 |
+| `Access denied for user 'root'@'localhost'` al arrancar el backend | `DB_USERNAME` o `DB_PASSWORD` no coinciden con los de MySQL | Corregilos en `application-local.properties` |
+| En una base nueva no se puede entrar como admin y el backend dijo `No se creó el admin inicial: falta ADMIN_PASSWORD` | `ADMIN_PASSWORD` vacía | Completala y volvé a arrancar el backend |
+| Después de cambiar `JWT_SECRET`, el sistema vuelve al login | Las sesiones firmadas con la clave anterior dejan de valer | Volvé a entrar (es normal) |
 | `Port 8080 was already in use` | Ya hay un backend abierto en otra terminal | Cerrá esa terminal (o `Ctrl + C` en ella) |
 | Vite dice `Port 5173 is in use` y abre otro puerto | Ya hay un frontend abierto | Cerrá el otro: el backend solo acepta pedidos desde el puerto 5173 |
-| Error 500 que menciona `ClassFormatError` | Clases compiladas por otra herramienta (por ejemplo el editor) | Arrancá con `clean`, como en el paso 2 |
+| Error 500 que menciona `ClassFormatError` | Clases compiladas por otra herramienta (por ejemplo el editor) | Arrancá con `clean`, como en el paso 3 |
 | Botones de IA deshabilitados ("Ollama no está corriendo") | Ollama cerrado | Abrí *Ollama* desde el menú Inicio y recargá la página |
 | `JAVA_HOME not found` | La terminal se abrió antes de instalar Java | Cerrá y abrí la terminal (o el editor) |
 
@@ -89,5 +116,10 @@ Para revisar si todo el backend compila sin arrancarlo: `.\mvnw.cmd compile` den
 
 - Para el backend usá siempre Maven (`mvnw.cmd`) y no los botones *Run/Debug* del editor: algunas versiones
   de la extensión de Java del editor compilan mal las clases de Lombok.
-- Para ver la base de datos: MySQL Workbench, conexión `127.0.0.1`, puerto `3306`, usuario `root`.
-- Débito automático con Mercado Pago (opcional): se activa con la variable de entorno `MP_ACCESS_TOKEN`.
+- Para ver la base de datos: MySQL Workbench, conexión `127.0.0.1`, puerto `3306`, con el usuario y la
+  contraseña de `application-local.properties`.
+- Débito automático con Mercado Pago (opcional): se activa con `MP_ACCESS_TOKEN` en
+  `application-local.properties`.
+- Ninguna contraseña va en `application.properties`, porque ese archivo se sube al repositorio. Los valores
+  privados van en `application-local.properties`. En un servidor también se pueden dar como variables de
+  entorno con el mismo nombre (`DB_PASSWORD`, `JWT_SECRET`, etc.), que tienen prioridad sobre el archivo.

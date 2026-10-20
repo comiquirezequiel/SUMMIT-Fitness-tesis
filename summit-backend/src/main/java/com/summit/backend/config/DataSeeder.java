@@ -58,6 +58,12 @@ public class DataSeeder implements ApplicationRunner {
         if (usuarioRepository.existsByRol(Rol.ADMIN)) {
             return;
         }
+        // Sin contraseña no se crea: el login la exige, así que ese admin no podría entrar nunca, y como ya
+        // existiría, cargar ADMIN_PASSWORD después no lo arreglaría.
+        if (adminPassword.isBlank()) {
+            log.warn("No se creó el admin inicial: falta ADMIN_PASSWORD en application-local.properties (ver README)");
+            return;
+        }
         if (usuarioRepository.existsByEmail(adminEmail) || usuarioRepository.existsByDni(adminDni)) {
             log.warn("No se creó el admin inicial: el email {} o el DNI {} ya están en uso por otro usuario", adminEmail, adminDni);
             return;
