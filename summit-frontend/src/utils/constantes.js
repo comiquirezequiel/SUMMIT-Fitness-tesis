@@ -4,6 +4,17 @@ export const GENEROS = ['Masculino', 'Femenino', 'No binario', 'Prefiero no deci
 
 export const OBJETIVOS = ['Hipertrofia', 'Pérdida de peso', 'Fuerza', 'Salud general', 'Rendimiento deportivo', 'Rehabilitación'];
 
+// Días de la semana como los manda el backend (enum DiaSemana), de lunes a domingo
+export const DIAS_SEMANA = [
+  { enum: 'LUNES', nombre: 'Lunes' }, { enum: 'MARTES', nombre: 'Martes' }, { enum: 'MIERCOLES', nombre: 'Miércoles' },
+  { enum: 'JUEVES', nombre: 'Jueves' }, { enum: 'VIERNES', nombre: 'Viernes' }, { enum: 'SABADO', nombre: 'Sábado' },
+  { enum: 'DOMINGO', nombre: 'Domingo' },
+];
+
+// Lo que dice el QR impreso de ingreso, antes del código del gimnasio (lo imprime Reglas de acceso y lo lee la
+// app del socio). Sin la dirección de la web, así el QR impreso sigue sirviendo aunque cambie el dominio.
+export const PREFIJO_QR_INGRESO = 'SUMMIT-INGRESO:';
+
 // Métodos que recepción puede elegir al cobrar (el débito automático lo registra el sistema solo).
 // MERCADO_PAGO se muestra como "QR / billetera": el QR del gimnasio se paga desde cualquier billetera o banco.
 export const METODOS_PAGO = [

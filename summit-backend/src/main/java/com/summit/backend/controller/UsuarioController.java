@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -83,6 +84,19 @@ public class UsuarioController {
             return ResponseEntity.ok(Map.of("mensaje", "Usuario desactivado correctamente"));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Le pone una contraseña temporal a otro usuario (solo ADMIN, ver SecurityConfig). Devuelve
+     * {passwordTemporal} para mostrársela una sola vez al admin.
+     */
+    @PostMapping("/{id}/restablecer-password")
+    public ResponseEntity<?> restablecerPassword(@PathVariable Long id, Authentication auth) {
+        try {
+            return ResponseEntity.ok(Map.of("passwordTemporal", usuarioService.restablecerPassword(id, auth.getName())));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 

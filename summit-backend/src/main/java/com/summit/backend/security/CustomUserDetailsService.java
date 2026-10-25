@@ -1,13 +1,10 @@
 package com.summit.backend.security;
 
-import com.summit.backend.model.EstadoUsuario;
 import com.summit.backend.model.Usuario;
 import com.summit.backend.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -26,7 +23,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     private final UsuarioRepository usuarioRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+    public UsuarioAutenticado loadUserByUsername(String email) throws UsernameNotFoundException {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(
                         "No se encontró un usuario con el email: " + email));
@@ -35,15 +32,6 @@ public class CustomUserDetailsService implements UserDetailsService {
         GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name());
         List<GrantedAuthority> authorities = Collections.singletonList(authority);
 
-        // Una cuenta que no está ACTIVO (dada de baja, desactivada, suspendida) queda deshabilitada:
-        // el filtro JWT deja de aceptar sus tokens aunque todavía no hayan vencido
-        boolean activa = usuario.getEstado() == EstadoUsuario.ACTIVO;
-
-        return new User(
-                usuario.getEmail(),
-                usuario.getPassword(),
-                activa, true, true, true,
-                authorities
-        );
+        return new UsuarioAutenticado(usuario, authorities);
     }
 }

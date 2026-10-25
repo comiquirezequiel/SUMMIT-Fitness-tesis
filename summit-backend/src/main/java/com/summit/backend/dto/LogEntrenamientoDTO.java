@@ -32,4 +32,6 @@ public class LogEntrenamientoDTO {
     private String comentario;
     private String registradoPor;
     private LocalDateTime fechaRegistro;
+    // Solo en la respuesta al guardar: la marca que superó, si es un récord personal (null si no)
+    private RecordDTO.Superado nuevoRecord;
 }

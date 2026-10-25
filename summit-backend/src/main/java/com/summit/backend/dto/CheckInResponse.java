@@ -24,6 +24,8 @@ public class CheckInResponse {
     private String nombreSocio;
 
     // --- Ficha que se muestra en recepción ---
+    private Long idUsuario;
+    private Long fotoVersion; // null si no tiene foto: recepción la puede sacar en ese momento
     private String dni;
     private String rol;
     private String plan;

@@ -3,8 +3,69 @@
 @tailwind utilities;
 
 @layer base {
+  /* Colores que cambian en el modo oscuro del portal del socio (ver tailwind.config.js). Valores en RGB.
+     Acá, los del modo claro: son los mismos de Tailwind y de la marca, así que el panel no cambia. */
+  :root {
+    --slate-50: 248 250 252; --slate-100: 241 245 249; --slate-200: 226 232 240; --slate-300: 203 213 225;
+    --slate-400: 148 163 184; --slate-500: 100 116 139; --slate-600: 71 85 105; --slate-700: 51 65 85;
+    --slate-800: 30 41 59; --slate-900: 15 23 42; --slate-950: 2 6 23;
+    --rose-50: 255 241 242; --rose-100: 255 228 230; --rose-200: 254 205 211;
+    --rose-700: 190 18 60; --rose-800: 159 18 57; --rose-900: 136 19 55;
+    --emerald-50: 236 253 245; --emerald-100: 209 250 229; --emerald-200: 167 243 208;
+    --emerald-700: 4 120 87; --emerald-800: 6 95 70; --emerald-900: 6 78 59;
+    --amber-50: 255 251 235; --amber-100: 254 243 199; --amber-200: 253 230 138;
+    --amber-700: 180 83 9; --amber-800: 146 64 14; --amber-900: 120 53 15;
+    --bordo-50: 251 243 245; --bordo-100: 245 225 230; --bordo-200: 235 195 205; --bordo-300: 218 151 168;
+    --bordo-400: 194 97 122;
+    --bronce-50: 251 246 239; --bronce-100: 245 233 215; --bronce-200: 235 210 174;
+    --bronce-800: 110 71 32; --bronce-900: 87 57 27;
+    --superficie: 255 255 255;
+    --acento: 107 16 39;
+  }
+
+  /* Modo oscuro automático del portal del socio: PortalSocio pone la clase tema-portal en <html> mientras está
+     abierto, y aplica si el celular está en modo oscuro. Los grises van de fondo casi negro (50) a texto casi
+     blanco (900); los tonos claros pasan a ser tintes oscuros y los textos oscuros, claros. */
+  @media (prefers-color-scheme: dark) {
+    html.tema-portal {
+      color-scheme: dark;
+      --slate-50: 18 16 19; --slate-100: 38 34 39; --slate-200: 51 46 52; --slate-300: 74 68 75;
+      --slate-400: 142 135 146; --slate-500: 169 162 173; --slate-600: 194 188 198; --slate-700: 215 210 218;
+      --slate-800: 234 230 236; --slate-900: 246 243 247; --slate-950: 255 255 255;
+      --rose-50: 42 16 21; --rose-100: 58 20 28; --rose-200: 90 31 43;
+      --rose-700: 253 164 175; --rose-800: 254 205 211; --rose-900: 255 228 230;
+      --emerald-50: 11 34 25; --emerald-100: 15 46 33; --emerald-200: 26 71 52;
+      --emerald-700: 110 231 183; --emerald-800: 167 243 208; --emerald-900: 209 250 229;
+      --amber-50: 42 30 7; --amber-100: 58 42 10; --amber-200: 92 67 17;
+      --amber-700: 252 211 77; --amber-800: 253 230 138; --amber-900: 254 243 199;
+      --bordo-50: 42 18 25; --bordo-100: 58 22 33; --bordo-200: 90 34 50; --bordo-300: 122 46 68;
+      --bordo-400: 156 61 88;
+      --bronce-50: 42 32 20; --bronce-100: 58 44 27; --bronce-200: 90 68 40;
+      --bronce-800: 235 210 174; --bronce-900: 245 233 215;
+      --superficie: 28 25 29;
+      --acento: 231 163 180;
+    }
+  }
+
   body {
     @apply antialiased text-slate-800 bg-slate-50;
+  }
+}
+
+/* Imprimir el QR de ingreso (Reglas de acceso): se imprime solo la zona-impresion, a página completa */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .zona-impresion,
+  .zona-impresion * {
+    visibility: visible;
+  }
+  .zona-impresion {
+    position: fixed;
+    inset: 0;
+    background: white;
+    color: black;
   }
 }
 
@@ -15,4 +76,3 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-

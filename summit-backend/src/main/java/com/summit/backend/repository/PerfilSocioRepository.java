@@ -16,4 +16,8 @@ public interface PerfilSocioRepository extends JpaRepository<PerfilSocio, Long> 
     @Query("SELECT p.usuario.idUsuario, p.fechaNacimiento, p.genero FROM PerfilSocio p WHERE p.usuario.idUsuario IN :ids")
     List<Object[]> edadYGenero(@Param("ids") Collection<Long> ids);
     Optional<PerfilSocio> findByUsuarioIdUsuario(Long idUsuario);
+
+    // Fotos de un grupo de usuarios, como filas [idUsuario, fotoActualizada] (los que no tienen foto no aparecen)
+    @Query("SELECT p.usuario.idUsuario, p.fotoActualizada FROM PerfilSocio p WHERE p.usuario.idUsuario IN :ids AND p.fotoUrl IS NOT NULL")
+    List<Object[]> fotosDe(@Param("ids") Collection<Long> ids);
 }

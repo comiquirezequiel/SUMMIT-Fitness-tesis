@@ -37,6 +37,8 @@ public class SocioService {
     private final SuscripcionRepository suscripcionRepository;
     private final ConfiguracionAccesoService configService;
     private final PasswordEncoder passwordEncoder;
+    private final SesionService sesionService;
+    private final PasswordService passwordService;
 
     public List<SocioResponseDTO> listarTodos() {
         ConfiguracionAcceso config = configService.obtenerConfiguracionGlobal();
@@ -66,6 +68,8 @@ public class SocioService {
                 .telefono(textoOpcional(request.getTelefono()))
                 .rol(Rol.SOCIO)
                 .estado(EstadoUsuario.ACTIVO)
+                // La contraseña inicial se la da recepción: al entrar por primera vez a la app tiene que cambiarla
+                .debeCambiarPassword(true)
                 .build();
         nuevoSocio = usuarioRepository.save(nuevoSocio);
 
@@ -112,12 +116,25 @@ public class SocioService {
     }
 
     /**
-     * Baja lógica del socio (pasa a CANCELADO).
+     * Baja lógica del socio (pasa a CANCELADO). También cierra su sesión en la app en todos sus celulares:
+     * si se lo reactiva, tiene que volver a entrar.
      */
+    @Transactional
     public void cancelarSocio(Long id) {
         Usuario socio = buscarSocio(id);
         socio.setEstado(EstadoUsuario.CANCELADO);
         usuarioRepository.save(socio);
+        sesionService.cerrarTodas(id);
+    }
+
+    /**
+     * Le pone al socio una contraseña temporal, que recepción le da en persona y que tiene que cambiar al entrar
+     * a la app. Cierra su sesión en todos sus celulares.
+     *
+     * @return la contraseña temporal (no se guarda en ningún lado salvo su hash)
+     */
+    public String restablecerPassword(Long id) {
+        return passwordService.restablecerConTemporal(buscarSocio(id));
     }
 
     /**
@@ -162,6 +179,7 @@ public class SocioService {
                 .telefono(usuario.getTelefono())
                 .estado(usuario.getEstado())
                 .fechaCreacion(usuario.getFechaCreacion())
+                .debeCambiarPassword(usuario.isDebeCambiarPassword())
                 .aptoMedicoVigente(certificadoMedicoService.esVigente(certificado, config))
                 .vencimientoApto(certificado.map(CertificadoMedico::getFechaVencimiento).orElse(null))
                 .planActual(sub != null ? sub.getPlan().getNombrePlan() : "Sin Plan")
@@ -173,6 +191,7 @@ public class SocioService {
                 .ciudad(perfil != null ? perfil.getCiudad() : null)
                 .objetivo(perfil != null ? perfil.getObjetivo() : null)
                 .observaciones(perfil != null ? perfil.getObservaciones() : null)
+                .fotoVersion(FotoSocioService.version(perfil))
                 .build();
     }
 }

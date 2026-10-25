@@ -1,30 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ScanLine, ShieldCheck, XCircle, AlertTriangle, CalendarDays, Wallet, HeartPulse, UserX, DoorOpen } from 'lucide-react';
+import { ScanLine, ShieldCheck, XCircle, UserX, DoorOpen, Camera } from 'lucide-react';
+import FotoSocio from './socios/FotoSocio';
+import CapturaFoto from './socios/CapturaFoto';
+import { FaltasIngreso, AvisosIngreso, DatosFicha } from './FichaIngreso';
 import { apiFetch } from '../services/api';
-import { formatFecha, textoVencimiento } from '../utils/formato';
-
-// Tarjeta chica con un dato de la ficha (días de la semana, cuota, apto)
-const DatoFicha = ({ icon: Icon, titulo, valor, detalle, alerta }) => (
-  <div className={`rounded-xl border p-3 ${alerta ? 'border-rose-200 bg-rose-50' : 'border-slate-200 bg-white'}`}>
-    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 flex items-center gap-1.5">
-      <Icon className="w-3.5 h-3.5" /> {titulo}
-    </p>
-    <p className={`text-lg font-bold mt-1 ${alerta ? 'text-rose-700' : 'text-slate-800'}`}>{valor}</p>
-    {detalle && <p className={`text-xs mt-0.5 ${alerta ? 'text-rose-600' : 'text-slate-500'}`}>{detalle}</p>}
-  </div>
-);
-
-const datoSemana = (r) => {
-  if (!r.plan) return { valor: '—', detalle: 'Sin plan' };
-  if (r.diasSemanaPermitidos == null) {
-    return { valor: 'Pase libre', detalle: `${r.diasSemanaUsados ?? 0} ${r.diasSemanaUsados === 1 ? 'día' : 'días'} esta semana` };
-  }
-  return {
-    valor: `${r.diasSemanaUsados} de ${r.diasSemanaPermitidos}`,
-    detalle: `Le ${r.diasSemanaRestantes === 1 ? 'queda' : 'quedan'} ${r.diasSemanaRestantes} esta semana`,
-    alerta: r.resultado === 'DENEGADO_LIMITE_SEMANAL',
-  };
-};
+import { subirFotoSocio } from '../services/fotos';
 
 /**
  * Control de acceso de recepción: el recepcionista escanea o escribe el DNI y ve la notificación
@@ -36,7 +16,20 @@ const ControlAcceso = ({ onIngreso }) => {
   const [resultado, setResultado] = useState(null); // respuesta del backend
   const [error, setError] = useState('');
   const [excepcion, setExcepcion] = useState(null); // { motivo, enviando, error } mientras se autoriza una excepción
+  const [sacandoFoto, setSacandoFoto] = useState(false);
   const inputRef = useRef(null);
+
+  // Socio sin foto: se la saca ahí mismo, mientras está en recepción
+  const guardarFoto = async (foto) => {
+    const r = await subirFotoSocio(resultado.idUsuario, foto);
+    if (r.ok) {
+      setResultado(actual => ({ ...actual, fotoVersion: r.fotoVersion }));
+      setSacandoFoto(false);
+      inputRef.current?.focus();
+      onIngreso?.(); // el tablero recarga la actividad: la fila del socio ya muestra la foto
+    }
+    return r;
+  };
 
   // Dejar pasar por excepción (cuota vencida o sin días del plan): queda registrado quién y por qué
   const confirmarExcepcion = async () => {
@@ -95,10 +88,6 @@ const ControlAcceso = ({ onIngreso }) => {
     }
   };
 
-  const semana = resultado ? datoSemana(resultado) : null;
-  const cuotaVencida = resultado?.diasParaVencerCuota != null && resultado.diasParaVencerCuota < 0;
-  const aptoVencido = resultado?.diasParaVencerApto != null && resultado.diasParaVencerApto < 0;
-
   return (
     <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
       <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center gap-3 justify-between">
@@ -147,11 +136,22 @@ const ControlAcceso = ({ onIngreso }) => {
       {resultado && (
         <div className={`p-4 md:p-5 ${resultado.permitido ? 'bg-emerald-50/60' : 'bg-rose-50/60'}`}>
           <div className="flex items-start gap-4">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${resultado.permitido ? 'bg-emerald-500' : 'bg-rose-500'}`}>
-              {resultado.permitido
-                ? <ShieldCheck className="w-8 h-8 text-white" />
-                : <XCircle className="w-8 h-8 text-white" />}
-            </div>
+            {resultado.fotoVersion ? (
+              // Con foto: recepción compara la cara con la persona que tiene adelante
+              <div className="relative shrink-0">
+                <FotoSocio idSocio={resultado.idUsuario} fotoVersion={resultado.fotoVersion} nombre={resultado.nombreSocio}
+                  className="w-24 h-24 md:w-28 md:h-28 rounded-2xl" texto="text-2xl" />
+                <span className={`absolute -bottom-2 -right-2 w-9 h-9 rounded-full ring-4 ring-white flex items-center justify-center ${resultado.permitido ? 'bg-emerald-500' : 'bg-rose-500'}`}>
+                  {resultado.permitido ? <ShieldCheck className="w-5 h-5 text-white" /> : <XCircle className="w-5 h-5 text-white" />}
+                </span>
+              </div>
+            ) : (
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${resultado.permitido ? 'bg-emerald-500' : 'bg-rose-500'}`}>
+                {resultado.permitido
+                  ? <ShieldCheck className="w-8 h-8 text-white" />
+                  : <XCircle className="w-8 h-8 text-white" />}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <p className={`text-xs font-black uppercase tracking-widest ${resultado.permitido ? 'text-emerald-600' : 'text-rose-600'}`}>
                 {resultado.permitido ? 'Acceso permitido' : 'Acceso denegado'}
@@ -162,18 +162,20 @@ const ControlAcceso = ({ onIngreso }) => {
                 {resultado.rol !== 'SOCIO' ? ` · Personal (${resultado.rol})` : ` · ${resultado.plan || 'Sin plan'}`}
                 {' · '}{resultado.fechaHora?.substring(11, 16)} hs
               </p>
+              {resultado.rol === 'SOCIO' && !resultado.fotoVersion && (
+                <button type="button" onClick={() => setSacandoFoto(true)}
+                  className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-200 bg-white text-blue-600 text-xs font-semibold hover:bg-blue-50">
+                  <Camera className="w-3.5 h-3.5" /> No tiene foto: sacarla ahora
+                </button>
+              )}
             </div>
           </div>
-
-          {resultado.faltas?.length > 0 && (
-            <ul className="mt-4 space-y-1.5">
-              {resultado.faltas.map((falta, i) => (
-                <li key={i} className="flex items-start gap-2 bg-rose-100 text-rose-800 rounded-lg px-3 py-2 text-sm font-semibold">
-                  <XCircle className="w-4 h-4 mt-0.5 shrink-0" /> {falta}
-                </li>
-              ))}
-            </ul>
+          {sacandoFoto && (
+            <CapturaFoto nombre={resultado.nombreSocio} onListo={guardarFoto}
+              onCerrar={() => { setSacandoFoto(false); inputRef.current?.focus(); }} />
           )}
+
+          <FaltasIngreso faltas={resultado.faltas} />
 
           {!resultado.permitido && resultado.excepcionPosible && (
             <div className="mt-3 rounded-xl border border-amber-200 bg-white p-3">
@@ -212,35 +214,9 @@ const ControlAcceso = ({ onIngreso }) => {
             </p>
           )}
 
-          {resultado.avisos?.length > 0 && (
-            <ul className="mt-2 space-y-1.5">
-              {resultado.avisos.map((aviso, i) => (
-                <li key={i} className="flex items-start gap-2 bg-amber-100 text-amber-800 rounded-lg px-3 py-2 text-sm font-medium">
-                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" /> {aviso}
-                </li>
-              ))}
-            </ul>
-          )}
+          <AvisosIngreso avisos={resultado.avisos} />
 
-          {resultado.rol === 'SOCIO' && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
-              <DatoFicha icon={CalendarDays} titulo="Días esta semana" {...semana} />
-              <DatoFicha
-                icon={Wallet}
-                titulo="Cuota"
-                valor={resultado.vencimientoCuota ? formatFecha(resultado.vencimientoCuota) : 'Sin membresía'}
-                detalle={textoVencimiento(resultado.diasParaVencerCuota)}
-                alerta={!resultado.vencimientoCuota || resultado.resultado === 'DENEGADO_CUOTA_VENCIDA' || cuotaVencida}
-              />
-              <DatoFicha
-                icon={HeartPulse}
-                titulo="Apto médico"
-                valor={resultado.vencimientoApto ? formatFecha(resultado.vencimientoApto) : 'Sin certificado'}
-                detalle={textoVencimiento(resultado.diasParaVencerApto)}
-                alerta={!resultado.vencimientoApto || resultado.resultado === 'DENEGADO_CERTIFICADO_MEDICO' || aptoVencido}
-              />
-            </div>
-          )}
+          {resultado.rol === 'SOCIO' && <DatosFicha ficha={resultado} />}
         </div>
       )}
     </div>

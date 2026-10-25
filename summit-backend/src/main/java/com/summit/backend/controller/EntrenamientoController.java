@@ -2,6 +2,7 @@ package com.summit.backend.controller;
 
 import com.summit.backend.dto.LogEntrenamientoRequestDTO;
 import com.summit.backend.service.EntrenamientoService;
+import com.summit.backend.service.ProgresoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -25,6 +26,7 @@ import java.util.Map;
 public class EntrenamientoController {
 
     private final EntrenamientoService entrenamientoService;
+    private final ProgresoService progresoService;
 
     /**
      * Registra un ejercicio de la rutina: 201 si es nuevo, 200 si actualizó el de esa fecha.
@@ -115,6 +117,17 @@ public class EntrenamientoController {
             return soloLoPropio();
         }
         return ResponseEntity.ok(entrenamientoService.progreso(idSocio, idEjercicio));
+    }
+
+    /**
+     * Récords personales: la mejor marca en cada ejercicio, primero los más recientes.
+     */
+    @GetMapping("/socio/{idSocio}/records")
+    public ResponseEntity<?> records(@PathVariable Long idSocio, Authentication auth) {
+        if (esOtroSocio(auth, idSocio)) {
+            return soloLoPropio();
+        }
+        return ResponseEntity.ok(progresoService.records(idSocio));
     }
 
     // Un socio solo ve y carga sus propios entrenamientos; el personal, los de cualquier socio

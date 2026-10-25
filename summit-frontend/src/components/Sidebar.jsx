@@ -6,7 +6,7 @@ import {
   Dumbbell, CalendarCheck, History, ClipboardList, ListChecks,
   Calendar, CalendarDays, BookOpen, Settings,
   LogOut, LayoutDashboard, ChevronDown, ChevronUp, GitBranch, Clipboard,
-  MessageCircle, CheckSquare, UserX, Home, ScanLine, Repeat
+  MessageCircle, CheckSquare, UserX, Home, ScanLine, Repeat, Building2, Megaphone
 } from 'lucide-react';
 import { usuarioActual } from '../utils/formato';
 
@@ -20,6 +20,7 @@ const MENU_ITEMS = [
       { icon: User, text: "Lista de Socios", path: "/socios", roles: ['ADMIN', 'RECEPCION', 'PROFESOR'] },
       { icon: Dumbbell, text: "Constructor de Rutinas", path: "/rutinas/constructor", roles: ['ADMIN', 'PROFESOR'] },
       { icon: BarChart2, text: "Analítica de Socios", path: "/socios/metricas", roles: STAFF },
+      { icon: Megaphone, text: "Novedades", path: "/socios/novedades", roles: STAFF },
       { icon: MessageCircle, text: "Chat", path: "/socios/chat", roles: STAFF, demo: true },
       { icon: CheckSquare, text: "Tareas CRM", path: "/socios/tareas", roles: STAFF, demo: true },
       { icon: UserX, text: "Inactividad", path: "/socios/inactividad", roles: STAFF, demo: true },
@@ -60,7 +61,7 @@ const MENU_ITEMS = [
     subItems: [
       { icon: CheckSquare, text: "Reglas de Acceso", path: "/ajustes/acceso", roles: STAFF },
       { icon: Users, text: "Equipo", path: "/ajustes/equipo", roles: ['ADMIN'] },
-      { icon: Settings, text: "General", path: "/ajustes/general", roles: ['ADMIN'], demo: true },
+      { icon: Building2, text: "Datos del gimnasio", path: "/ajustes/gimnasio", roles: ['ADMIN'] },
       { icon: GitBranch, text: "Tablas del Sistema", path: "/ajustes/tablas", roles: ['ADMIN'], demo: true },
       { icon: Clipboard, text: "Asistencia Staff", path: "/ajustes/asistencia", roles: ['ADMIN'], demo: true },
     ]

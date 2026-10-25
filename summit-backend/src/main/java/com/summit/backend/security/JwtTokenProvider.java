@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
 import java.security.Key;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.Date;
 
@@ -38,11 +39,18 @@ public class JwtTokenProvider {
     }
 
     /**
-     * Genera un token JWT firmado con el email y rol del usuario.
+     * Genera un token JWT firmado con el email y rol del usuario, que vence a los jwt.expiration milisegundos.
      */
     public String generateToken(String email, String rol) {
+        return generateToken(email, rol, Duration.ofMillis(jwtExpiration));
+    }
+
+    /**
+     * Genera un token JWT que vence en "duracion" (el del socio dura poco: la app lo renueva sola, ver SesionService).
+     */
+    public String generateToken(String email, String rol, Duration duracion) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtExpiration);
+        Date expiryDate = new Date(now.getTime() + duracion.toMillis());
 
         return Jwts.builder()
                 .setSubject(email)
@@ -75,6 +83,18 @@ public class JwtTokenProvider {
                 .parseClaimsJws(token)
                 .getBody();
         return claims.get("rol", String.class);
+    }
+
+    /**
+     * Fecha de emisión del token (en segundos): si la contraseña cambió después, el token ya no sirve.
+     */
+    public Date getIssuedAt(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(signingKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getIssuedAt();
     }
 
     /**

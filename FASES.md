@@ -37,16 +37,29 @@ no esté acá, sumalo.
 
 ## Pendiente (propuesta, en este orden)
 
-La numeración sigue la de la etapa 2.
+### Etapa 3: app del socio (PWA), en curso
 
-### Fase 6: contraseñas (prioridad alta)
+Va antes que las fases de abajo. El plan completo y las decisiones están en
+[PLAN-APP-SOCIOS.md](PLAN-APP-SOCIOS.md): A0 preparar las pruebas en el celular (terminada), A1 app
+instalable, A2 sesión larga, A3 entrenamiento sin conexión y catálogo, A4 ingreso con QR y ubicación,
+A5 planes, profesores e información del gimnasio (cubre la Fase 11), A6 progreso, A7 notificaciones y
+A8 chat con recepción (cubre el Chat de la Fase 8).
 
-Hoy nadie puede cambiar su contraseña: ni el admin (queda la de `ADMIN_PASSWORD`), ni el personal, ni los
-socios (usan la "contraseña inicial" que les da recepción). Tampoco hay forma de recuperarla.
+La numeración de las fases siguientes sigue la de la etapa 2.
 
-- Cambiar la propia contraseña pidiendo la actual, desde el panel y desde el portal del socio.
-- El admin resetea la de un empleado o un socio con una temporal, que hay que cambiar al entrar.
-- Opcional: "¿Olvidaste tu contraseña?" por email (necesita configurar un correo saliente).
+### Fase 6: contraseñas (hecha el 24/10/2026, con lo opcional)
+
+- Cada uno cambia la suya pidiendo la actual: en el panel, desde el menú de su nombre (arriba a la derecha); en la
+  app del socio, desde *Perfil*. Al cambiarla se cierran sus sesiones en los otros dispositivos.
+- Recepción (a los socios, desde la ficha) y el admin (también al personal, desde *Ajustes > Equipo*) restablecen
+  una contraseña con una temporal de 10 caracteres, para darla en persona.
+- Con una contraseña temporal no se puede usar nada hasta elegir una propia: al entrar aparece la pantalla para
+  hacerlo. Lo mismo pasa con la contraseña inicial de una cuenta nueva y con la de `ADMIN_PASSWORD`.
+- "¿Olvidaste tu contraseña?" por email, con un link de un solo uso que vence a los 30 minutos. Se activa
+  configurando un correo saliente (`MAIL_HOST` y compañía) y la dirección pública de la app (`APP_URL`); sin eso,
+  el login dice que la contraseña la restablece el gimnasio.
+- Reglas: 8 caracteres o más, con letras y números. Cambiarla, pedir el mail y usar el link: hasta 5 intentos por
+  minuto.
 
 ### Fase 7: tests automáticos (prioridad alta)
 
@@ -84,11 +97,12 @@ falta la salida.
 - Gastos (egresos) en la caja y cierre de caja diario por medio de pago.
 - Venta de productos en recepción (agua, suplementos) con un stock simple.
 
-### Fase 11: datos del gimnasio
+### Fase 11: datos del gimnasio (hecha en la A5 de la app, salvo el logo y los comprobantes)
 
-"Ajustes > General" ofrece formatos de fecha, moneda y zona horaria de varios países, pero el sistema es para
-Argentina. Propuesta: reemplazarla por los datos del gimnasio (nombre, dirección, horarios, logo) para usarlos
-en el portal y en los comprobantes.
+"Ajustes > General" ofrecía formatos de fecha, moneda y zona horaria de varios países, pero el sistema es para
+Argentina. El 20/10/2026 se reemplazó por *Ajustes > Datos del gimnasio* (nombre, dirección, contacto, horarios,
+capacidad y reglamento), que ya usa la app del socio. Quedan el logo (todavía no está decidido) y usar estos
+datos en los comprobantes.
 
 ### Fase 12: puesta en producción
 
@@ -103,3 +117,4 @@ en el portal y en los comprobantes.
 - Avisos al arrancar el backend: `MySQL8Dialect` está deprecado y conviene definir `spring.jpa.open-in-view`.
 - `spring.jpa.show-sql=true` llena la consola de SQL: apagarlo fuera de desarrollo.
 - La rama `pagos-debito-metricas` ya está incluida en `main`: se puede borrar.
+- `npm run lint` falla porque el frontend no tiene archivo de configuración de ESLint.

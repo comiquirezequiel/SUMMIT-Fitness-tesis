@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   UserPlus, ChevronRight, ChevronLeft, User, Mail, Phone, CreditCard,
-  MapPin, FileText, Check, X, KeyRound, HeartPulse, Upload, CheckCircle2, XCircle, AlertTriangle
+  MapPin, FileText, Check, X, KeyRound, HeartPulse, Upload, CheckCircle2, XCircle, AlertTriangle, Camera, Trash2
 } from 'lucide-react';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../components/Campo';
+import CapturaFoto from '../components/socios/CapturaFoto';
+import { subirFotoSocio } from '../services/fotos';
 import { useEstadoIa, BotonIa, ResultadoAnalisis, AvisoIaNoDisponible } from '../components/ia/AsistenteIa';
 import { apiFetch } from '../services/api';
 import { subirCertificado, validarArchivoApto } from '../services/certificados';
@@ -19,6 +21,7 @@ const FORM_INICIAL = {
   email: '', telefono: '', domicilio: '', ciudad: '', password: '',
   idPlan: '', monto: '', metodoPago: 'EFECTIVO', comprobante: '',
   archivoApto: null, fechaEmisionApto: '', patologias: '', resumenIa: '', observaciones: '',
+  foto: null, // JPG cuadrado de CapturaFoto: se sube después de crear al socio
 };
 
 // Contraseña inicial para la app del socio (sin caracteres que se confunden: 0/O, 1/l)
@@ -77,6 +80,19 @@ const NuevoSocio = () => {
   const [analisisIa, setAnalisisIa] = useState(null);
   const [analizandoIa, setAnalizandoIa] = useState(false);
   const [errorIa, setErrorIa] = useState('');
+  const [sacandoFoto, setSacandoFoto] = useState(false);
+  const [urlFoto, setUrlFoto] = useState(null);
+
+  // Vista previa de la foto sacada (la dirección blob: se libera al cambiarla)
+  useEffect(() => {
+    if (!form.foto) {
+      setUrlFoto(null);
+      return undefined;
+    }
+    const url = URL.createObjectURL(form.foto);
+    setUrlFoto(url);
+    return () => URL.revokeObjectURL(url);
+  }, [form.foto]);
 
   useEffect(() => {
     apiFetch('/planes')
@@ -184,7 +200,13 @@ const NuevoSocio = () => {
         apto = await subirCertificado(datosSocio.idSocio, form.archivoApto, form.fechaEmisionApto, form.patologias, form.resumenIa);
       }
 
-      setResultado({ socio: datosSocio, cobro, apto });
+      // 4. Foto (opcional)
+      let foto = null;
+      if (form.foto) {
+        foto = await subirFotoSocio(datosSocio.idSocio, form.foto);
+      }
+
+      setResultado({ socio: datosSocio, cobro, apto, foto });
     } catch (err) {
       setErrorEnvio(err.message);
     } finally {
@@ -248,6 +270,11 @@ const NuevoSocio = () => {
                     texto={resultado.apto.ok ? 'Certificado médico cargado' : 'El certificado no se cargó'}
                     detalle={resultado.apto.ok ? `Vence el ${formatFecha(resultado.apto.certificado.fechaVencimiento)}` : `${resultado.apto.error}. Podés cargarlo desde la ficha del socio.`} />
             : <Item ok={false} texto="Sin certificado médico" detalle="Cargalo desde la ficha del socio: sin apto vigente no puede ingresar (Ley 5397)." />}
+          {resultado.foto
+            ? <Item ok={resultado.foto.ok}
+                    texto={resultado.foto.ok ? 'Foto guardada' : 'La foto no se guardó'}
+                    detalle={resultado.foto.ok ? 'Recepción la va a ver en cada ingreso.' : `${resultado.foto.error}. Podés sacarla desde la ficha del socio.`} />
+            : <Item ok={false} texto="Sin foto" detalle="Sacala desde la ficha del socio: recepción la ve en cada ingreso, también cuando entra con el QR de la app." />}
         </ul>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button onClick={() => navigate('/socios')} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold">
@@ -291,6 +318,37 @@ const NuevoSocio = () => {
             <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
               <User className="w-5 h-5 text-blue-500" /> Datos Personales
             </h2>
+            {/* Foto (opcional): recepción la ve en cada ingreso, también cuando entra con el QR de la app */}
+            <div className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 bg-slate-50/60">
+              <div className="w-20 h-20 rounded-2xl overflow-hidden bg-blue-100 border border-blue-200 flex items-center justify-center shrink-0">
+                {urlFoto
+                  ? <img src={urlFoto} alt="Foto del socio" className="w-full h-full object-cover" />
+                  : <Camera className="w-7 h-7 text-blue-400" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-700">Foto <span className="font-normal text-slate-400">(opcional)</span></p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Para que recepción lo reconozca en cada ingreso, también cuando entra con el QR de la app. Se puede sacar después desde la ficha.
+                </p>
+                <div className="flex gap-2 mt-2">
+                  <button type="button" onClick={() => setSacandoFoto(true)}
+                    className="px-3 py-1.5 text-xs font-semibold text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5" /> {form.foto ? 'Sacar otra' : 'Sacar foto'}
+                  </button>
+                  {form.foto && (
+                    <button type="button" onClick={() => update('foto', null)}
+                      className="px-3 py-1.5 text-xs font-semibold text-slate-500 border border-slate-200 rounded-lg hover:bg-white flex items-center gap-1.5">
+                      <Trash2 className="w-3.5 h-3.5" /> Quitar
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+            {sacandoFoto && (
+              <CapturaFoto nombre={`${form.nombre} ${form.apellido}`.trim()}
+                onListo={(foto) => { update('foto', foto); setSacandoFoto(false); }}
+                onCerrar={() => setSacandoFoto(false)} />
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <Campo label="Nombre" required error={errores.nombre}>
                 <input type="text" placeholder="Ej: Juan" value={form.nombre}
@@ -357,7 +415,7 @@ const NuevoSocio = () => {
                   onChange={e => update('ciudad', e.target.value)} className={inputClass} />
               </Campo>
               <Campo label="Contraseña inicial (app del socio)" required error={errores.password}
-                     ayuda="Entregásela al socio: con su email y esta contraseña entra a la app."
+                     ayuda="Entregásela al socio: con su email y esta contraseña entra a la app, y ahí elige una propia."
                      className="md:col-span-2">
                 <div className="flex gap-2">
                   <div className="relative flex-1">
@@ -487,6 +545,7 @@ const NuevoSocio = () => {
                 <FilaResumen label="Fecha de nac." valor={form.fechaNacimiento && formatFecha(form.fechaNacimiento)} />
                 <FilaResumen label="Género" valor={form.genero} />
                 <FilaResumen label="Objetivo" valor={form.objetivo} />
+                <FilaResumen label="Foto" valor={form.foto ? 'Sacada' : 'Sin foto (se puede sacar después)'} />
               </div>
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
                 <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide mb-2">Contacto</h3>

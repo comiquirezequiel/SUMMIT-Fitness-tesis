@@ -43,6 +43,10 @@ public interface LogEntrenamientoRepository extends JpaRepository<LogEntrenamien
     List<LogEntrenamiento> findBySocioIdUsuarioAndEjercicioIdEjercicioOrderByFechaAscFechaRegistroAsc(
             Long idSocio, Long idEjercicio);
 
+    // Todo lo que anotó un socio, del más viejo al más nuevo, con el ejercicio (récords personales)
+    @EntityGraph(attributePaths = "ejercicio")
+    List<LogEntrenamiento> findBySocioIdUsuarioOrderByFechaAscFechaRegistroAsc(Long idSocio);
+
     // Filas [idEjercicio, nombre, grupoMuscular, cantidad de registros] de los ejercicios que el socio entrenó
     @Query("""
             SELECT e.idEjercicio, e.nombre, e.grupoMuscular, COUNT(l)

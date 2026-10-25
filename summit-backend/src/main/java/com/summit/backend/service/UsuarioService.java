@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Servicio de gestión de usuarios/socios.
@@ -21,10 +22,12 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SesionService sesionService;
+    private final PasswordService passwordService;
 
     /**
      * Alta de personal (ADMIN, RECEPCION o PROFESOR).
-     * Los socios se crean desde SocioService; el registro público solo crea socios.
+     * Los socios se crean desde SocioService (el alta la hace recepción).
      */
     public Usuario crearStaff(StaffRequestDTO request) {
         Rol rol;
@@ -51,8 +54,25 @@ public class UsuarioService {
                 .telefono(request.getTelefono())
                 .rol(rol)
                 .estado(EstadoUsuario.ACTIVO)
+                // La contraseña inicial la eligió el admin: al entrar por primera vez tiene que cambiarla
+                .debeCambiarPassword(true)
                 .build();
         return usuarioRepository.save(usuario);
+    }
+
+    /**
+     * Restablece la contraseña de otro usuario con una temporal, que el admin le da en persona y hay que
+     * cambiar al entrar. Cierra las sesiones abiertas de esa cuenta. La propia se cambia con PUT /api/auth/password.
+     *
+     * @param emailAdmin quien lo pide
+     * @return la contraseña temporal (no se guarda en ningún lado salvo su hash)
+     */
+    public String restablecerPassword(Long id, String emailAdmin) {
+        Usuario usuario = buscarPorId(id);
+        if (usuario.getEmail().equalsIgnoreCase(emailAdmin)) {
+            throw new RuntimeException("Tu propia contraseña la cambiás desde tu perfil, con la actual");
+        }
+        return passwordService.restablecerConTemporal(usuario);
     }
 
     /**
@@ -102,12 +122,15 @@ public class UsuarioService {
     }
 
     /**
-     * Baja lógica: cambia el estado a INACTIVO sin borrar el registro.
+     * Baja lógica: cambia el estado a INACTIVO sin borrar el registro. Si es un socio, también se cierra su
+     * sesión en la app en todos sus celulares.
      */
+    @Transactional
     public void desactivar(Long id) {
         Usuario usuario = buscarPorId(id);
         usuario.setEstado(EstadoUsuario.INACTIVO);
         usuarioRepository.save(usuario);
+        sesionService.cerrarTodas(id);
     }
 
     /**

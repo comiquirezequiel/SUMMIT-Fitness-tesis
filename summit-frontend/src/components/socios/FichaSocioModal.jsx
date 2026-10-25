@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FileText, Upload, HeartPulse, Wallet, User, LogIn, Sparkles } from 'lucide-react';
+import { FileText, Upload, HeartPulse, Wallet, User, LogIn, Sparkles, Camera, Trash2, KeyRound } from 'lucide-react';
 import Modal from '../Modal';
+import RestablecerPasswordModal from '../RestablecerPasswordModal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../Campo';
+import FotoSocio from './FotoSocio';
+import CapturaFoto from './CapturaFoto';
 import { apiFetch } from '../../services/api';
+import { subirFotoSocio, quitarFotoSocio } from '../../services/fotos';
 import DebitoSocio from '../debito/DebitoSocio';
 import { subirCertificado, validarArchivoApto, verArchivoCertificado } from '../../services/certificados';
 import { analizarArchivo, analizarCertificado, guardarObservaciones } from '../../services/ia';
@@ -43,6 +47,36 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
   const [analizando, setAnalizando] = useState(null); // clave del certificado que se está leyendo
   const [errorIa, setErrorIa] = useState(null);       // { clave, texto }
   const [rechazo, setRechazo] = useState(null);       // { id, motivo, error } mientras se rechaza un certificado
+  // Foto (A4): la versión local se actualiza al sacar o quitar la foto, sin esperar a que se recargue la lista
+  const [fotoVersion, setFotoVersion] = useState(socio.fotoVersion ?? null);
+  const [sacandoFoto, setSacandoFoto] = useState(false);
+  const [errorFoto, setErrorFoto] = useState('');
+  // Contraseña de la app: si todavía tiene la que le dio recepción, y la ventana para darle una temporal nueva
+  const [conTemporal, setConTemporal] = useState(!!socio.debeCambiarPassword);
+  const [restableciendo, setRestableciendo] = useState(false);
+
+  const guardarFoto = async (foto) => {
+    const r = await subirFotoSocio(socio.idSocio, foto);
+    if (r.ok) {
+      setFotoVersion(r.fotoVersion);
+      setErrorFoto('');
+      setSacandoFoto(false);
+      onActualizado?.();
+    }
+    return r;
+  };
+
+  const quitarFoto = async () => {
+    if (!window.confirm('¿Quitar la foto? Recepción deja de verla en cada ingreso.')) return;
+    const r = await quitarFotoSocio(socio.idSocio);
+    if (r.ok) {
+      setFotoVersion(null);
+      setErrorFoto('');
+      onActualizado?.();
+    } else {
+      setErrorFoto(r.error);
+    }
+  };
 
   // Rechazar (con motivo) o volver a aprobar un certificado: queda registrado quién lo revisó
   const cambiarEstadoCertificado = async (idCertificado, estado, motivo) => {
@@ -176,16 +210,59 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
       onClose={onClose} ancho="max-w-3xl" pie={<button onClick={onClose} className={botonSecundario}>Cerrar</button>}>
       <div className="space-y-6">
         <Seccion icon={User} titulo="Datos personales">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <Dato label="Email" valor={socio.email} />
-            <Dato label="Teléfono" valor={socio.telefono} />
-            <Dato label="Nacimiento" valor={socio.fechaNacimiento && `${formatFecha(socio.fechaNacimiento)} (${anios} años)`} />
-            <Dato label="Género" valor={socio.genero} />
-            <Dato label="Domicilio" valor={[socio.domicilio, socio.ciudad].filter(Boolean).join(', ')} />
-            <Dato label="Objetivo" valor={socio.objetivo} />
+          <div className="flex flex-col sm:flex-row gap-5">
+            {/* Foto: la ve recepción en cada ingreso (también cuando entra con el QR de la app) */}
+            <div className="flex sm:flex-col items-center gap-3 shrink-0">
+              <FotoSocio idSocio={socio.idSocio} fotoVersion={fotoVersion} nombre={socio.nombreCompleto}
+                className="w-28 h-28 rounded-2xl" texto="text-2xl" />
+              {puedeEditar && (
+                <div className="flex sm:flex-col gap-2">
+                  <button onClick={() => setSacandoFoto(true)}
+                    className="px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 flex items-center justify-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5" /> {fotoVersion ? 'Cambiar foto' : 'Sacar foto'}
+                  </button>
+                  {fotoVersion && (
+                    <button onClick={quitarFoto}
+                      className="px-3 py-1.5 text-xs font-semibold text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-1.5">
+                      <Trash2 className="w-3.5 h-3.5" /> Quitar
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0 space-y-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <Dato label="Email" valor={socio.email} />
+                <Dato label="Teléfono" valor={socio.telefono} />
+                <Dato label="Nacimiento" valor={socio.fechaNacimiento && `${formatFecha(socio.fechaNacimiento)} (${anios} años)`} />
+                <Dato label="Género" valor={socio.genero} />
+                <Dato label="Domicilio" valor={[socio.domicilio, socio.ciudad].filter(Boolean).join(', ')} />
+                <Dato label="Objetivo" valor={socio.objetivo} />
+              </div>
+              {socio.observaciones && <p className="text-sm text-slate-600 bg-slate-50 rounded-lg p-3">{socio.observaciones}</p>}
+            </div>
           </div>
-          {socio.observaciones && <p className="text-sm text-slate-600 bg-slate-50 rounded-lg p-3">{socio.observaciones}</p>}
+          {errorFoto && <p className="text-sm font-medium text-rose-600">{errorFoto}</p>}
+          {puedeEditar && (
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
+              <p className="text-sm text-slate-500">
+                Entra a la app con su email.{' '}
+                {conTemporal && <span className="font-medium text-amber-700">Todavía no eligió su contraseña: tiene la que le dio recepción.</span>}
+              </p>
+              <button onClick={() => setRestableciendo(true)}
+                className="px-3 py-1.5 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-1.5">
+                <KeyRound className="w-3.5 h-3.5" /> Restablecer contraseña
+              </button>
+            </div>
+          )}
         </Seccion>
+        {restableciendo && (
+          <RestablecerPasswordModal nombre={socio.nombreCompleto} ruta={`/socios/${socio.idSocio}`}
+            onClose={() => setRestableciendo(false)} onListo={() => { setConTemporal(true); onActualizado?.(); }} />
+        )}
+        {sacandoFoto && (
+          <CapturaFoto nombre={socio.nombreCompleto} onListo={guardarFoto} onCerrar={() => setSacandoFoto(false)} />
+        )}
 
         <Seccion icon={Wallet} titulo="Membresía">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

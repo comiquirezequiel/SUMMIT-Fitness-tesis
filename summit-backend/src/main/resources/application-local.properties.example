@@ -21,7 +21,20 @@ JWT_SECRET=
 
 # Contraseña del administrador inicial (admin@summit.com). Solo se usa cuando la base no tiene ningún
 # administrador, es decir, la primera vez que arranca con una base vacía. Si queda vacía, no se crea.
+# Al entrar por primera vez, el sistema pide cambiarla.
 ADMIN_PASSWORD=
+
+# "¿Olvidaste tu contraseña?" por email (opcional): el correo desde el que salen los mails. Vacío = el login no
+# ofrece la opción y la contraseña la restablece recepción o el admin.
+# Con Gmail: MAIL_HOST=smtp.gmail.com y, en MAIL_PASSWORD, una "contraseña de aplicación" (Cuenta de Google >
+# Seguridad > Verificación en 2 pasos > Contraseñas de aplicaciones), nunca la contraseña de la cuenta.
+MAIL_HOST=
+MAIL_PORT=587
+MAIL_USERNAME=
+MAIL_PASSWORD=
+# Dirección pública de la app, la que abren los socios en el celular (por ejemplo https://app.tugimnasio.com.ar).
+# Es la del link que llega por mail: sin ella tampoco se ofrece la opción.
+APP_URL=
 
 # Débito automático con Mercado Pago (opcional): credencial privada de la cuenta del gimnasio.
 # Vacía = débito automático apagado; el resto del sistema funciona igual.

@@ -58,6 +58,22 @@ public class ArchivoService {
         return rutaRelativa;
     }
 
+    /**
+     * Guarda contenido que ya se validó y armó en el servidor (por ejemplo, una foto vuelta a codificar) y devuelve
+     * la ruta relativa, como guardar(...).
+     */
+    public String guardarContenido(byte[] contenido, String carpeta, String prefijo, String extension) {
+        String rutaRelativa = carpeta + "/" + prefijo + "-" + UUID.randomUUID() + extension;
+        Path destino = resolver(rutaRelativa);
+        try {
+            Files.createDirectories(destino.getParent());
+            Files.write(destino, contenido);
+        } catch (IOException e) {
+            throw new RuntimeException("No se pudo guardar el archivo", e);
+        }
+        return rutaRelativa;
+    }
+
     public Archivo cargar(String rutaRelativa) {
         Path ruta = resolver(rutaRelativa);
         if (!Files.isRegularFile(ruta)) {

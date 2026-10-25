@@ -3,8 +3,10 @@ package com.summit.backend.service;
 import com.summit.backend.dto.DashboardResumenDTO;
 import com.summit.backend.dto.IngresoDTO;
 import com.summit.backend.model.EstadoUsuario;
+import com.summit.backend.model.LogAsistencia;
 import com.summit.backend.model.ResultadoAsistencia;
 import com.summit.backend.model.Rol;
+import com.summit.backend.model.TipoEventoAsistencia;
 import com.summit.backend.repository.LogAsistenciaRepository;
 import com.summit.backend.repository.SuscripcionRepository;
 import com.summit.backend.repository.UsuarioRepository;
@@ -15,6 +17,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Indicadores del tablero principal y actividad de ingresos del día.
@@ -28,6 +32,8 @@ public class DashboardService {
     private final UsuarioRepository usuarioRepository;
     private final SuscripcionRepository suscripcionRepository;
     private final LogAsistenciaRepository logAsistenciaRepository;
+    private final FotoSocioService fotoSocioService;
+    private final AsistenciaService asistenciaService;
 
     public DashboardResumenDTO resumen() {
         LocalDate hoy = LocalDate.now();
@@ -57,23 +63,35 @@ public class DashboardService {
     }
 
     /**
-     * Intentos de ingreso de hoy, del más reciente al más antiguo.
+     * Intentos de ingreso de hoy, del más reciente al más antiguo. Con despuesDe (un idLog), solo los posteriores:
+     * el tablero lo pregunta cada pocos segundos para mostrar enseguida quién entró con la app.
      */
-    public List<IngresoDTO> ingresosDeHoy() {
+    public List<IngresoDTO> ingresosDeHoy(Long despuesDe) {
         LocalDate hoy = LocalDate.now();
-        return logAsistenciaRepository
-                .findByFechaHoraBetweenOrderByFechaHoraDesc(hoy.atStartOfDay(), hoy.atTime(LocalTime.MAX))
-                .stream()
-                .map(log -> IngresoDTO.builder()
-                        .idLog(log.getIdLog())
-                        .fechaHora(log.getFechaHora())
-                        .idUsuario(log.getUsuario().getIdUsuario())
-                        .nombre(log.getUsuario().getNombreCompleto())
-                        .dni(log.getUsuario().getDni())
-                        .rol(log.getUsuario().getRol().name())
-                        .resultado(log.getResultado().name())
-                        .tipoEvento(log.getTipoEvento() != null ? log.getTipoEvento().name() : null)
-                        .build())
+        LocalDateTime inicio = hoy.atStartOfDay();
+        LocalDateTime fin = hoy.atTime(LocalTime.MAX);
+        List<LogAsistencia> logs = despuesDe == null
+                ? logAsistenciaRepository.findByFechaHoraBetweenOrderByFechaHoraDesc(inicio, fin)
+                : logAsistenciaRepository.findByFechaHoraBetweenAndIdLogGreaterThanOrderByFechaHoraDesc(inicio, fin, despuesDe);
+        Map<Long, Long> fotos = fotoSocioService.versiones(
+                logs.stream().map(log -> log.getUsuario().getIdUsuario()).collect(Collectors.toSet()));
+        return logs.stream()
+                .map(log -> {
+                    boolean conQr = log.getTipoEvento() == TipoEventoAsistencia.CHECKIN_QR;
+                    return IngresoDTO.builder()
+                            .idLog(log.getIdLog())
+                            .fechaHora(log.getFechaHora())
+                            .idUsuario(log.getUsuario().getIdUsuario())
+                            .nombre(log.getUsuario().getNombreCompleto())
+                            .dni(log.getUsuario().getDni())
+                            .rol(log.getUsuario().getRol().name())
+                            .resultado(log.getResultado().name())
+                            .tipoEvento(log.getTipoEvento() != null ? log.getTipoEvento().name() : null)
+                            .fotoVersion(fotos.get(log.getUsuario().getIdUsuario()))
+                            .distanciaMetros(conQr ? log.getDistanciaMetros() : null)
+                            .ficha(conQr ? asistenciaService.fichaDeIngresoQr(log.getIdLog()) : null)
+                            .build();
+                })
                 .toList();
     }
 }

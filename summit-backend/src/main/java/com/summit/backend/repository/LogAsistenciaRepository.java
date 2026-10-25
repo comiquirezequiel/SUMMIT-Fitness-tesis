@@ -20,6 +20,11 @@ public interface LogAsistenciaRepository extends JpaRepository<LogAsistencia, Lo
     @EntityGraph(attributePaths = "usuario")
     List<LogAsistencia> findByFechaHoraBetweenOrderByFechaHoraDesc(LocalDateTime inicio, LocalDateTime fin);
 
+    // Solo los posteriores a un ingreso ya conocido (el tablero pregunta seguido si hay nuevos)
+    @EntityGraph(attributePaths = "usuario")
+    List<LogAsistencia> findByFechaHoraBetweenAndIdLogGreaterThanOrderByFechaHoraDesc(
+            LocalDateTime inicio, LocalDateTime fin, Long idLog);
+
     long countByFechaHoraBetween(LocalDateTime desde, LocalDateTime hasta);
     long countByResultadoAndFechaHoraBetween(ResultadoAsistencia resultado, LocalDateTime desde, LocalDateTime hasta);
 
@@ -36,4 +41,12 @@ public interface LogAsistenciaRepository extends JpaRepository<LogAsistencia, Lo
             + "AND l.tipoEvento <> com.summit.backend.model.TipoEventoAsistencia.CHECKOUT "
             + "AND l.fechaHora >= :desde AND l.fechaHora < :hasta")
     List<Object[]> ingresosPermitidos(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
+
+    // Ocupación: ingresos efectivos de socios (sin el personal) de un rango, como filas [fechaHora, idUsuario]
+    @Query("SELECT l.fechaHora, l.usuario.idUsuario FROM LogAsistencia l "
+            + "WHERE l.resultado = com.summit.backend.model.ResultadoAsistencia.PERMITIDO "
+            + "AND l.tipoEvento <> com.summit.backend.model.TipoEventoAsistencia.CHECKOUT "
+            + "AND l.usuario.rol = com.summit.backend.model.Rol.SOCIO "
+            + "AND l.fechaHora >= :desde AND l.fechaHora < :hasta")
+    List<Object[]> ingresosDeSocios(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
 }

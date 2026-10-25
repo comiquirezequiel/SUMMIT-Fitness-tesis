@@ -21,6 +21,8 @@ public class SocioResponseDTO {
     private String telefono;
     private EstadoUsuario estado;
     private LocalDateTime fechaCreacion;
+    // Todavía tiene la contraseña que le dio recepción (inicial o temporal): no eligió la suya
+    private boolean debeCambiarPassword;
 
     // --- Apto médico (Motor de Validación Ley 5397) ---
     private boolean aptoMedicoVigente;
@@ -38,4 +40,6 @@ public class SocioResponseDTO {
     private String ciudad;
     private String objetivo;
     private String observaciones;
+    // Versión de la foto (null si no tiene): la imagen se pide a /api/socios/{id}/foto?v=fotoVersion
+    private Long fotoVersion;
 }

@@ -4,12 +4,7 @@ import Modal from '../components/Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../components/Campo';
 import { apiFetch } from '../services/api';
 import { formatFecha, hoyIso, usuarioActual } from '../utils/formato';
-
-const DIAS = [
-  { enum: 'LUNES', nombre: 'Lunes' }, { enum: 'MARTES', nombre: 'Martes' }, { enum: 'MIERCOLES', nombre: 'Miércoles' },
-  { enum: 'JUEVES', nombre: 'Jueves' }, { enum: 'VIERNES', nombre: 'Viernes' }, { enum: 'SABADO', nombre: 'Sábado' },
-  { enum: 'DOMINGO', nombre: 'Domingo' },
-];
+import { DIAS_SEMANA as DIAS } from '../utils/constantes';
 const COLORES = ['border-l-rose-500', 'border-l-indigo-500', 'border-l-pink-500', 'border-l-orange-500', 'border-l-blue-500', 'border-l-emerald-500'];
 
 const ESTADOS_RESERVA = {

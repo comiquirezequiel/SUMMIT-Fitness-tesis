@@ -52,6 +52,16 @@ public class Usuario {
     @Column(name = "fecha_creacion")
     private LocalDateTime fechaCreacion;
 
+    // La contraseña es temporal (la dio recepción o el admin): hay que cambiarla al entrar. Mientras tanto el
+    // backend solo deja cambiarla (JwtAuthenticationFilter)
+    @Column(name = "debe_cambiar_password", nullable = false)
+    private boolean debeCambiarPassword;
+
+    // Último cambio de contraseña: los tokens emitidos antes dejan de servir
+    @JsonIgnore
+    @Column(name = "password_cambiada")
+    private LocalDateTime passwordCambiada;
+
     @PrePersist
     public void prePersist() {
         this.fechaCreacion = LocalDateTime.now();

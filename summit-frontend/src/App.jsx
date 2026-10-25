@@ -1,20 +1,54 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
-import ConfiguracionAcceso from './pages/ConfiguracionAcceso';
+import AvisoActualizacion from './components/AvisoActualizacion';
 import { sesionVigente, limpiarSesion } from './services/auth';
 import { usuarioActual } from './utils/formato';
 
 // Portal del socio (pensado para el celular): se descarga aparte, el personal no lo necesita
 const PortalSocio = lazy(() => import('./portal/PortalSocio'));
 
-// Pantallas de entrenamiento (solo profesor y admin): también se descargan aparte
+// Contraseñas: elegir la propia al entrar con una temporal, "¿Olvidaste tu contraseña?" y el link del mail.
+// Las usan el socio y el personal (por eso están en cuenta/ y no en pages/)
+const CambiarPassword = lazy(() => import('./cuenta/CambiarPassword'));
+const OlvidePassword = lazy(() => import('./cuenta/OlvidePassword'));
+const RestablecerPassword = lazy(() => import('./cuenta/RestablecerPassword'));
+
+// Panel del personal: cada pantalla se descarga recién cuando se abre, así el socio no baja ninguna
+// (en el build llevan el prefijo panel-: ver vite.config.js)
+const Layout = lazy(() => import('./components/Layout'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Socios = lazy(() => import('./pages/Socios'));
+const NuevoSocio = lazy(() => import('./pages/NuevoSocio'));
+const MetricasGenerales = lazy(() => import('./pages/MetricasGenerales'));
+const Chat = lazy(() => import('./pages/Chat'));
+const TareasCRM = lazy(() => import('./pages/TareasCRM'));
+const Inactividad = lazy(() => import('./pages/Inactividad'));
+const Caja = lazy(() => import('./pages/Caja'));
+const Planes = lazy(() => import('./pages/Planes'));
+const EstadoMembresias = lazy(() => import('./pages/EstadoMembresias'));
+const MetricasPlanes = lazy(() => import('./pages/MetricasPlanes'));
+const DebitosAutomaticos = lazy(() => import('./pages/DebitosAutomaticos'));
 const ConstructorRutinas = lazy(() => import('./pages/ConstructorRutinas'));
 const EntrenamientoHoy = lazy(() => import('./pages/EntrenamientoHoy'));
 const EntrenamientoHistorial = lazy(() => import('./pages/EntrenamientoHistorial'));
 const EntrenamientoPlanes = lazy(() => import('./pages/EntrenamientoPlanes'));
+const Entrenamiento = lazy(() => import('./pages/Entrenamiento'));
+const Clases = lazy(() => import('./pages/Clases'));
+const DatosGimnasio = lazy(() => import('./pages/DatosGimnasio'));
+const Novedades = lazy(() => import('./pages/Novedades'));
+const ConfiguracionAcceso = lazy(() => import('./pages/ConfiguracionAcceso'));
+const AjustesTablas = lazy(() => import('./pages/AjustesTablas'));
+const AjustesEquipo = lazy(() => import('./pages/AjustesEquipo'));
+const AjustesAsistencia = lazy(() => import('./pages/AjustesAsistencia'));
+
 const Diferida = ({ children }) => (
   <Suspense fallback={<div className="p-8 text-sm text-slate-400">Cargando…</div>}>{children}</Suspense>
+);
+
+// Mientras se descarga una pantalla de la cuenta, el fondo bordó del login
+const DeLaCuenta = ({ children }) => (
+  <Suspense fallback={<div className="min-h-screen bg-bordo-800" />}>{children}</Suspense>
 );
 
 // Rutas protegidas: sin token, o con el token vencido, vuelve al login
@@ -23,6 +57,10 @@ const ProtectedRoute = ({ children }) => {
     const habiaSesion = !!localStorage.getItem('token');
     limpiarSesion();
     return <Navigate to={habiaSesion ? '/login?sesion=expirada' : '/login'} replace />;
+  }
+  // Con una contraseña temporal no se entra a nada hasta elegir una propia (el backend tampoco responde otra cosa)
+  if (usuarioActual()?.debeCambiarPassword) {
+    return <Navigate to="/cambiar-password" replace />;
   }
   // El socio usa su portal (pensado para el celular); el panel es para el personal
   if (usuarioActual()?.rol === 'SOCIO') {
@@ -34,81 +72,65 @@ const ProtectedRoute = ({ children }) => {
   }
   return children;
 };
-import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard';
-import Socios from './pages/Socios';
-import Entrenamiento from './pages/Entrenamiento';
-import MetricasGenerales from './pages/MetricasGenerales';
-import NuevoSocio from './pages/NuevoSocio';
-import Chat from './pages/Chat';
-import TareasCRM from './pages/TareasCRM';
-import Inactividad from './pages/Inactividad';
-
-import Clases from './pages/Clases';
-import Planes from './pages/Planes';
-import EstadoMembresias from './pages/EstadoMembresias';
-import MetricasPlanes from './pages/MetricasPlanes';
-import DebitosAutomaticos from './pages/DebitosAutomaticos';
-import Caja from './pages/Caja';
-import AjustesGeneral from './pages/AjustesGeneral';
-import AjustesTablas from './pages/AjustesTablas';
-import AjustesEquipo from './pages/AjustesEquipo';
-import AjustesAsistencia from './pages/AjustesAsistencia';
-
 
 // Inicio según el rol: el tablero de recepción no le sirve al profesor
 const Inicio = () => (usuarioActual()?.rol === 'PROFESOR'
   ? <Navigate to="/rutinas/constructor" replace />
-  : <Dashboard />);
+  : <Diferida><Dashboard /></Diferida>);
 
 function App() {
   return (
     <Router>
+      <AvisoActualizacion />
       <Routes>
         <Route path="/login" element={<Login />} />
-        
+        <Route path="/cambiar-password" element={<DeLaCuenta><CambiarPassword /></DeLaCuenta>} />
+        <Route path="/olvide-password" element={<DeLaCuenta><OlvidePassword /></DeLaCuenta>} />
+        <Route path="/restablecer" element={<DeLaCuenta><RestablecerPassword /></DeLaCuenta>} />
+
         {/* Protected Routes - require authentication */}
         <Route path="/" element={
           <ProtectedRoute>
-            <Layout />
+            <Diferida><Layout /></Diferida>
           </ProtectedRoute>
         }>
           <Route index element={<Inicio />} />
-          
+
           {/* Socios */}
-          <Route path="socios" element={<Socios />} />
+          <Route path="socios" element={<Diferida><Socios /></Diferida>} />
           <Route path="rutinas/constructor" element={<Diferida><ConstructorRutinas /></Diferida>} />
-          <Route path="socios/metricas" element={<MetricasGenerales />} />
-          <Route path="socios/nuevo" element={<NuevoSocio />} />
-          <Route path="socios/chat" element={<Chat />} />
-          <Route path="socios/tareas" element={<TareasCRM />} />
-          <Route path="socios/inactividad" element={<Inactividad />} />
-          
+          <Route path="socios/metricas" element={<Diferida><MetricasGenerales /></Diferida>} />
+          <Route path="socios/nuevo" element={<Diferida><NuevoSocio /></Diferida>} />
+          <Route path="socios/novedades" element={<Diferida><Novedades /></Diferida>} />
+          <Route path="socios/chat" element={<Diferida><Chat /></Diferida>} />
+          <Route path="socios/tareas" element={<Diferida><TareasCRM /></Diferida>} />
+          <Route path="socios/inactividad" element={<Diferida><Inactividad /></Diferida>} />
+
           {/* Caja */}
-          <Route path="caja" element={<Caja />} />
-          
+          <Route path="caja" element={<Diferida><Caja /></Diferida>} />
+
           {/* Membresías / Planes */}
-          <Route path="planes" element={<Planes />} />
-          <Route path="membresias/metricas" element={<MetricasPlanes />} />
-          <Route path="membresias/estado" element={<EstadoMembresias />} />
-          <Route path="membresias/debitos" element={<DebitosAutomaticos />} />
-          
+          <Route path="planes" element={<Diferida><Planes /></Diferida>} />
+          <Route path="membresias/metricas" element={<Diferida><MetricasPlanes /></Diferida>} />
+          <Route path="membresias/estado" element={<Diferida><EstadoMembresias /></Diferida>} />
+          <Route path="membresias/debitos" element={<Diferida><DebitosAutomaticos /></Diferida>} />
+
           {/* Entrenamiento */}
           <Route path="entrenamiento/hoy" element={<Diferida><EntrenamientoHoy /></Diferida>} />
           <Route path="entrenamiento/historial" element={<Diferida><EntrenamientoHistorial /></Diferida>} />
           <Route path="entrenamiento/rutinas" element={<Diferida><EntrenamientoPlanes /></Diferida>} />
-          <Route path="entrenamiento/ejercicios" element={<Entrenamiento />} />
-          
+          <Route path="entrenamiento/ejercicios" element={<Diferida><Entrenamiento /></Diferida>} />
+
           {/* Clases */}
-          <Route path="clases/*" element={<Clases />} />
-          
+          <Route path="clases/*" element={<Diferida><Clases /></Diferida>} />
+
           {/* Ajustes */}
-          <Route path="ajustes/general" element={<AjustesGeneral />} />
-          <Route path="ajustes/acceso" element={<ConfiguracionAcceso />} />
-          <Route path="ajustes/tablas" element={<AjustesTablas />} />
-          <Route path="ajustes/equipo" element={<AjustesEquipo />} />
-          <Route path="ajustes/asistencia" element={<AjustesAsistencia />} />
-          
+          <Route path="ajustes/gimnasio" element={<Diferida><DatosGimnasio /></Diferida>} />
+          <Route path="ajustes/acceso" element={<Diferida><ConfiguracionAcceso /></Diferida>} />
+          <Route path="ajustes/tablas" element={<Diferida><AjustesTablas /></Diferida>} />
+          <Route path="ajustes/equipo" element={<Diferida><AjustesEquipo /></Diferida>} />
+          <Route path="ajustes/asistencia" element={<Diferida><AjustesAsistencia /></Diferida>} />
+
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

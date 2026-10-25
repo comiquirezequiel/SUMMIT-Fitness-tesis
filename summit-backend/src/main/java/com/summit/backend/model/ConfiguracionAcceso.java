@@ -31,4 +31,19 @@ public class ConfiguracionAcceso {
     // --- Períodos de Gracia (Días) ---
     private int diasGraciaMembresia;
     private int diasGraciaCertificado;
+
+    // --- Ingreso con QR desde la app del socio (PLAN-APP-SOCIOS.md, A4) ---
+    // El socio escanea el QR impreso en recepción y su ubicación tiene que estar dentro del radio del gimnasio.
+    private boolean ingresoQrHabilitado;
+
+    // Ubicación del gimnasio (se carga desde Reglas de acceso, parado en el lugar). null = sin configurar
+    private Double latitudGimnasio;
+    private Double longitudGimnasio;
+
+    // Distancia máxima al gimnasio para ingresar con el QR. null = 20 metros
+    private Integer radioIngresoMetros;
+
+    // Lo que dice el QR impreso, después de "SUMMIT-INGRESO:". Si se publica, el admin genera uno nuevo y
+    // los QR impresos anteriores dejan de servir
+    private String codigoQrIngreso;
 }

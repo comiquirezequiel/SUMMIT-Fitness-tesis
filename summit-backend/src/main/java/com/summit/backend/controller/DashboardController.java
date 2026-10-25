@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -27,8 +28,9 @@ public class DashboardController {
         return ResponseEntity.ok(dashboardService.resumen());
     }
 
+    // ?despuesDe=idLog: solo los ingresos posteriores a ese (para preguntar seguido sin traer todo el día)
     @GetMapping("/ingresos-hoy")
-    public ResponseEntity<List<IngresoDTO>> ingresosDeHoy() {
-        return ResponseEntity.ok(dashboardService.ingresosDeHoy());
+    public ResponseEntity<List<IngresoDTO>> ingresosDeHoy(@RequestParam(required = false) Long despuesDe) {
+        return ResponseEntity.ok(dashboardService.ingresosDeHoy(despuesDe));
     }
 }

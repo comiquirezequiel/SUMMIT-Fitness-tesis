@@ -9,6 +9,7 @@ import StatCard from '../components/StatCard';
 import CobroModal from '../components/socios/CobroModal';
 import EditarSocioModal from '../components/socios/EditarSocioModal';
 import FichaSocioModal from '../components/socios/FichaSocioModal';
+import FotoSocio from '../components/socios/FotoSocio';
 import { apiFetch } from '../services/api';
 import { formatFecha, descargarCsv, usuarioActual } from '../utils/formato';
 import { ESTADOS_USUARIO } from '../utils/constantes';
@@ -215,9 +216,7 @@ const Socios = () => {
                     <tr key={socio.idSocio} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-xs overflow-hidden border border-blue-200 shrink-0">
-                            {socio.nombreCompleto.substring(0, 2).toUpperCase()}
-                          </div>
+                          <FotoSocio idSocio={socio.idSocio} fotoVersion={socio.fotoVersion} nombre={socio.nombreCompleto} />
                           <div>
                             <div className="font-medium text-slate-800">{socio.nombreCompleto}</div>
                             <div className="text-slate-500 text-xs mt-0.5">DNI: {socio.dni}</div>

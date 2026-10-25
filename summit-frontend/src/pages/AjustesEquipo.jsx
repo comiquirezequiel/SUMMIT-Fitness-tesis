@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, UserPlus, Save, Power } from 'lucide-react';
+import { Users, UserPlus, Save, Power, Contact, KeyRound } from 'lucide-react';
 import Modal from '../components/Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../components/Campo';
+import PerfilProfesorModal from '../components/equipo/PerfilProfesorModal';
+import RestablecerPasswordModal from '../components/RestablecerPasswordModal';
 import { apiFetch } from '../services/api';
 import { usuarioActual } from '../utils/formato';
 import { ESTADOS_USUARIO } from '../utils/constantes';
@@ -67,7 +69,7 @@ const NuevoMiembroModal = ({ onClose, onGuardado }) => {
         <Campo label="Teléfono">
           <input value={datos.telefono} onChange={e => set('telefono', e.target.value)} className={inputClass} />
         </Campo>
-        <Campo label="Contraseña inicial" required ayuda="Mínimo 6 caracteres" className="md:col-span-2">
+        <Campo label="Contraseña inicial" required ayuda="Mínimo 6 caracteres. Al entrar por primera vez, elige una propia." className="md:col-span-2">
           <input type="text" required minLength={6} value={datos.password} onChange={e => set('password', e.target.value)} className={`${inputClass} font-mono`} />
         </Campo>
         {error && <p className="md:col-span-2 text-sm text-rose-600 font-medium">{error}</p>}
@@ -81,6 +83,8 @@ const AjustesEquipo = () => {
   const [miembros, setMiembros] = useState([]);
   const [error, setError] = useState('');
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [perfilDe, setPerfilDe] = useState(null); // profesor cuyo perfil para la app se edita
+  const [restableciendo, setRestableciendo] = useState(null); // miembro al que se le da una contraseña temporal
 
   const cargar = useCallback(async () => {
     try {
@@ -161,6 +165,9 @@ const AjustesEquipo = () => {
                         <div>
                           <p className="font-medium text-slate-800">{m.nombreCompleto} {esYo && <span className="text-xs text-slate-400">(vos)</span>}</p>
                           <p className="text-xs text-slate-500">{m.telefono || `DNI ${m.dni}`}</p>
+                          {m.debeCambiarPassword && (
+                            <p className="text-xs text-amber-700 mt-0.5" title="Todavía no entró a elegir su propia contraseña">Con contraseña temporal</p>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -172,7 +179,19 @@ const AjustesEquipo = () => {
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${estado.clase}`}>{estado.texto}</span>
                     </td>
                     {esAdmin && (
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 text-right whitespace-nowrap">
+                        {m.rol === 'PROFESOR' && (
+                          <button onClick={() => setPerfilDe(m)} title="Perfil que ven los socios en la app"
+                            className="mr-2 px-3 py-2 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 text-xs font-semibold inline-flex items-center gap-1.5">
+                            <Contact className="w-4 h-4" /> Perfil
+                          </button>
+                        )}
+                        {!esYo && (
+                          <button onClick={() => setRestableciendo(m)} title="Restablecer contraseña"
+                            className="mr-2 p-2 rounded-lg border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 transition-colors">
+                            <KeyRound className="w-4 h-4" />
+                          </button>
+                        )}
                         {!esYo && (
                           <button onClick={() => cambiarEstado(m)} title={m.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'}
                             className={`p-2 rounded-lg border transition-colors ${m.estado === 'ACTIVO' ? 'border-slate-200 text-slate-500 hover:text-rose-600 hover:border-rose-200' : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'}`}>
@@ -190,6 +209,11 @@ const AjustesEquipo = () => {
       </div>
 
       {modalAbierto && <NuevoMiembroModal onClose={() => setModalAbierto(false)} onGuardado={() => { setModalAbierto(false); cargar(); }} />}
+      {perfilDe && <PerfilProfesorModal profesor={perfilDe} onClose={() => setPerfilDe(null)} />}
+      {restableciendo && (
+        <RestablecerPasswordModal nombre={restableciendo.nombreCompleto} ruta={`/usuarios/${restableciendo.idUsuario}`}
+          onClose={() => setRestableciendo(null)} onListo={cargar} />
+      )}
     </div>
   );
 };

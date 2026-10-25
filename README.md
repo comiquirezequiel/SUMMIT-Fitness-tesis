@@ -51,6 +51,9 @@ Abrilo en el editor y completá:
 
 - `ADMIN_PASSWORD`: la contraseña del administrador inicial. Solo se usa la primera vez, con la base vacía.
 - `MP_ACCESS_TOKEN` (opcional): la credencial de Mercado Pago para el débito automático.
+- `MAIL_HOST`, `MAIL_USERNAME`, `MAIL_PASSWORD` y `APP_URL` (opcionales): el correo desde el que sale el mail de
+  "¿Olvidaste tu contraseña?" y la dirección pública de la app, que va en el link. Sin ellos, el login no ofrece
+  la opción y la contraseña la restablece recepción o el admin. El ejemplo explica cómo hacerlo con Gmail.
 
 **3. Arrancá el backend** (terminal 1):
 
@@ -79,8 +82,8 @@ sola vez con `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
 
 **5. Entrá a http://localhost:5173** con el administrador inicial: `admin@summit.com` y la contraseña de
 `ADMIN_PASSWORD`. El backend lo crea solo la primera vez, con la base vacía: si la base ya existía, vale la
-contraseña con la que se creó. Todavía no hay una pantalla para cambiar contraseñas, así que elegí una
-buena antes del primer arranque.
+contraseña con la que se creó. En una base nueva, al entrar por primera vez el sistema pide elegir una
+contraseña propia. Después se cambia cuando quieras desde el menú de tu nombre, arriba a la derecha.
 
 **Asistente de IA:** si Ollama está abierto (ícono de la llama en la bandeja de Windows), los botones de
 IA se habilitan solos. El primer análisis tarda más porque Ollama carga el modelo en memoria.
@@ -103,6 +106,8 @@ MySQL y Ollama pueden quedar corriendo: casi no consumen nada mientras no se usa
 | `Access denied for user 'root'@'localhost'` al arrancar el backend | `DB_USERNAME` o `DB_PASSWORD` no coinciden con los de MySQL | Corregilos en `application-local.properties` |
 | En una base nueva no se puede entrar como admin y el backend dijo `No se creó el admin inicial: falta ADMIN_PASSWORD` | `ADMIN_PASSWORD` vacía | Completala y volvé a arrancar el backend |
 | Después de cambiar `JWT_SECRET`, el sistema vuelve al login | Las sesiones firmadas con la clave anterior dejan de valer | Volvé a entrar (es normal) |
+| Te olvidaste la contraseña del admin | — | Otro admin te la restablece desde *Ajustes > Equipo*. Si sos el único, configurá el correo (paso 2) y usá "¿Olvidaste tu contraseña?" en el login |
+| No llega el mail de "¿Olvidaste tu contraseña?" | Correo mal configurado, o el mail quedó en spam | Revisá spam y los `MAIL_*`; si el backend no pudo mandarlo, su consola dice `No se pudo mandar el mail de recuperación` |
 | `Port 8080 was already in use` | Ya hay un backend abierto en otra terminal | Cerrá esa terminal (o `Ctrl + C` en ella) |
 | Vite dice `Port 5173 is in use` y abre otro puerto | Ya hay un frontend abierto | Cerrá el otro: el backend solo acepta pedidos desde el puerto 5173 |
 | Error 500 que menciona `ClassFormatError` | Clases compiladas por otra herramienta (por ejemplo el editor) | Arrancá con `clean`, como en el paso 3 |

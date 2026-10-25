@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * Datos personales del socio que no hacen al inicio de sesión.
@@ -45,4 +46,14 @@ public class PerfilSocio {
 
     @Column(name = "observaciones", length = 500)
     private String observaciones;
+
+    // Foto para que recepción reconozca al socio en cada ingreso (la saca recepción). Ruta dentro de
+    // summit.uploads.dir: no sale en la API, la foto se pide por /api/socios/{id}/foto
+    @JsonIgnore
+    @Column(name = "foto_url", length = 255)
+    private String fotoUrl;
+
+    // Cuándo se sacó la foto: es su "versión", para que el navegador no muestre una vieja
+    @Column(name = "foto_actualizada")
+    private LocalDateTime fotoActualizada;
 }

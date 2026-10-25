@@ -1,9 +1,10 @@
 package com.summit.backend.security;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,11 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    // Con contraseña temporal solo se puede usar /api/auth (cambiarla o salir). El frontend reconoce el código
+    // y lleva a la pantalla para cambiarla.
+    private static final String DEBE_CAMBIAR_PASSWORD =
+            "{\"error\":\"Antes de seguir tenés que cambiar tu contraseña\",\"codigo\":\"CAMBIAR_PASSWORD\"}";
+
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomUserDetailsService customUserDetailsService;
 
@@ -38,15 +44,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
             String email = jwtTokenProvider.getEmailFromToken(token);
 
-            // Si la cuenta se desactivó o se borró después de emitir el token, el pedido sigue sin
-            // autenticar y termina en 401: el frontend vuelve al login
-            UserDetails userDetails = cargarUsuario(email);
-            if (userDetails != null && userDetails.isEnabled()) {
+            // Si la cuenta se desactivó o se borró después de emitir el token, o si la contraseña cambió después
+            // (se cerraron todas las sesiones), el pedido sigue sin autenticar y termina en 401: el frontend
+            // vuelve al login
+            UsuarioAutenticado usuario = cargarUsuario(email);
+            if (usuario != null && usuario.isEnabled()
+                    && !usuario.tokenAnteriorAlCambio(jwtTokenProvider.getIssuedAt(token))) {
+                if (usuario.isDebeCambiarPassword() && !request.getRequestURI().startsWith("/api/auth/")) {
+                    response.setStatus(HttpStatus.FORBIDDEN.value());
+                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                    response.setCharacterEncoding("UTF-8");
+                    response.getWriter().write(DEBE_CAMBIAR_PASSWORD);
+                    return;
+                }
+
                 UsernamePasswordAuthenticationToken authenticationToken =
                         new UsernamePasswordAuthenticationToken(
-                                userDetails,
+                                usuario,
                                 null,
-                                userDetails.getAuthorities()
+                                usuario.getAuthorities()
                         );
 
                 authenticationToken.setDetails(
@@ -60,7 +76,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private UserDetails cargarUsuario(String email) {
+    private UsuarioAutenticado cargarUsuario(String email) {
         try {
             return customUserDetailsService.loadUserByUsername(email);
         } catch (UsernameNotFoundException e) {

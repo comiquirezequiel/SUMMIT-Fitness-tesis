@@ -3,14 +3,12 @@ import { Table2, LineChart } from 'lucide-react';
 import { formatFecha } from '../../utils/formato';
 import { fechaCorta, formatNumero, seriesPorReps } from './comun';
 
-// Colores (validados para daltonismo y contraste sobre blanco). El texto va siempre en grises.
+// Colores de los datos (validados para daltonismo y contraste sobre blanco). Los grises (grilla, ejes y textos) y
+// el fondo van con clases de Tailwind: en la app del socio se adaptan solos al modo oscuro (index.css), en el panel
+// son los mismos de siempre.
 const AZUL = '#2563eb';
 const NARANJA = '#ea580c';
 const NARANJA_OSCURO = '#9a3412';
-const GRILLA = '#f1f5f9';
-const EJE = '#cbd5e1';
-const TEXTO = '#64748b';
-const TEXTO_FUERTE = '#334155';
 
 // Geometría: dos paneles que comparten el eje de fechas (nunca dos escalas en el mismo panel)
 const ML = 46;
@@ -240,7 +238,7 @@ const GraficoProgreso = ({ datos, nombreEjercicio }) => {
             <div className="flex rounded-lg border border-slate-200 p-0.5 bg-slate-50" role="group" aria-label="Medida del gráfico de barras">
               {Object.entries(METRICAS_INFERIORES).map(([clave, m]) => (
                 <button key={clave} onClick={() => setInferior(clave)} aria-pressed={metricaInferior === clave}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-md ${metricaInferior === clave ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500'}`}>
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-md ${metricaInferior === clave ? 'bg-superficie shadow-sm text-slate-800' : 'text-slate-500'}`}>
                   {m.corto}
                 </button>
               ))}
@@ -286,8 +284,8 @@ const GraficoProgreso = ({ datos, nombreEjercicio }) => {
               {/* Panel superior: grilla y eje */}
               {geo.e1.ticks.map((t) => (
                 <g key={`t1-${t}`}>
-                  <line x1={ML} x2={ancho - MR} y1={geo.y1(t)} y2={geo.y1(t)} stroke={t === geo.e1.desde ? EJE : GRILLA} strokeWidth="1" />
-                  <text x={ML - 8} y={geo.y1(t)} dy="0.32em" textAnchor="end" fontSize="11" fill={TEXTO}>{formatNumero(t)}</text>
+                  <line x1={ML} x2={ancho - MR} y1={geo.y1(t)} y2={geo.y1(t)} className={t === geo.e1.desde ? 'stroke-slate-300' : 'stroke-slate-100'} strokeWidth="1" />
+                  <text x={ML - 8} y={geo.y1(t)} dy="0.32em" textAnchor="end" fontSize="11" className="fill-slate-500">{formatNumero(t)}</text>
                 </g>
               ))}
               {geo.camino && <path d={geo.camino} fill="none" stroke={AZUL} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}
@@ -296,22 +294,22 @@ const GraficoProgreso = ({ datos, nombreEjercicio }) => {
                 if (v === null || v === undefined) return null;
                 return (
                   <circle key={`p-${i}`} cx={geo.xs[i]} cy={geo.y1(v)} r={activo === i ? 6 : 4}
-                    fill={AZUL} stroke="#ffffff" strokeWidth="2" />
+                    fill={AZUL} className="stroke-superficie" strokeWidth="2" />
                 );
               })}
               {geo.etiquetas.map((i) => (
                 <text key={`e-${i}`} x={geo.xs[i]} y={geo.y1(datos[i][principal.campo]) - 11} textAnchor={anclaje(geo.xs[i])}
-                  fontSize="11" fontWeight="600" fill={TEXTO_FUERTE} stroke="#ffffff" strokeWidth="3" style={{ paintOrder: 'stroke' }}>
+                  fontSize="11" fontWeight="600" className="fill-slate-700 stroke-superficie" strokeWidth="3" style={{ paintOrder: 'stroke' }}>
                   {principal.formato(datos[i][principal.campo])}
                 </text>
               ))}
 
               {/* Panel inferior: RPE o volumen, misma escala de fechas */}
-              <text x={4} y={T2 - 16} fontSize="12" fontWeight="600" fill={TEXTO_FUERTE}>{METRICAS_INFERIORES[metricaInferior].titulo}</text>
+              <text x={4} y={T2 - 16} fontSize="12" fontWeight="600" className="fill-slate-700">{METRICAS_INFERIORES[metricaInferior].titulo}</text>
               {geo.e2.ticks.map((t) => (
                 <g key={`t2-${t}`}>
-                  <line x1={ML} x2={ancho - MR} y1={geo.y2(t)} y2={geo.y2(t)} stroke={t === 0 ? EJE : GRILLA} strokeWidth="1" />
-                  <text x={ML - 8} y={geo.y2(t)} dy="0.32em" textAnchor="end" fontSize="11" fill={TEXTO}>{formatNumero(t, 0)}</text>
+                  <line x1={ML} x2={ancho - MR} y1={geo.y2(t)} y2={geo.y2(t)} className={t === 0 ? 'stroke-slate-300' : 'stroke-slate-100'} strokeWidth="1" />
+                  <text x={ML - 8} y={geo.y2(t)} dy="0.32em" textAnchor="end" fontSize="11" className="fill-slate-500">{formatNumero(t, 0)}</text>
                 </g>
               ))}
               {datos.map((d, i) => {
@@ -325,14 +323,14 @@ const GraficoProgreso = ({ datos, nombreEjercicio }) => {
 
               {/* Eje de fechas compartido */}
               {geo.etiquetasX.map((px) => (
-                <text key={`x-${px}`} x={px} y={B2 + 18} textAnchor={anclaje(px)} fontSize="11" fill={TEXTO}>
+                <text key={`x-${px}`} x={px} y={B2 + 18} textAnchor={anclaje(px)} fontSize="11" className="fill-slate-500">
                   {fechaCorta(geo.fechaDeX.get(px)).split(' ')[1]}
                 </text>
               ))}
 
               {/* Guía del registro elegido */}
               {punto && (
-                <line x1={xActivo} x2={xActivo} y1={T1 - 8} y2={B2} stroke="#94a3b8" strokeWidth="1" strokeDasharray="3 3" pointerEvents="none" />
+                <line x1={xActivo} x2={xActivo} y1={T1 - 8} y2={B2} className="stroke-slate-400" strokeWidth="1" strokeDasharray="3 3" pointerEvents="none" />
               )}
 
               {/* Zona sensible (más grande que las marcas) para mouse y dedo */}
@@ -344,7 +342,7 @@ const GraficoProgreso = ({ datos, nombreEjercicio }) => {
           )}
 
           {punto && (
-            <div className="absolute pointer-events-none bg-white/95 border border-slate-200 shadow-lg rounded-lg px-3 py-2 text-xs text-slate-600 space-y-0.5"
+            <div className="absolute pointer-events-none bg-superficie/95 border border-slate-200 shadow-lg rounded-lg px-3 py-2 text-xs text-slate-600 space-y-0.5"
               style={{ left: izquierdaTooltip, top: T1, width: ANCHO_TOOLTIP }} role="status">
               <p className="font-semibold text-slate-800">{fechaCorta(punto.fecha)}/{punto.fecha.substring(0, 4)}</p>
               <p className="flex items-center gap-1.5">

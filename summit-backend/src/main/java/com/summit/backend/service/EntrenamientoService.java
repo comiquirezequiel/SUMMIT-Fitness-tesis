@@ -44,6 +44,7 @@ public class EntrenamientoService {
     private final LogEntrenamientoRepository logEntrenamientoRepository;
     private final RutinaEjercicioRepository rutinaEjercicioRepository;
     private final UsuarioRepository usuarioRepository;
+    private final ProgresoService progresoService;
 
     /** El registro guardado y si es nuevo (si no, se actualizó el que ya existía). */
     public record Resultado(LogEntrenamientoDTO registro, boolean nuevo) {}
@@ -94,7 +95,11 @@ public class EntrenamientoService {
         registro.setComentario(comentario);
         registro.setRegistradoPor(cargadoPor);
         registro.setFechaRegistro(LocalDateTime.now());
-        return new Resultado(toDTO(logEntrenamientoRepository.save(registro)), existente.isEmpty());
+        LogEntrenamiento guardado = logEntrenamientoRepository.save(registro);
+        LogEntrenamientoDTO dto = toDTO(guardado);
+        // La app festeja el "¡Nuevo récord!" (PLAN-APP-SOCIOS.md, A6)
+        dto.setNuevoRecord(progresoService.recordSuperado(guardado));
+        return new Resultado(dto, existente.isEmpty());
     }
 
     /**

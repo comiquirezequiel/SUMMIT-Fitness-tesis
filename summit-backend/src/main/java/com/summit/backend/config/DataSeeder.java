@@ -76,8 +76,10 @@ public class DataSeeder implements ApplicationRunner {
                 .password(passwordEncoder.encode(adminPassword))
                 .rol(Rol.ADMIN)
                 .estado(EstadoUsuario.ACTIVO)
+                // ADMIN_PASSWORD queda escrita en un archivo: al entrar por primera vez la tiene que cambiar
+                .debeCambiarPassword(true)
                 .build());
-        log.warn("Se creó el admin inicial {} con la contraseña de summit.seed.admin.password. Cambiala después del primer login.", adminEmail);
+        log.warn("Se creó el admin inicial {} con la contraseña de summit.seed.admin.password: al entrar por primera vez pide cambiarla.", adminEmail);
     }
 
     /**

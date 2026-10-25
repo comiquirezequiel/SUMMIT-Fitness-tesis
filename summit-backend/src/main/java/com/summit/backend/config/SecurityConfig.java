@@ -74,6 +74,8 @@ public class SecurityConfig {
             .exceptionHandling(ex -> ex.authenticationEntryPoint(
                     new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
             .authorizeHttpRequests(auth -> auth
+                // Cambiar la propia contraseña: con token (también con una contraseña temporal)
+                .requestMatchers(HttpMethod.PUT, "/api/auth/password").authenticated()
                 // Endpoints públicos (sin token)
                 .requestMatchers("/api/auth/**", "/api/test/**").permitAll()
                 // Página de error interna de Spring: si queda protegida, un 403 se convierte en 401
@@ -90,6 +92,11 @@ public class SecurityConfig {
                 // Reglas de acceso del gimnasio: RECEPCION consulta, solo ADMIN modifica
                 .requestMatchers(HttpMethod.GET, "/api/configuracion/**").hasAnyRole("ADMIN", "RECEPCION")
                 .requestMatchers("/api/configuracion/**").hasRole("ADMIN")
+
+                // Novedades del gimnasio (avisos en la app): RECEPCION consulta, solo ADMIN publica.
+                // El socio las lee en /api/portal/novedades
+                .requestMatchers(HttpMethod.GET, "/api/novedades/**").hasAnyRole("ADMIN", "RECEPCION")
+                .requestMatchers("/api/novedades/**").hasRole("ADMIN")
 
                 // Gestión de planes: solo ADMIN
                 .requestMatchers(HttpMethod.POST, "/api/planes/**").hasRole("ADMIN")
