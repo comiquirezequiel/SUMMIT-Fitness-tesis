@@ -125,6 +125,9 @@ Para revisar si todo el backend compila sin arrancarlo: `.\mvnw.cmd compile` den
   contraseña de `application-local.properties`.
 - Débito automático con Mercado Pago (opcional): se activa con `MP_ACCESS_TOKEN` en
   `application-local.properties`.
+- Notificaciones de la app del socio: funcionan con la app servida por HTTPS (en el iPhone, además, agregada a la
+  pantalla de inicio). Las claves se generan solas la primera vez y quedan en la base: no hay que configurar nada.
+  Conviene cargar el email del gimnasio en *Ajustes > Datos del gimnasio*, porque va como contacto en cada aviso.
 - Ninguna contraseña va en `application.properties`, porque ese archivo se sube al repositorio. Los valores
   privados van en `application-local.properties`. En un servidor también se pueden dar como variables de
   entorno con el mismo nombre (`DB_PASSWORD`, `JWT_SECRET`, etc.), que tienen prioridad sobre el archivo.

@@ -37,13 +37,13 @@ no esté acá, sumalo.
 
 ## Pendiente (propuesta, en este orden)
 
-### Etapa 3: app del socio (PWA), en curso
+### Etapa 3: app del socio (PWA), hecha salvo la publicación
 
 Va antes que las fases de abajo. El plan completo y las decisiones están en
-[PLAN-APP-SOCIOS.md](PLAN-APP-SOCIOS.md): A0 preparar las pruebas en el celular (terminada), A1 app
-instalable, A2 sesión larga, A3 entrenamiento sin conexión y catálogo, A4 ingreso con QR y ubicación,
-A5 planes, profesores e información del gimnasio (cubre la Fase 11), A6 progreso, A7 notificaciones y
-A8 chat con recepción (cubre el Chat de la Fase 8).
+[PLAN-APP-SOCIOS.md](PLAN-APP-SOCIOS.md): A0 preparar las pruebas en el celular, A1 app instalable, A2 sesión
+larga, A3 entrenamiento sin conexión y catálogo, A4 ingreso con QR y ubicación, A5 planes, profesores e
+información del gimnasio (cubre la Fase 11), A6 progreso, A7 notificaciones y lista de espera, y A8 chat con
+recepción (cubre el Chat de la Fase 8). Están todas hechas (la última, el 25/10/2026); falta publicarla.
 
 La numeración de las fases siguientes sigue la de la etapa 2.
 
@@ -74,14 +74,14 @@ por API que se hicieron en cada fase quedaron solo descriptas en los commits.
 
 ### Fase 8: seguimiento de socios
 
-Las tres pantallas "Demo" de Socios (Inactividad, Tareas CRM y Chat) muestran datos de ejemplo.
+Dos pantallas "Demo" de Socios (Inactividad y Tareas CRM) muestran datos de ejemplo.
 
 - **Inactividad** con datos reales: los ingresos ya se registran, así que se pueden calcular los días sin
   venir, el promedio semanal de los últimos 90 días y un nivel de riesgo.
 - **Tareas CRM** que se generan solas: cuota por vencer, apto por vencer, socio inactivo, débito rechazado.
   Recepción las marca como hechas.
 - Contacto por WhatsApp con un enlace que abre el mensaje ya escrito (sin servicios pagos).
-- **Chat**: decidir si se hace (mensajes entre recepción y el portal del socio) o se saca del menú.
+- **Chat**: hecho en la A8 de la app (bandeja de recepción en el panel y pestaña Mensajes en la app).
 
 ### Fase 9: asistencia del personal
 

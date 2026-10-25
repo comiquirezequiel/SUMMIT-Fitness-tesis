@@ -2,6 +2,7 @@ package com.summit.backend.controller;
 
 import com.summit.backend.model.EstadoReserva;
 import com.summit.backend.model.ReservaClase;
+import com.summit.backend.service.ListaEsperaService;
 import com.summit.backend.service.ReservaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -22,6 +23,7 @@ import java.util.Map;
 public class ReservaController {
 
     private final ReservaService reservaService;
+    private final ListaEsperaService listaEsperaService;
 
     @PostMapping
     public ResponseEntity<?> reservar(@RequestBody Map<String, Object> request, Authentication auth) {
@@ -37,6 +39,8 @@ public class ReservaController {
             }
 
             ReservaClase reserva = reservaService.reservar(idUsuario, idHorario, fechaClase);
+            // Si esperaba un lugar en esa clase, ya lo tiene
+            listaEsperaService.quitarSiReservo(idUsuario, idHorario, fechaClase);
             return ResponseEntity.status(HttpStatus.CREATED).body(ReservaService.toDTO(reserva));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", String.valueOf(e.getMessage())));
@@ -75,6 +79,13 @@ public class ReservaController {
     public ResponseEntity<?> listarPorHorario(@PathVariable Long idHorario,
                                               @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
         return ResponseEntity.ok(reservaService.listarPorHorario(idHorario, fecha));
+    }
+
+    /** Lista de espera de una clase en una fecha, en orden (personal del gimnasio, ver SecurityConfig). */
+    @GetMapping("/horario/{idHorario}/espera")
+    public ResponseEntity<?> listaDeEspera(@PathVariable Long idHorario,
+                                           @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
+        return ResponseEntity.ok(listaEsperaService.deLaClase(idHorario, fecha));
     }
 
     @GetMapping("/socio/{idUsuario}")

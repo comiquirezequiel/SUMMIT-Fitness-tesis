@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, Users, Plus, ChevronLeft, ChevronRight, User, Trash2, Save, CheckCircle2, XCircle, Ban } from 'lucide-react';
+import { Calendar, Clock, Users, Plus, ChevronLeft, ChevronRight, User, Trash2, Save, CheckCircle2, XCircle, Ban, Hourglass } from 'lucide-react';
 import Modal from '../components/Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../components/Campo';
 import { apiFetch } from '../services/api';
@@ -161,13 +161,18 @@ const NuevaClaseModal = ({ onClose, onGuardado }) => {
  */
 const ReservasModal = ({ clase, fecha, esAdmin, onClose, onCambio }) => {
   const [reservas, setReservas] = useState([]);
+  const [espera, setEspera] = useState([]); // lista de espera, en orden (se anotan desde la app)
   const [socios, setSocios] = useState([]);
   const [idSocio, setIdSocio] = useState('');
   const [mensaje, setMensaje] = useState(null);
 
   const cargar = useCallback(async () => {
-    const res = await apiFetch(`/reservas/horario/${clase.idHorario}?fecha=${fecha}`);
+    const [res, resEspera] = await Promise.all([
+      apiFetch(`/reservas/horario/${clase.idHorario}?fecha=${fecha}`),
+      apiFetch(`/reservas/horario/${clase.idHorario}/espera?fecha=${fecha}`),
+    ]);
     if (res.ok) setReservas(await res.json());
+    if (resEspera.ok) setEspera(await resEspera.json());
   }, [clase.idHorario, fecha]);
 
   useEffect(() => {
@@ -272,6 +277,28 @@ const ReservasModal = ({ clase, fecha, esAdmin, onClose, onCambio }) => {
               );
             })}
           </ul>
+        )}
+
+        {espera.length > 0 && (
+          <div>
+            <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+              <Hourglass className="w-4 h-4 text-amber-600" /> Lista de espera ({espera.length})
+            </h4>
+            <p className="text-xs text-slate-500 mt-0.5 mb-2">
+              Si se libera un lugar con más de una hora de anticipación, se le reserva solo al primero que puede y le llega una notificación.
+            </p>
+            <ol className="divide-y divide-slate-100 border border-amber-200 rounded-lg">
+              {espera.map(e => (
+                <li key={e.idSocio} className="p-3 flex items-center gap-3">
+                  <span className="w-7 h-7 rounded-full bg-amber-50 text-amber-800 text-xs font-bold flex items-center justify-center shrink-0">{e.puesto}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{e.nombreSocio}</p>
+                    <p className="text-xs text-slate-500">DNI {e.dni}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
         )}
       </div>
     </Modal>

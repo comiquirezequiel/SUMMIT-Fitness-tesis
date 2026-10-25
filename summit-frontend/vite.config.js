@@ -5,15 +5,17 @@ import { VitePWA } from 'vite-plugin-pwa'
 // Los archivos que solo usa el panel del personal llevan el prefijo panel-: la app del socio no los precarga
 // (ver injectManifest.globIgnores). Para saber cuáles son, se recorren los imports desde la entrada de la app sin
 // seguir las pantallas del panel que App.jsx descarga recién cuando se abren (las de src/pages y src/components).
-// Un archivo es del panel si ninguno de sus módulos de src quedó en ese recorrido. Las librerías no cuentan: el
+// Un archivo con módulos de src es del panel si ninguno de ellos quedó en ese recorrido; sus librerías no cuentan: el
 // índice de lucide-react importa todos los íconos, aunque el build después deja solo los que se usan. Rollup junta
 // en un mismo archivo solo módulos que necesitan las mismas pantallas, así que los íconos y librerías que comparten
-// archivo con una pantalla del panel también son solo del panel.
+// archivo con una pantalla del panel también son solo del panel. Un archivo hecho solo de librerías (por ejemplo, la
+// de los PDF, que usan varias pantallas del panel) es del panel si la app del socio no llega a ninguna.
 const PANTALLAS = /[\\/]src[\\/]App\.jsx$/
 const PANTALLA_DEL_PANEL = /[\\/]src[\\/](pages|components)[\\/]/
 const DE_SRC = /[\\/]src[\\/]/
 
-// Módulos de src que puede necesitar la app del socio (los llena recorridoDelSocio antes de nombrar los archivos)
+// Módulos (de src y librerías) que puede necesitar la app del socio (los llena recorridoDelSocio antes de nombrar
+// los archivos)
 const delSocio = new Set()
 const recorridoDelSocio = () => ({
   name: 'summit-recorrido-del-socio',
@@ -23,7 +25,7 @@ const recorridoDelSocio = () => ({
     const pendientes = [...this.getModuleIds()].filter((id) => this.getModuleInfo(id)?.isEntry)
     while (pendientes.length) {
       const id = pendientes.pop()
-      if (delSocio.has(id) || id.includes('node_modules')) continue
+      if (delSocio.has(id)) continue
       delSocio.add(id)
       const info = this.getModuleInfo(id)
       if (!info) continue
@@ -36,7 +38,8 @@ const recorridoDelSocio = () => ({
 })
 const archivoDelPanel = (chunk) => {
   const propios = chunk.moduleIds.filter((id) => DE_SRC.test(id) && !id.includes('node_modules') && !id.startsWith('\0'))
-  return propios.length > 0 && !propios.some((id) => delSocio.has(id))
+  if (propios.length > 0) return !propios.some((id) => delSocio.has(id))
+  return chunk.moduleIds.length > 0 && !chunk.moduleIds.some((id) => delSocio.has(id))
 }
 
 // https://vite.dev/config/
@@ -45,7 +48,7 @@ export default defineConfig({
     react(),
     recorridoDelSocio(),
     // App instalable (PWA): manifiesto, íconos y service worker propio (src/sw.js), que precarga la app para
-    // que abra sin conexión y más adelante va a recibir las notificaciones
+    // que abra sin conexión y recibe las notificaciones
     VitePWA({
       strategies: 'injectManifest',
       srcDir: 'src',
@@ -94,7 +97,8 @@ export default defineConfig({
     // Así funciona igual en la PC y en el celular a través del túnel HTTPS.
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        // SUMMIT_BACKEND_URL: otro backend (por ejemplo, uno de prueba en otro puerto); por defecto, el de la PC
+        target: process.env.SUMMIT_BACKEND_URL || 'http://localhost:8080',
         // Le pasa al backend la IP real de quien pide (la usa el limitador de pedidos)
         xfwd: true,
         // Para el navegador el pedido es del mismo sitio. Sin el encabezado Origin, el backend no lo trata como

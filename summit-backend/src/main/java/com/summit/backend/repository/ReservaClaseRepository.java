@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 public interface ReservaClaseRepository extends JpaRepository<ReservaClase, Long> {
@@ -39,4 +40,12 @@ public interface ReservaClaseRepository extends JpaRepository<ReservaClase, Long
             "WHERE r.socio.idUsuario = :idSocio AND r.fechaClase >= :desde " +
             "ORDER BY r.fechaClase, h.horaInicio, r.idReserva")
     List<ReservaClase> buscarDelSocioDesde(@Param("idSocio") Long idSocio, @Param("desde") LocalDate desde);
+
+    // Reservas confirmadas de una fecha cuya clase empieza después de "desde" y hasta "hasta", con el socio y la
+    // clase (recordatorio de clase)
+    @Query("SELECT r FROM ReservaClase r JOIN FETCH r.horario h JOIN FETCH h.clase JOIN FETCH r.socio "
+            + "WHERE r.fechaClase = :fecha AND r.estado = com.summit.backend.model.EstadoReserva.CONFIRMADA "
+            + "AND h.horaInicio > :desde AND h.horaInicio <= :hasta")
+    List<ReservaClase> confirmadasQueEmpiezanEntre(@Param("fecha") LocalDate fecha, @Param("desde") LocalTime desde,
+                                                   @Param("hasta") LocalTime hasta);
 }

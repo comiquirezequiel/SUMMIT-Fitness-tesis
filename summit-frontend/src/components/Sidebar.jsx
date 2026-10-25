@@ -9,9 +9,12 @@ import {
   MessageCircle, CheckSquare, UserX, Home, ScanLine, Repeat, Building2, Megaphone
 } from 'lucide-react';
 import { usuarioActual } from '../utils/formato';
+import { cerrarSesion } from '../services/auth';
+import { useSinLeerChat } from '../services/chat';
 
 // Roles que ven cada opción (los mismos permisos que exige el backend).
 // demo: pantallas que todavía muestran datos de ejemplo (no están conectadas al backend).
+// contador: globito con un número (por ahora, las conversaciones del chat con mensajes sin leer).
 const STAFF = ['ADMIN', 'RECEPCION'];
 const MENU_ITEMS = [
   {
@@ -21,7 +24,7 @@ const MENU_ITEMS = [
       { icon: Dumbbell, text: "Constructor de Rutinas", path: "/rutinas/constructor", roles: ['ADMIN', 'PROFESOR'] },
       { icon: BarChart2, text: "Analítica de Socios", path: "/socios/metricas", roles: STAFF },
       { icon: Megaphone, text: "Novedades", path: "/socios/novedades", roles: STAFF },
-      { icon: MessageCircle, text: "Chat", path: "/socios/chat", roles: STAFF, demo: true },
+      { icon: MessageCircle, text: "Chat", path: "/socios/chat", roles: STAFF, contador: 'chat' },
       { icon: CheckSquare, text: "Tareas CRM", path: "/socios/tareas", roles: STAFF, demo: true },
       { icon: UserX, text: "Inactividad", path: "/socios/inactividad", roles: STAFF, demo: true },
     ]
@@ -73,10 +76,18 @@ const menuParaRol = (rol) => MENU_ITEMS
   .map(item => ({ ...item, subItems: item.subItems.filter(sub => sub.roles.includes(rol)) }))
   .filter(item => item.subItems.length > 0);
 
-const SidebarItem = ({ icon: Icon, text, path, subItems, activePath, onNavigate }) => {
+const Globito = ({ cantidad }) => (
+  <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-blue-600 text-white text-[11px] font-bold flex items-center justify-center">
+    {cantidad > 99 ? '99+' : cantidad}
+  </span>
+);
+
+const SidebarItem = ({ icon: Icon, text, path, subItems, activePath, onNavigate, contadores }) => {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   const isActiveParent = subItems && subItems.some(sub => activePath.startsWith(sub.path));
+  // Con el grupo cerrado, un punto avisa que adentro hay algo pendiente
+  const pendiente = subItems && subItems.some(sub => sub.contador && contadores[sub.contador] > 0);
 
   useEffect(() => {
     if (isActiveParent) {
@@ -94,6 +105,7 @@ const SidebarItem = ({ icon: Icon, text, path, subItems, activePath, onNavigate 
           <div className="flex items-center gap-3">
             <Icon className={`w-5 h-5 ${isActiveParent ? 'text-blue-500' : 'text-slate-500'}`} />
             <span className="text-sm">{text}</span>
+            {!isOpen && pendiente && <span className="w-2 h-2 rounded-full bg-blue-600" aria-label="Hay mensajes sin leer" />}
           </div>
           {isOpen ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
         </button>
@@ -129,6 +141,7 @@ const SidebarItem = ({ icon: Icon, text, path, subItems, activePath, onNavigate 
                     Demo
                   </span>
                 )}
+                {sub.contador && contadores[sub.contador] > 0 && <Globito cantidad={contadores[sub.contador]} />}
               </NavLink>
             );
           })}
@@ -141,6 +154,7 @@ const SidebarItem = ({ icon: Icon, text, path, subItems, activePath, onNavigate 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const location = useLocation();
   const rol = usuarioActual()?.rol;
+  const contadores = { chat: useSinLeerChat(STAFF.includes(rol)) };
 
   return (
     <aside 
@@ -171,17 +185,14 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             subItems={item.subItems} 
             activePath={location.pathname}
             onNavigate={() => setIsOpen(false)}
+            contadores={contadores}
           />
         ))}
       </div>
       
       <div className="p-3 border-t border-slate-200">
-        <button 
-          onClick={() => {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '/login';
-          }}
+        <button
+          onClick={() => cerrarSesion()}
           className="flex items-center gap-2 text-slate-600 hover:text-slate-800 text-sm font-medium w-full p-2 rounded-lg hover:bg-slate-50 transition-colors"
         >
           <LogOut className="w-4 h-4" /> Cerrar sesión

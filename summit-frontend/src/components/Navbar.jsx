@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronLeft, Globe, Moon, Bell, LogOut, Menu, KeyRound, CheckCircle2 } from 'lucide-react';
 import Modal from './Modal';
+import { useSinLeerChat } from '../services/chat';
 import FormCambiarPassword from '../cuenta/FormCambiarPassword';
 import { cambiarPassword } from '../services/cuenta';
 import { cerrarSesion } from '../services/auth';
@@ -30,6 +32,8 @@ const CambiarPasswordModal = ({ email, onClose }) => {
 
 const Navbar = ({ onMenuClick }) => {
   const usuario = usuarioActual();
+  const atiendeChat = ['ADMIN', 'RECEPCION'].includes(usuario?.rol);
+  const sinLeerChat = useSinLeerChat(atiendeChat);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [cambiandoPassword, setCambiandoPassword] = useState(false);
   const menu = useRef(null);
@@ -76,14 +80,18 @@ const Navbar = ({ onMenuClick }) => {
           <Moon className="w-4 h-4" />
         </button>
 
-        <div className="relative">
-          <button className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors">
+        {/* Campanita: conversaciones del chat con mensajes de socios sin leer (solo para quien atiende el chat) */}
+        {atiendeChat && (
+          <Link to="/socios/chat" className="relative p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors"
+            title={sinLeerChat > 0 ? `Chat: ${sinLeerChat} ${sinLeerChat === 1 ? 'conversación' : 'conversaciones'} sin leer` : 'Chat con los socios'}>
             <Bell className="w-4 h-4" />
-          </button>
-          <span className="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full border-2 border-white">
-            0
-          </span>
-        </div>
+            {sinLeerChat > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[9px] font-bold px-1.5 rounded-full border-2 border-white">
+                {sinLeerChat > 9 ? '9+' : sinLeerChat}
+              </span>
+            )}
+          </Link>
+        )}
 
         <button 
           onClick={() => cerrarSesion()}

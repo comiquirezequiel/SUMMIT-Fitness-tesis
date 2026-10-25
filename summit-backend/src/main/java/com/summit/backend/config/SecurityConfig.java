@@ -93,6 +93,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/configuracion/**").hasAnyRole("ADMIN", "RECEPCION")
                 .requestMatchers("/api/configuracion/**").hasRole("ADMIN")
 
+                // Chat con los socios (A8): lo atienden recepción y el admin. El socio usa /api/portal/chat
+                .requestMatchers("/api/chat/**").hasAnyRole("ADMIN", "RECEPCION")
+
                 // Novedades del gimnasio (avisos en la app): RECEPCION consulta, solo ADMIN publica.
                 // El socio las lee en /api/portal/novedades
                 .requestMatchers(HttpMethod.GET, "/api/novedades/**").hasAnyRole("ADMIN", "RECEPCION")
