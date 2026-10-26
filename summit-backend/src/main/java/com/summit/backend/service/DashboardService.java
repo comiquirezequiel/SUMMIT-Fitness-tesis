@@ -28,6 +28,8 @@ import java.util.stream.Collectors;
 public class DashboardService {
 
     private static final int DIAS_POR_VENCER = 7;
+    // Salida del personal (AsistenciaPersonalService): queda en logs_asistencia, pero no es un ingreso
+    private static final TipoEventoAsistencia SALIDA = TipoEventoAsistencia.CHECKOUT;
 
     private final UsuarioRepository usuarioRepository;
     private final SuscripcionRepository suscripcionRepository;
@@ -43,9 +45,10 @@ public class DashboardService {
 
         long sociosTotal = usuarioRepository.countByRol(Rol.SOCIO);
         long sociosActivos = usuarioRepository.countByRolAndEstado(Rol.SOCIO, EstadoUsuario.ACTIVO);
-        long ingresosHoy = logAsistenciaRepository.countByFechaHoraBetween(inicioDia, finDia);
+        // Las salidas del personal (CHECKOUT) no son ingresos
+        long ingresosHoy = logAsistenciaRepository.countByTipoEventoNotAndFechaHoraBetween(SALIDA, inicioDia, finDia);
         long permitidosHoy = logAsistenciaRepository
-                .countByResultadoAndFechaHoraBetween(ResultadoAsistencia.PERMITIDO, inicioDia, finDia);
+                .countByResultadoAndTipoEventoNotAndFechaHoraBetween(ResultadoAsistencia.PERMITIDO, SALIDA, inicioDia, finDia);
 
         return DashboardResumenDTO.builder()
                 .sociosTotal(sociosTotal)
@@ -58,21 +61,23 @@ public class DashboardService {
                 .ingresosHoy(ingresosHoy)
                 .permitidosHoy(permitidosHoy)
                 .denegadosHoy(ingresosHoy - permitidosHoy)
-                .ingresosUltimaHora(logAsistenciaRepository.countByFechaHoraBetween(ahora.minusHours(1), ahora))
+                .ingresosUltimaHora(logAsistenciaRepository.countByTipoEventoNotAndFechaHoraBetween(SALIDA, ahora.minusHours(1), ahora))
                 .build();
     }
 
     /**
      * Intentos de ingreso de hoy, del más reciente al más antiguo. Con despuesDe (un idLog), solo los posteriores:
-     * el tablero lo pregunta cada pocos segundos para mostrar enseguida quién entró con la app.
+     * el tablero lo pregunta cada pocos segundos para mostrar enseguida quién entró con la app. Sin las salidas del
+     * personal: esas se ven en Asistencia del personal.
      */
     public List<IngresoDTO> ingresosDeHoy(Long despuesDe) {
         LocalDate hoy = LocalDate.now();
         LocalDateTime inicio = hoy.atStartOfDay();
         LocalDateTime fin = hoy.atTime(LocalTime.MAX);
         List<LogAsistencia> logs = despuesDe == null
-                ? logAsistenciaRepository.findByFechaHoraBetweenOrderByFechaHoraDesc(inicio, fin)
-                : logAsistenciaRepository.findByFechaHoraBetweenAndIdLogGreaterThanOrderByFechaHoraDesc(inicio, fin, despuesDe);
+                ? logAsistenciaRepository.findByTipoEventoNotAndFechaHoraBetweenOrderByFechaHoraDesc(SALIDA, inicio, fin)
+                : logAsistenciaRepository.findByTipoEventoNotAndFechaHoraBetweenAndIdLogGreaterThanOrderByFechaHoraDesc(
+                        SALIDA, inicio, fin, despuesDe);
         Map<Long, Long> fotos = fotoSocioService.versiones(
                 logs.stream().map(log -> log.getUsuario().getIdUsuario()).collect(Collectors.toSet()));
         return logs.stream()

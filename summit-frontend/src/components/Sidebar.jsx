@@ -66,7 +66,7 @@ const MENU_ITEMS = [
       { icon: Users, text: "Equipo", path: "/ajustes/equipo", roles: ['ADMIN'] },
       { icon: Building2, text: "Datos del gimnasio", path: "/ajustes/gimnasio", roles: ['ADMIN'] },
       { icon: GitBranch, text: "Tablas del Sistema", path: "/ajustes/tablas", roles: ['ADMIN'], demo: true },
-      { icon: Clipboard, text: "Asistencia Staff", path: "/ajustes/asistencia", roles: ['ADMIN'], demo: true },
+      { icon: Clipboard, text: "Asistencia del personal", path: "/ajustes/asistencia", roles: ['ADMIN'] },
     ]
   }
 ];

@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
  * la usa para mostrarle si puede entrar, sin registrar nada.
  * El ingreso con QR desde la app del socio (ingresoConQr) además controla el código del QR impreso, que el
  * celular esté dentro del radio del gimnasio (Reglas de acceso) y una espera anti-repetición.
+ * El personal no pasa por estas reglas en recepción: su paso es su entrada o su salida (AsistenciaPersonalService).
  */
 @Service
 @RequiredArgsConstructor
@@ -48,6 +49,7 @@ public class AsistenciaService {
     private final GeolocationService geolocationService;
     private final ConfiguracionAccesoService configService;
     private final FotoSocioService fotoSocioService;
+    private final AsistenciaPersonalService asistenciaPersonalService;
 
     // Mapa de cooldown: idUsuario -> último intento
     private final ConcurrentHashMap<Long, LocalDateTime> cooldownMap = new ConcurrentHashMap<>();
@@ -277,6 +279,10 @@ public class AsistenciaService {
         Usuario usuario = usuarioRepository.findByDni(dniLimpio)
                 .orElseThrow(() -> new RuntimeException("No se encontró ningún socio con DNI " + dniLimpio));
 
+        if (usuario.getRol() != Rol.SOCIO) {
+            // Personal del gimnasio: cada paso por recepción es su entrada o su salida
+            return asistenciaPersonalService.ficharEnRecepcion(usuario);
+        }
         return validarAccesoInterno(usuario, TipoEventoAsistencia.INGRESO_MOLINETE, null);
     }
 
