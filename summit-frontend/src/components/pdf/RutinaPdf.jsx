@@ -180,10 +180,10 @@ const Dia = ({ numero, ejercicios }) => {
 /**
  * - rutina: la de GET /api/rutinas/{id} (nombre, objetivo, socio, profesor, fechaCreacion y ejercicios)
  * - objetivo: el de la rutina o, si no tiene, el del perfil del socio
- * - gimnasio: datos del gimnasio (o null), logo: imagen para el encabezado (opcional)
+ * - gimnasio: datos del gimnasio (o null); logoUrl: logo para el encabezado (opcional, ver Encabezado)
  * - emitida: fecha de hoy, 'YYYY-MM-DD'
  */
-const RutinaPdf = ({ rutina, objetivo, gimnasio, logo, emitida }) => {
+const RutinaPdf = ({ rutina, objetivo, gimnasio, logoUrl, emitida }) => {
   const dias = agruparPorDia(rutina.ejercicios);
   const socio = textoPdf(rutina.nombreSocio);
   const cantidad = rutina.ejercicios?.length || 0;
@@ -199,7 +199,7 @@ const RutinaPdf = ({ rutina, objetivo, gimnasio, logo, emitida }) => {
       <Page size="A4" style={estilosBase.pagina}>
         <EncabezadoContinuacion izquierda={`${socio} · ${textoPdf(rutina.nombre)}`} derecha={textoPdf(gimnasio?.nombre)} />
 
-        <Encabezado gimnasio={gimnasio} logo={logo} tipo="Rutina de entrenamiento" detalle={`Emitida el ${formatFecha(emitida)}`} />
+        <Encabezado gimnasio={gimnasio} logoUrl={logoUrl} tipo="Rutina de entrenamiento" detalle={`Emitida el ${formatFecha(emitida)}`} />
 
         <View style={s.titulo}>
           <Text style={s.nombreRutina}>{textoPdf(rutina.nombre)}</Text>

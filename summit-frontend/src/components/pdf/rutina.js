@@ -17,8 +17,9 @@ export const documentoRutina = (rutina, { objetivoSocio, logoUrl } = {}) => {
     cargar: () => import('./RutinaPdf'),
     datos: async () => {
       const gimnasio = await datosDelGimnasio();
+      // El logo se baja y se pasa a PNG antes (la librería solo acepta PNG y JPG); si falla, null: sale sin logo
       const logo = await imagenParaPdf(logoUrl || gimnasio?.logoUrl);
-      return { rutina, objetivo: rutina.objetivo || objetivoSocio, gimnasio, logo, emitida: hoyIso() };
+      return { rutina, objetivo: rutina.objetivo || objetivoSocio, gimnasio, logoUrl: logo, emitida: hoyIso() };
     },
   };
 };

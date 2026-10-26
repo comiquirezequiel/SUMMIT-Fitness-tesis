@@ -86,11 +86,12 @@ export const contactoDe = (gimnasio) => {
  * Encabezado de la primera página: logo (opcional), nombre y contacto del gimnasio a la izquierda; a la derecha, el
  * tipo de documento y un detalle (por ejemplo, la fecha de emisión).
  * - gimnasio: lo que devuelve /api/configuracion/gimnasio (o null: sale solo el tipo de documento)
- * - logo: imagen PNG o JPG (data URL o dirección); conviene pasarla por imagenParaPdf (index.js)
+ * - logoUrl (opcional): imagen PNG o JPG (data URL o dirección); conviene pasarla antes por imagenParaPdf (index.js),
+ *   que acepta cualquier formato y devuelve null si no se puede bajar
  */
-export const Encabezado = ({ gimnasio, logo, tipo, detalle }) => (
+export const Encabezado = ({ gimnasio, logoUrl, tipo, detalle }) => (
   <View style={s.encabezado}>
-    {logo && <Image src={logo} style={s.logo} />}
+    {logoUrl && <Image src={logoUrl} style={s.logo} />}
     <View style={s.gimnasio}>
       {gimnasio?.nombre && <Text style={s.nombreGimnasio}>{textoPdf(gimnasio.nombre)}</Text>}
       {contactoDe(gimnasio) !== '' && <Text style={s.contacto}>{contactoDe(gimnasio)}</Text>}
