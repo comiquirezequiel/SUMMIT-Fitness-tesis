@@ -119,6 +119,8 @@ Para revisar si todo el backend compila sin arrancarlo: `.\mvnw.cmd compile` den
 
 ## Notas
 
+- Para instalar SUMMIT en la PC del gimnasio (servicios que arrancan solos, acceso desde otras PC y copias de
+  seguridad cifradas), seguí [INSTALACION.md](INSTALACION.md).
 - Para el backend usá siempre Maven (`mvnw.cmd`) y no los botones *Run/Debug* del editor: algunas versiones
   de la extensión de Java del editor compilan mal las clases de Lombok.
 - Para ver la base de datos: MySQL Workbench, conexión `127.0.0.1`, puerto `3306`, con el usuario y la

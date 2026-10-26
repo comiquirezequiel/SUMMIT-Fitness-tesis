@@ -91,6 +91,17 @@
 
 	<build>
 		<plugins>
+			<!-- La configuración privada de la PC donde se compila (contraseñas) no va adentro del .jar.
+			     En desarrollo no cambia nada: spring-boot:run la sigue leyendo de target/classes -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<exclude>application-local.properties</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>

@@ -160,6 +160,10 @@ datos en los comprobantes.
 - Poner la dirección real en `summit.cors.origins` y los valores privados como variables de entorno.
 - Copias de seguridad automáticas de la base y de `uploads/` (certificados: datos de salud, Ley 25.326).
 - Tener en cuenta la RAM para la IA: `gemma4:12b` ocupa unos 10 GB.
+- Hecho el 26/10/2026: [INSTALACION.md](INSTALACION.md) e `instalacion/` (servicios: backend y Caddy adelante; copias
+  diarias cifradas con restauración probada; usuarios de MySQL con permisos mínimos; chequeo). Falta el dominio y el
+  HTTPS público (túnel), y poner esa dirección en `summit.cors.origins` y `APP_URL`. La primera corrida de lo que pide
+  administrador (servicios, tarea como SYSTEM, firewall) se hace en la PC del gimnasio.
 
 ## Limpiezas chicas (en cualquier momento)
 
