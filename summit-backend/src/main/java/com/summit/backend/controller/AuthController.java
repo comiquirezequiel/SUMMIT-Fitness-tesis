@@ -1,5 +1,6 @@
 package com.summit.backend.controller;
 
+import com.summit.backend.config.AppSocios;
 import com.summit.backend.dto.LoginRequest;
 import com.summit.backend.service.AuthService;
 import com.summit.backend.service.PasswordService;
@@ -36,6 +37,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final PasswordService passwordService;
+    private final AppSocios appSocios;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request,
@@ -84,10 +86,13 @@ public class AuthController {
         }
     }
 
-    /** Si el login puede ofrecer "¿Olvidaste tu contraseña?" (hace falta un correo saliente configurado). */
-    @GetMapping("/recuperacion")
-    public Map<String, Boolean> recuperacion() {
-        return Map.of("porEmail", passwordService.recuperacionDisponible());
+    /**
+     * Qué funciones opcionales están activas, para que el frontend muestre solo esas: la app del socio (AppSocios)
+     * y "¿Olvidaste tu contraseña?" por email (hace falta un correo saliente configurado).
+     */
+    @GetMapping("/funciones")
+    public Map<String, Boolean> funciones() {
+        return Map.of("appSocios", appSocios.habilitada(), "recuperacionPorEmail", passwordService.recuperacionDisponible());
     }
 
     /**

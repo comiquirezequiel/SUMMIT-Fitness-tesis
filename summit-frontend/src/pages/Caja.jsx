@@ -21,6 +21,16 @@ const TarjetaMonto = ({ title, amount, detalle, icon: Icon, color, onClick, acti
 
 const TAMANIO_PAGINA = 15;
 
+// Detalle de un cobro con descuento o matrícula: "Plan $ 20.000 · Familiar − $ 2.000 · Matrícula $ 5.000".
+// null si no tiene ninguno de los dos (o es anterior al detalle)
+const detalleCobro = (p) => {
+  if (p.precioLista == null || (!p.descuentoNombre && p.matriculaMonto == null)) return null;
+  const partes = [`Plan ${formatMoneda(p.precioLista)}`];
+  if (p.descuentoNombre) partes.push(`${p.descuentoNombre} − ${formatMoneda(p.descuentoMonto)}`);
+  if (p.matriculaMonto != null) partes.push(Number(p.matriculaMonto) > 0 ? `Matrícula ${formatMoneda(p.matriculaMonto)}` : 'Matrícula bonificada');
+  return partes.join(' · ');
+};
+
 /**
  * Caja: ingresos de hoy y del mes, y los cobros registrados (presenciales y débitos automáticos).
  * Solo los pagos aprobados suman. Los "a verificar" se listan aparte y el admin los confirma o rechaza.
@@ -92,9 +102,11 @@ const Caja = () => {
     p.plan.toLowerCase().includes(filtro) || (p.comprobante || '').toLowerCase().includes(filtro));
 
   const exportar = () => descargarCsv(`caja-${new Date().toISOString().substring(0, 10)}.csv`,
-    ['Fecha', 'Hora', 'Socio', 'DNI', 'Plan', 'Método', 'Comprobante', 'Estado', 'Cobró', 'Monto'],
+    ['Fecha', 'Hora', 'Socio', 'DNI', 'Plan', 'Método', 'Comprobante', 'Estado', 'Cobró', 'Precio de lista', 'Descuento',
+      'Monto descontado', 'Matrícula', 'Monto'],
     pagosFiltrados.map(p => [formatFecha(p.fechaPago), formatHora(p.fechaPago), p.nombreSocio, p.dniSocio, p.plan,
-      textoMetodoPago(p.metodoPago), p.comprobante, ESTADOS_PAGO[p.estado]?.texto || p.estado, p.registradoPor || 'Sistema', p.monto]));
+      textoMetodoPago(p.metodoPago), p.comprobante, ESTADOS_PAGO[p.estado]?.texto || p.estado, p.registradoPor || 'Sistema',
+      p.precioLista, p.descuentoNombre, p.descuentoMonto, p.matriculaMonto, p.monto]));
 
   const detalleMetodos = resumen && Object.keys(resumen.ingresosHoyPorMetodo).length > 0
     ? Object.entries(resumen.ingresosHoyPorMetodo).map(([m, total]) => `${textoMetodoPago(m)}: ${formatMoneda(total)}`).join(' · ')
@@ -204,6 +216,7 @@ const Caja = () => {
                       <td className="px-6 py-4">
                         <div className="font-medium text-slate-800">{p.plan}</div>
                         <div className="text-slate-500 text-xs mt-0.5">{p.nombreSocio} · DNI {p.dniSocio}</div>
+                        {detalleCobro(p) && <div className="text-[11px] text-slate-400 mt-1">{detalleCobro(p)}</div>}
                       </td>
                       <td className="px-6 py-4">
                         <span className="inline-flex items-center px-2 py-1 rounded bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200 whitespace-nowrap">

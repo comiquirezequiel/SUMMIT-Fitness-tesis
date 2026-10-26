@@ -24,12 +24,6 @@ export const cambiarPassword = async (actual, nueva) => {
   guardarSesion(await respuesta.json());
 };
 
-// true si el gimnasio configuró el correo para "¿Olvidaste tu contraseña?"
-export const hayRecuperacionPorEmail = async () => {
-  const respuesta = await apiFetch('/auth/recuperacion');
-  return respuesta.ok && (await respuesta.json()).porEmail === true;
-};
-
 // Pide el link por mail. Devuelve el mensaje del backend (es el mismo exista o no la cuenta)
 export const pedirLinkPorEmail = async (email) => {
   const respuesta = await apiFetch('/auth/olvide-password', enviarJson('POST', { email }));

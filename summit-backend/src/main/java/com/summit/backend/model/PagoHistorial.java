@@ -70,6 +70,22 @@ public class PagoHistorial {
     @Column(name = "fecha_verificacion")
     private LocalDateTime fechaVerificacion;
 
+    // Detalle del cobro para el comprobante y la caja: montoAbonado = precioLista - descuentoMonto + matriculaMonto.
+    // Los cobros anteriores a este detalle (y los débitos automáticos) los tienen en null
+    @Column(name = "precio_lista", precision = 10, scale = 2)
+    private BigDecimal precioLista;
+
+    // Nombre del descuento del catálogo, o "Especial: <motivo>". null = sin descuento
+    @Column(name = "descuento_nombre", length = 120)
+    private String descuentoNombre;
+
+    @Column(name = "descuento_monto", precision = 10, scale = 2)
+    private BigDecimal descuentoMonto;
+
+    // null = no correspondía matrícula; 0 = correspondía y se bonificó; más de 0 = se cobró
+    @Column(name = "matricula_monto", precision = 10, scale = 2)
+    private BigDecimal matriculaMonto;
+
     @PrePersist
     public void prePersist() {
         if (this.fechaPago == null) this.fechaPago = LocalDateTime.now();

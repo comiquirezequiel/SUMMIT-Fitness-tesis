@@ -1,7 +1,9 @@
 package com.summit.backend.service;
 
+import com.summit.backend.config.AppSocios;
 import com.summit.backend.model.EstadoUsuario;
 import com.summit.backend.model.RecuperacionPassword;
+import com.summit.backend.model.Rol;
 import com.summit.backend.model.Usuario;
 import com.summit.backend.repository.RecuperacionPasswordRepository;
 import com.summit.backend.repository.UsuarioRepository;
@@ -58,6 +60,7 @@ public class PasswordService {
     private final PasswordEncoder passwordEncoder;
     private final SesionService sesionService;
     private final DatosGimnasioService datosGimnasioService;
+    private final AppSocios appSocios;
     // Spring lo arma con spring.mail.* (MAIL_HOST y compañía)
     private final ObjectProvider<JavaMailSender> correo;
     private final SecureRandom azar = new SecureRandom();
@@ -135,6 +138,14 @@ public class PasswordService {
         return temporal;
     }
 
+    /**
+     * Una contraseña al azar (para un socio que se da de alta sin contraseña porque la app está suspendida: si la app
+     * vuelve, recepción le da una temporal con "Restablecer contraseña").
+     */
+    public String alAzar() {
+        return temporalNueva();
+    }
+
     /** Si se puede ofrecer "¿Olvidaste tu contraseña?": hay correo saliente y se sabe la dirección de la app. */
     public boolean recuperacionDisponible() {
         return enviador() != null;
@@ -155,8 +166,10 @@ public class PasswordService {
         if (email == null || email.isBlank()) {
             throw new IllegalArgumentException("Escribí tu email");
         }
+        // Con la app suspendida, los socios no entran: solo el personal recupera su contraseña
         Optional<Usuario> cuenta = usuarioRepository.findByEmail(email.trim())
-                .filter(u -> u.getEstado() == EstadoUsuario.ACTIVO);
+                .filter(u -> u.getEstado() == EstadoUsuario.ACTIVO)
+                .filter(u -> u.getRol() != Rol.SOCIO || appSocios.habilitada());
         if (cuenta.isEmpty()) {
             return;
         }

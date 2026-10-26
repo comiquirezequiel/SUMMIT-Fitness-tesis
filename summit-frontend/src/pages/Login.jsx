@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, Mail, WifiOff } from 'lucide-react';
 import Marco from '../cuenta/Marco';
 import { apiFetch } from '../services/api';
 import { guardarSesion, recordarClaveDelLogin } from '../services/auth';
-import { hayRecuperacionPorEmail } from '../services/cuenta';
+import { useFunciones } from '../services/funciones';
 import { esErrorDeConexion, useEnLinea } from '../utils/conexion';
 
 export default function Login() {
@@ -14,17 +14,13 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [recuperacionPorEmail, setRecuperacionPorEmail] = useState(false);
+  // "¿Olvidaste tu contraseña?" lleva al link por mail solo si el gimnasio configuró el correo
+  const { recuperacionPorEmail } = useFunciones();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const sesionExpirada = searchParams.get('sesion') === 'expirada';
   const passwordElegida = location.state?.listo === true;
   const enLinea = useEnLinea();
-
-  // "¿Olvidaste tu contraseña?" lleva al link por mail solo si el gimnasio configuró el correo
-  useEffect(() => {
-    hayRecuperacionPorEmail().then(setRecuperacionPorEmail).catch(() => setRecuperacionPorEmail(false));
-  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();

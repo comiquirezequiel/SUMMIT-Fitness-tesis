@@ -6,6 +6,7 @@ import PerfilProfesorModal from '../components/equipo/PerfilProfesorModal';
 import RestablecerPasswordModal from '../components/RestablecerPasswordModal';
 import { apiFetch } from '../services/api';
 import { usuarioActual } from '../utils/formato';
+import { useFunciones } from '../services/funciones';
 import { ESTADOS_USUARIO } from '../utils/constantes';
 
 const ROLES = {
@@ -80,6 +81,8 @@ const NuevoMiembroModal = ({ onClose, onGuardado }) => {
 
 const AjustesEquipo = () => {
   const usuario = usuarioActual();
+  // El perfil público del profesor es para la app del socio: mientras está suspendida no se muestra
+  const { appSocios } = useFunciones();
   const [miembros, setMiembros] = useState([]);
   const [error, setError] = useState('');
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -180,7 +183,7 @@ const AjustesEquipo = () => {
                     </td>
                     {esAdmin && (
                       <td className="px-6 py-4 text-right whitespace-nowrap">
-                        {m.rol === 'PROFESOR' && (
+                        {m.rol === 'PROFESOR' && appSocios && (
                           <button onClick={() => setPerfilDe(m)} title="Perfil que ven los socios en la app"
                             className="mr-2 px-3 py-2 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 text-xs font-semibold inline-flex items-center gap-1.5">
                             <Contact className="w-4 h-4" /> Perfil

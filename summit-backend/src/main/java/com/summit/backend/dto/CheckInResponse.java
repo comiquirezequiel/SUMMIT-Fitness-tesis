@@ -47,4 +47,8 @@ public class CheckInResponse {
     private Long diasParaVencerApto;
     // true si recepción puede dejarlo pasar por excepción (solo cuota vencida o límite semanal; nunca el apto médico)
     private boolean excepcionPosible;
+
+    // Congelamiento que rige hoy (null si no tiene): si volvió antes, recepción lo termina desde la ficha
+    private Long idCongelamiento;
+    private LocalDate congeladaHasta;
 }

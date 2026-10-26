@@ -29,9 +29,10 @@ import java.util.stream.Collectors;
  * Servicio de asistencia y check-in.
  * Las reglas de ingreso se evalúan en un solo lugar (evaluarAcceso), sin escribir en la base:
  * 1. Estado de la cuenta
- * 2. Cuota al día (con días de gracia)
- * 3. Límite semanal del plan (ej. 3 veces por semana)
- * 4. Certificado médico vigente (Ley 5397, con días de gracia)
+ * 2. Membresía no congelada
+ * 3. Cuota al día (con días de gracia)
+ * 4. Límite semanal del plan (ej. 3 veces por semana)
+ * 5. Certificado médico vigente (Ley 5397, con días de gracia)
  * Recepción arma con esa evaluación la ficha del monitor y registra el intento; el portal del socio
  * la usa para mostrarle si puede entrar, sin registrar nada.
  * El ingreso con QR desde la app del socio (ingresoConQr) además controla el código del QR impreso, que el
@@ -48,6 +49,7 @@ public class AsistenciaService {
     private final GeolocationService geolocationService;
     private final ConfiguracionAccesoService configService;
     private final FotoSocioService fotoSocioService;
+    private final CongelamientoService congelamientoService;
 
     // Mapa de cooldown: idUsuario -> último intento
     private final ConcurrentHashMap<Long, LocalDateTime> cooldownMap = new ConcurrentHashMap<>();
@@ -105,11 +107,12 @@ public class AsistenciaService {
             ConfiguracionAcceso config,
             Suscripcion suscripcion,              // membresía activa (null si no tiene)
             CertificadoMedico certificado,        // el de vencimiento más lejano (null si no tiene)
+            Congelamiento congelamiento,          // el que rige hoy (null si no está congelada)
             Vigencia cuota,
             Vigencia apto,
             SortedSet<LocalDate> diasConIngreso,  // días de esta semana (lunes a hoy) con un ingreso permitido
             boolean limiteSemanalExcedido,
-            List<ResultadoAsistencia> motivos) {  // faltas en orden: cuenta → cuota → límite semanal → apto
+            List<ResultadoAsistencia> motivos) {  // faltas en orden: cuenta → congelada → cuota → límite semanal → apto
 
         public boolean permitido() {
             return motivos.isEmpty();
@@ -294,7 +297,7 @@ public class AsistenciaService {
         }
         if (usuario.getRol() != Rol.SOCIO) {
             // Personal del gimnasio: su ingreso es presentismo, sin controles de socio
-            return new EvaluacionAcceso(usuario, hoy, null, null, null, null, null,
+            return new EvaluacionAcceso(usuario, hoy, null, null, null, null, null, null,
                     Collections.emptySortedSet(), false, List.copyOf(motivos));
         }
 
@@ -306,6 +309,13 @@ public class AsistenciaService {
                 .certificadoQueRige(usuario.getIdUsuario())
                 .orElse(null);
         SortedSet<LocalDate> diasConIngreso = diasConIngresoEnLaSemana(usuario.getIdUsuario(), hoy);
+
+        // Congelada: los días se le suman al vencimiento, así que mientras tanto no entra, aunque el gimnasio no exija
+        // la cuota al día (si vuelve antes, recepción termina el congelamiento)
+        Congelamiento congelamiento = congelamientoService.vigente(usuario.getIdUsuario(), hoy).orElse(null);
+        if (congelamiento != null) {
+            motivos.add(ResultadoAsistencia.DENEGADO_MEMBRESIA_CONGELADA);
+        }
 
         Vigencia cuota = vigenciaCuota(suscripcion, config, hoy);
         if (cuota.bloquea()) {
@@ -325,7 +335,7 @@ public class AsistenciaService {
             motivos.add(ResultadoAsistencia.DENEGADO_CERTIFICADO_MEDICO);
         }
 
-        return new EvaluacionAcceso(usuario, hoy, config, suscripcion, certificado, cuota, apto,
+        return new EvaluacionAcceso(usuario, hoy, config, suscripcion, certificado, congelamiento, cuota, apto,
                 diasConIngreso, limiteExcedido, List.copyOf(motivos));
     }
 
@@ -394,7 +404,7 @@ public class AsistenciaService {
 
     /**
      * Ficha del monitor de recepción: los textos le hablan al recepcionista.
-     * Las faltas siguen el orden de las reglas: cuenta → cuota → límite semanal → apto médico.
+     * Las faltas siguen el orden de las reglas: cuenta → congelada → cuota → límite semanal → apto médico.
      */
     private CheckInResponse fichaRecepcion(EvaluacionAcceso ev, Double distancia) {
         Usuario usuario = ev.usuario();
@@ -409,6 +419,13 @@ public class AsistenciaService {
                 respuesta.getAvisos().add("Personal del gimnasio (" + usuario.getRol().name() + "): se registra su ingreso");
             }
         } else {
+            Congelamiento congelamiento = ev.congelamiento();
+            if (congelamiento != null) {
+                respuesta.setIdCongelamiento(congelamiento.getIdCongelamiento());
+                respuesta.setCongeladaHasta(congelamiento.getHasta());
+                respuesta.getFaltas().add("Membresía congelada hasta el " + congelamiento.getHasta().format(FECHA_CORTA)
+                        + ": si volvió antes, terminá el congelamiento");
+            }
             fichaCuota(ev, respuesta);
             if (ev.limiteSemanalExcedido()) {
                 respuesta.getFaltas().add("Excedió los días semanales de su plan: ya usó "
@@ -525,6 +542,8 @@ public class AsistenciaService {
                 motivoRechazo = "No se puede hacer una excepción sin apto médico vigente: es una exigencia legal";
             } else if (evaluacion.esPersonal() || evaluacion.motivos().contains(ResultadoAsistencia.DENEGADO_CUENTA_INACTIVA)) {
                 motivoRechazo = "No se puede hacer una excepción: la cuenta del socio no está activa";
+            } else if (evaluacion.motivos().contains(ResultadoAsistencia.DENEGADO_MEMBRESIA_CONGELADA)) {
+                motivoRechazo = "Tiene la membresía congelada: si volvió antes, terminá el congelamiento";
             } else {
                 motivoRechazo = "El gimnasio no permite ingresos por excepción: se habilitan en Ajustes > Reglas de acceso";
             }

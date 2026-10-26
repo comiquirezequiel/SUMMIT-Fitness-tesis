@@ -3,6 +3,7 @@ package com.summit.backend.model;
 public enum ResultadoAsistencia {
     PERMITIDO,
     DENEGADO_CUENTA_INACTIVA,
+    DENEGADO_MEMBRESIA_CONGELADA,
     DENEGADO_CUOTA_VENCIDA,
     DENEGADO_LIMITE_SEMANAL,
     DENEGADO_CERTIFICADO_MEDICO,

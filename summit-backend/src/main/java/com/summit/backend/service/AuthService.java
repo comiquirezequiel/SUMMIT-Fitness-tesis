@@ -1,5 +1,6 @@
 package com.summit.backend.service;
 
+import com.summit.backend.config.AppSocios;
 import com.summit.backend.dto.AuthResponse;
 import com.summit.backend.dto.LoginRequest;
 import com.summit.backend.model.EstadoUsuario;
@@ -29,6 +30,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final SesionService sesionService;
     private final PasswordService passwordService;
+    private final AppSocios appSocios;
 
     // Duración del token del socio: corta, porque la app lo renueva sola con la sesión
     @Value("${summit.sesion.socio.token-minutos:60}")
@@ -54,6 +56,11 @@ public class AuthService {
             throw new RuntimeException("La cuenta está " + textoEstado(usuario.getEstado()) + ": comunicate con el gimnasio");
         }
 
+        // App del socio suspendida (AppSocios): el login queda solo para el personal
+        if (usuario.getRol() == Rol.SOCIO && !appSocios.habilitada()) {
+            throw new RuntimeException("La app para socios todavía no está disponible: por cualquier consulta, acercate a recepción");
+        }
+
         return entrar(usuario, dispositivo);
     }
 
@@ -71,6 +78,10 @@ public class AuthService {
      * @throws SesionService.SesionInvalidaException si la sesión no sirve más: hay que volver a entrar
      */
     public ResultadoAutenticacion renovar(String tokenSesion, String dispositivo) {
+        // Con la app del socio suspendida, las sesiones que quedaron abiertas en los celulares ya no se renuevan
+        if (!appSocios.habilitada()) {
+            throw new SesionService.SesionInvalidaException();
+        }
         SesionService.Renovacion renovacion = sesionService.renovar(tokenSesion, dispositivo);
         Usuario usuario = renovacion.usuario();
         return new ResultadoAutenticacion(respuesta(usuario, tokenDeSocio(usuario), renovacion.sesion()), renovacion.sesion());

@@ -5,6 +5,8 @@ import com.summit.backend.dto.SocioResponseDTO;
 import com.summit.backend.dto.SocioUpdateRequestDTO;
 import com.summit.backend.model.CertificadoMedico;
 import com.summit.backend.model.ConfiguracionAcceso;
+import com.summit.backend.model.Congelamiento;
+import com.summit.backend.model.Descuento;
 import com.summit.backend.model.EstadoUsuario;
 import com.summit.backend.model.PerfilSocio;
 import com.summit.backend.model.Rol;
@@ -20,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -39,11 +42,14 @@ public class SocioService {
     private final PasswordEncoder passwordEncoder;
     private final SesionService sesionService;
     private final PasswordService passwordService;
+    private final DescuentoService descuentoService;
+    private final CongelamientoService congelamientoService;
 
     public List<SocioResponseDTO> listarTodos() {
         ConfiguracionAcceso config = configService.obtenerConfiguracionGlobal();
+        Map<Long, LocalDate> congelados = congelamientoService.congeladosHoy();
         return usuarioRepository.findByRol(Rol.SOCIO).stream()
-                .map(usuario -> mapToDTO(usuario, config))
+                .map(usuario -> mapToDTO(usuario, config, congelados.get(usuario.getIdUsuario())))
                 .collect(Collectors.toList());
     }
 
@@ -64,7 +70,10 @@ public class SocioService {
                 .dni(request.getDni())
                 .nombreCompleto(request.getNombreCompleto().trim())
                 .email(request.getEmail().trim())
-                .password(passwordEncoder.encode(request.getPassword()))
+                // Sin contraseña (la app del socio está suspendida), una al azar: si la app vuelve, recepción le da una
+                // temporal con "Restablecer contraseña"
+                .password(passwordEncoder.encode(request.getPassword() == null || request.getPassword().isBlank()
+                        ? passwordService.alAzar() : request.getPassword()))
                 .telefono(textoOpcional(request.getTelefono()))
                 .rol(Rol.SOCIO)
                 .estado(EstadoUsuario.ACTIVO)
@@ -81,6 +90,7 @@ public class SocioService {
                 .ciudad(textoOpcional(request.getCiudad()))
                 .objetivo(textoOpcional(request.getObjetivo()))
                 .observaciones(textoOpcional(request.getObservaciones()))
+                .descuento(request.getIdDescuento() != null ? descuentoService.activo(request.getIdDescuento()) : null)
                 .build());
 
         return mapToDTO(nuevoSocio, configService.obtenerConfiguracionGlobal());
@@ -110,9 +120,21 @@ public class SocioService {
         perfil.setCiudad(textoOpcional(request.getCiudad()));
         perfil.setObjetivo(textoOpcional(request.getObjetivo()));
         perfil.setObservaciones(textoOpcional(request.getObservaciones()));
+        perfil.setDescuento(descuentoElegido(request.getIdDescuento(), perfil.getDescuento()));
         perfilSocioRepository.save(perfil);
 
         return mapToDTO(socio, configService.obtenerConfiguracionGlobal());
+    }
+
+    // Se puede dejar el descuento que ya tenía aunque después se haya desactivado; para elegir otro, tiene que estar activo
+    private Descuento descuentoElegido(Long idDescuento, Descuento actual) {
+        if (idDescuento == null) {
+            return null;
+        }
+        if (actual != null && actual.getIdDescuento().equals(idDescuento)) {
+            return actual;
+        }
+        return descuentoService.activo(idDescuento);
     }
 
     /**
@@ -157,6 +179,13 @@ public class SocioService {
     }
 
     private SocioResponseDTO mapToDTO(Usuario usuario, ConfiguracionAcceso config) {
+        LocalDate congeladaHasta = congelamientoService.vigente(usuario.getIdUsuario(), LocalDate.now())
+                .map(Congelamiento::getHasta)
+                .orElse(null);
+        return mapToDTO(usuario, config, congeladaHasta);
+    }
+
+    private SocioResponseDTO mapToDTO(Usuario usuario, ConfiguracionAcceso config, LocalDate congeladaHasta) {
         Optional<CertificadoMedico> certificado = certificadoMedicoService.obtenerCertificadoActual(usuario.getIdUsuario());
         PerfilSocio perfil = perfilSocioRepository.findByUsuarioIdUsuario(usuario.getIdUsuario()).orElse(null);
         Suscripcion sub = suscripcionRepository
@@ -185,6 +214,9 @@ public class SocioService {
                 .planActual(sub != null ? sub.getPlan().getNombrePlan() : "Sin Plan")
                 .vencimientoMembresia(sub != null ? sub.getFechaVencimiento() : null)
                 .membresiaAlDia(membresiaAlDia)
+                .congeladaHasta(congeladaHasta)
+                .idDescuentoHabitual(perfil != null && perfil.getDescuento() != null ? perfil.getDescuento().getIdDescuento() : null)
+                .descuentoHabitual(perfil != null && perfil.getDescuento() != null ? perfil.getDescuento().getNombre() : null)
                 .fechaNacimiento(perfil != null ? perfil.getFechaNacimiento() : null)
                 .genero(perfil != null ? perfil.getGenero() : null)
                 .domicilio(perfil != null ? perfil.getDomicilio() : null)

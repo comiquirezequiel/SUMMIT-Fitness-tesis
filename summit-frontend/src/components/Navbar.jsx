@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronLeft, Globe, Moon, Bell, LogOut, Menu, KeyRound, CheckCircle2 } from 'lucide-react';
 import Modal from './Modal';
 import { useSinLeerChat } from '../services/chat';
+import { useFunciones } from '../services/funciones';
 import FormCambiarPassword from '../cuenta/FormCambiarPassword';
 import { cambiarPassword } from '../services/cuenta';
 import { cerrarSesion } from '../services/auth';
@@ -32,7 +33,8 @@ const CambiarPasswordModal = ({ email, onClose }) => {
 
 const Navbar = ({ onMenuClick }) => {
   const usuario = usuarioActual();
-  const atiendeChat = ['ADMIN', 'RECEPCION'].includes(usuario?.rol);
+  const { appSocios } = useFunciones();
+  const atiendeChat = appSocios && ['ADMIN', 'RECEPCION'].includes(usuario?.rol);
   const sinLeerChat = useSinLeerChat(atiendeChat);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [cambiandoPassword, setCambiandoPassword] = useState(false);

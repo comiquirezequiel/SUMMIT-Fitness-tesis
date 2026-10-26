@@ -306,7 +306,8 @@ const Socios = () => {
         <EditarSocioModal socio={modal.socio} onClose={() => setModal(null)} onGuardado={cerrarYRefrescar} />
       )}
       {modal?.tipo === 'ficha' && (
-        <FichaSocioModal socio={modal.socio} puedeEditar={puedeEditar} onActualizado={fetchSocios}
+        // Con los datos recargados de la lista: al congelar o restablecer algo, la ficha abierta se actualiza
+        <FichaSocioModal socio={socios.find(s => s.idSocio === modal.socio.idSocio) || modal.socio} puedeEditar={puedeEditar} onActualizado={fetchSocios}
           onClose={() => { setModal(null); fetchDebitos(); }} />
       )}
     </div>

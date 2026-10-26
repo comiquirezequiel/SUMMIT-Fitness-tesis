@@ -6,9 +6,12 @@ import {
 } from 'lucide-react';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../components/Campo';
 import CapturaFoto from '../components/socios/CapturaFoto';
+import DetalleCobro from '../components/socios/DetalleCobro';
+import { listarDescuentos, registrarCobro, textoValorDescuento, usePresupuesto } from '../services/membresias';
 import { subirFotoSocio } from '../services/fotos';
 import { useEstadoIa, BotonIa, ResultadoAnalisis, AvisoIaNoDisponible } from '../components/ia/AsistenteIa';
 import { apiFetch } from '../services/api';
+import { useFunciones } from '../services/funciones';
 import { subirCertificado, validarArchivoApto } from '../services/certificados';
 import { analizarArchivo } from '../services/ia';
 import { formatFecha, formatMoneda, hoyIso, diasHasta } from '../utils/formato';
@@ -19,7 +22,7 @@ const STEPS = ['Datos Personales', 'Contacto y Acceso', 'Membresía y Apto', 'Co
 const FORM_INICIAL = {
   nombre: '', apellido: '', dni: '', fechaNacimiento: '', genero: '', objetivo: '',
   email: '', telefono: '', domicilio: '', ciudad: '', password: '',
-  idPlan: '', monto: '', metodoPago: 'EFECTIVO', comprobante: '',
+  idPlan: '', idDescuento: '', bonificarMatricula: false, metodoPago: 'EFECTIVO', comprobante: '',
   archivoApto: null, fechaEmisionApto: '', patologias: '', resumenIa: '', observaciones: '',
   foto: null, // JPG cuadrado de CapturaFoto: se sube después de crear al socio
 };
@@ -31,8 +34,9 @@ const generarPassword = () => {
   return Array.from(valores, v => caracteres[v % caracteres.length]).join('');
 };
 
-// Devuelve { campo: mensaje } con los errores del paso indicado
-const validarPaso = (paso, form) => {
+// Devuelve { campo: mensaje } con los errores del paso indicado. conApp: la app del socio está habilitada (si no,
+// no se pide contraseña)
+const validarPaso = (paso, form, conApp) => {
   const e = {};
   if (paso === 0) {
     if (!form.nombre.trim()) e.nombre = 'Ingresá el nombre';
@@ -42,10 +46,9 @@ const validarPaso = (paso, form) => {
   }
   if (paso === 1) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = 'Ingresá un email válido';
-    if (form.password.length < 6) e.password = 'Mínimo 6 caracteres';
+    if (conApp && form.password.length < 6) e.password = 'Mínimo 6 caracteres';
   }
   if (paso === 2) {
-    if (form.idPlan && !(Number(form.monto) > 0)) e.monto = 'Ingresá el monto cobrado';
     if (form.archivoApto) {
       const errorArchivo = validarArchivoApto(form.archivoApto);
       if (errorArchivo) e.archivoApto = errorArchivo;
@@ -66,10 +69,12 @@ const FilaResumen = ({ label, valor }) => (
 
 const NuevoSocio = () => {
   const navigate = useNavigate();
+  const { appSocios } = useFunciones();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState(FORM_INICIAL);
   const [errores, setErrores] = useState({});
   const [planes, setPlanes] = useState([]);
+  const [descuentos, setDescuentos] = useState([]);
   const [enviando, setEnviando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState('');
   const [resultado, setResultado] = useState(null); // { socio, cobro, apto }
@@ -99,7 +104,15 @@ const NuevoSocio = () => {
       .then(res => (res.ok ? res.json() : []))
       .then(data => setPlanes(data.filter(p => p.activo)))
       .catch(() => setPlanes([]));
+    listarDescuentos(true).then(setDescuentos).catch(() => setDescuentos([]));
   }, []);
+
+  // Total del primer cobro (plan - descuento habitual + matrícula), calculado por el backend como para un socio nuevo
+  const { presupuesto, calculando, error: errorPresupuesto } = usePresupuesto(form.idPlan ? {
+    idPlan: Number(form.idPlan),
+    idDescuento: form.idDescuento ? Number(form.idDescuento) : null,
+    bonificarMatricula: form.bonificarMatricula,
+  } : null);
 
   const update = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -135,14 +148,12 @@ const NuevoSocio = () => {
     setAnalisisIa(null);
   };
 
-  const elegirPlan = (idPlan) => {
-    const plan = planes.find(p => p.idPlan.toString() === idPlan);
-    setForm(prev => ({ ...prev, idPlan, monto: plan ? plan.precioBase : '' }));
-    setErrores(prev => ({ ...prev, monto: undefined }));
-  };
-
   const siguiente = () => {
-    const e = validarPaso(step, form);
+    const e = validarPaso(step, form, appSocios);
+    // Con plan, se sigue cuando el total del cobro ya está calculado (y sin errores)
+    if (step === 2 && form.idPlan && (errorPresupuesto || !presupuesto || calculando)) {
+      e.idPlan = errorPresupuesto || 'Esperá a que se calcule el total';
+    }
     setErrores(e);
     if (Object.keys(e).length === 0) setStep(s => Math.min(s + 1, STEPS.length - 1));
   };
@@ -161,7 +172,8 @@ const NuevoSocio = () => {
           dni: form.dni,
           nombreCompleto: `${form.nombre.trim()} ${form.apellido.trim()}`,
           email: form.email.trim(),
-          password: form.password,
+          // Con la app suspendida no se pide: el backend genera una al azar
+          password: appSocios ? form.password : null,
           telefono: form.telefono,
           fechaNacimiento: form.fechaNacimiento || null,
           genero: form.genero,
@@ -169,6 +181,7 @@ const NuevoSocio = () => {
           ciudad: form.ciudad,
           objetivo: form.objetivo,
           observaciones: form.observaciones,
+          idDescuento: form.idDescuento ? Number(form.idDescuento) : null,
         }),
       });
       const datosSocio = await resSocio.json().catch(() => ({}));
@@ -177,21 +190,23 @@ const NuevoSocio = () => {
         throw new Error(detalle || datosSocio.error || 'No se pudo registrar el socio');
       }
 
-      // 2. Cobro de la membresía (opcional)
+      // 2. Cobro de la membresía (opcional), con el total que se mostró
       let cobro = null;
       if (form.idPlan) {
-        const resPago = await apiFetch('/pagos', {
-          method: 'POST',
-          body: JSON.stringify({
+        try {
+          const pago = await registrarCobro({
             idUsuario: datosSocio.idSocio,
-            idPlan: form.idPlan,
-            monto: form.monto,
+            idPlan: Number(form.idPlan),
+            idDescuento: form.idDescuento ? Number(form.idDescuento) : null,
+            bonificarMatricula: form.bonificarMatricula,
             metodoPago: form.metodoPago,
             comprobante: form.comprobante,
-          }),
-        });
-        const errPago = resPago.ok ? null : (await resPago.json().catch(() => ({}))).error;
-        cobro = { ok: resPago.ok, error: errPago || 'No se pudo registrar el cobro' };
+            totalMostrado: presupuesto?.total,
+          });
+          cobro = { ok: true, pago };
+        } catch (err) {
+          cobro = { ok: false, error: err.message };
+        }
       }
 
       // 3. Certificado médico (opcional)
@@ -259,11 +274,11 @@ const NuevoSocio = () => {
           <p className="text-slate-500">{resultado.socio.nombreCompleto} · DNI {resultado.socio.dni}</p>
         </div>
         <ul className="space-y-2">
-          <Item ok texto="Datos del socio guardados" detalle={`Usuario para la app: ${resultado.socio.email}`} />
+          <Item ok texto="Datos del socio guardados" detalle={appSocios ? `Usuario para la app: ${resultado.socio.email}` : resultado.socio.email} />
           {resultado.cobro
             ? <Item ok={resultado.cobro.ok}
                     texto={resultado.cobro.ok ? `Cobro registrado: ${planElegido?.nombrePlan}` : 'El cobro no se registró'}
-                    detalle={resultado.cobro.ok ? `${formatMoneda(form.monto)} · membresía activa por ${planElegido?.duracionDias} días` : `${resultado.cobro.error}. Podés cobrarlo desde la lista de socios.`} />
+                    detalle={resultado.cobro.ok ? `${formatMoneda(resultado.cobro.pago.monto)} · membresía activa por ${planElegido?.duracionDias} días` : `${resultado.cobro.error}. Podés cobrarlo desde la lista de socios.`} />
             : <Item ok={false} texto="Sin membresía" detalle="No se registró un cobro: el socio no podrá ingresar hasta pagar un plan." />}
           {resultado.apto
             ? <Item ok={resultado.apto.ok}
@@ -274,7 +289,7 @@ const NuevoSocio = () => {
             ? <Item ok={resultado.foto.ok}
                     texto={resultado.foto.ok ? 'Foto guardada' : 'La foto no se guardó'}
                     detalle={resultado.foto.ok ? 'Recepción la va a ver en cada ingreso.' : `${resultado.foto.error}. Podés sacarla desde la ficha del socio.`} />
-            : <Item ok={false} texto="Sin foto" detalle="Sacala desde la ficha del socio: recepción la ve en cada ingreso, también cuando entra con el QR de la app." />}
+            : <Item ok={false} texto="Sin foto" detalle="Sacala desde la ficha del socio: recepción la ve en cada ingreso." />}
         </ul>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button onClick={() => navigate('/socios')} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold">
@@ -318,7 +333,7 @@ const NuevoSocio = () => {
             <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
               <User className="w-5 h-5 text-blue-500" /> Datos Personales
             </h2>
-            {/* Foto (opcional): recepción la ve en cada ingreso, también cuando entra con el QR de la app */}
+            {/* Foto (opcional): recepción la ve en cada ingreso */}
             <div className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 bg-slate-50/60">
               <div className="w-20 h-20 rounded-2xl overflow-hidden bg-blue-100 border border-blue-200 flex items-center justify-center shrink-0">
                 {urlFoto
@@ -328,7 +343,7 @@ const NuevoSocio = () => {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-slate-700">Foto <span className="font-normal text-slate-400">(opcional)</span></p>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Para que recepción lo reconozca en cada ingreso, también cuando entra con el QR de la app. Se puede sacar después desde la ficha.
+                  Para que recepción lo reconozca en cada ingreso. Se puede sacar después desde la ficha.
                 </p>
                 <div className="flex gap-2 mt-2">
                   <button type="button" onClick={() => setSacandoFoto(true)}
@@ -414,6 +429,7 @@ const NuevoSocio = () => {
                 <input type="text" placeholder="Corrientes" value={form.ciudad}
                   onChange={e => update('ciudad', e.target.value)} className={inputClass} />
               </Campo>
+              {appSocios && (
               <Campo label="Contraseña inicial (app del socio)" required error={errores.password}
                      ayuda="Entregásela al socio: con su email y esta contraseña entra a la app, y ahí elige una propia."
                      className="md:col-span-2">
@@ -429,6 +445,7 @@ const NuevoSocio = () => {
                   </button>
                 </div>
               </Campo>
+              )}
             </div>
           </div>
         )}
@@ -441,8 +458,8 @@ const NuevoSocio = () => {
                 <CreditCard className="w-5 h-5 text-blue-500" /> Membresía y Pago
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <Campo label="Plan" ayuda="Podés dejarlo sin plan y cobrarlo después desde la lista de socios.">
-                  <select value={form.idPlan} onChange={e => elegirPlan(e.target.value)} className={inputClass}>
+                <Campo label="Plan" error={errores.idPlan} ayuda="Podés dejarlo sin plan y cobrarlo después desde la lista de socios.">
+                  <select value={form.idPlan} onChange={e => update('idPlan', e.target.value)} className={inputClass}>
                     <option value="">Sin plan por ahora</option>
                     {planes.map(p => (
                       <option key={p.idPlan} value={p.idPlan}>
@@ -451,12 +468,20 @@ const NuevoSocio = () => {
                     ))}
                   </select>
                 </Campo>
+                <Campo label="Descuento habitual" ayuda="Se le propone en cada cobro. Los descuentos los arma el dueño en Membresías > Descuentos y reglas.">
+                  <select value={form.idDescuento} onChange={e => update('idDescuento', e.target.value)} className={inputClass}>
+                    <option value="">Sin descuento</option>
+                    {descuentos.map(d => (
+                      <option key={d.idDescuento} value={d.idDescuento}>{d.nombre} ({textoValorDescuento(d)})</option>
+                    ))}
+                  </select>
+                </Campo>
                 {form.idPlan && (
                   <>
-                    <Campo label="Monto cobrado ($)" required error={errores.monto}>
-                      <input type="number" min="0" step="0.01" value={form.monto}
-                        onChange={e => update('monto', e.target.value)} className={inputClass} />
-                    </Campo>
+                    <div className="md:col-span-2">
+                      <DetalleCobro presupuesto={presupuesto} calculando={calculando} error={errorPresupuesto}
+                        bonificarMatricula={form.bonificarMatricula} onBonificarMatricula={v => update('bonificarMatricula', v)} />
+                    </div>
                     <Campo label="Método de Pago" required>
                       <select value={form.metodoPago} onChange={e => update('metodoPago', e.target.value)} className={inputClass}>
                         {METODOS_PAGO.map(m => <option key={m.valor} value={m.valor}>{m.texto}</option>)}
@@ -556,7 +581,8 @@ const NuevoSocio = () => {
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2 md:col-span-2">
                 <h3 className="font-semibold text-blue-700 text-sm uppercase tracking-wide mb-2">Membresía y Apto</h3>
                 <FilaResumen label="Plan" valor={planElegido ? planElegido.nombrePlan : 'Sin plan por ahora'} />
-                {planElegido && <FilaResumen label="Cobro" valor={`${formatMoneda(form.monto)} · ${textoMetodoPago(form.metodoPago)}`} />}
+                {planElegido && presupuesto && <FilaResumen label="Cobro" valor={`${formatMoneda(presupuesto.total)} · ${textoMetodoPago(form.metodoPago)}`} />}
+                {form.idDescuento && <FilaResumen label="Descuento habitual" valor={descuentos.find(d => String(d.idDescuento) === form.idDescuento)?.nombre} />}
                 <FilaResumen label="Certificado médico" valor={form.archivoApto ? `${form.archivoApto.name} (emitido ${formatFecha(form.fechaEmisionApto)})` : 'Pendiente'} />
                 {form.patologias && <FilaResumen label="Patologías" valor={form.patologias} />}
                 {form.resumenIa && <FilaResumen label="Resumen (IA)" valor={form.resumenIa} />}

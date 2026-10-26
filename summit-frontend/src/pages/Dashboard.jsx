@@ -41,6 +41,7 @@ const ActivityStat = ({ title, value, icon: Icon, color }) => {
 const RESULTADOS = {
   PERMITIDO: { texto: 'Permitido', clase: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   DENEGADO_CUENTA_INACTIVA: { texto: 'Cuenta inactiva', clase: 'bg-rose-50 text-rose-700 border-rose-200' },
+  DENEGADO_MEMBRESIA_CONGELADA: { texto: 'Congelada', clase: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
   DENEGADO_CUOTA_VENCIDA: { texto: 'Cuota vencida', clase: 'bg-rose-50 text-rose-700 border-rose-200' },
   DENEGADO_LIMITE_SEMANAL: { texto: 'Límite semanal', clase: 'bg-rose-50 text-rose-700 border-rose-200' },
   DENEGADO_CERTIFICADO_MEDICO: { texto: 'Apto médico', clase: 'bg-rose-50 text-rose-700 border-rose-200' },

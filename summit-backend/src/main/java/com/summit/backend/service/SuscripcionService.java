@@ -8,6 +8,7 @@ import com.summit.backend.repository.SuscripcionRepository;
 import com.summit.backend.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -32,10 +33,13 @@ public class SuscripcionService {
      * Extiende o crea una suscripción al registrar un pago.
      * Si tiene una activa, suma días al vencimiento actual.
      * Si no tiene o está vencida, empieza desde hoy.
+     * La membresía queda bloqueada hasta el final de la transacción: un congelamiento al mismo tiempo no pisa el
+     * vencimiento nuevo.
      */
+    @Transactional
     public Suscripcion extenderOcrearSuscripcion(Usuario usuario, Plan plan) {
-        Suscripcion sub = suscripcionRepository
-                .findFirstByUsuarioIdUsuarioAndActivaTrueOrderByFechaVencimientoDesc(usuario.getIdUsuario())
+        Suscripcion sub = suscripcionRepository.activasParaActualizar(usuario.getIdUsuario()).stream()
+                .findFirst()
                 .orElse(null);
 
         LocalDate hoy = LocalDate.now();
@@ -68,7 +72,9 @@ public class SuscripcionService {
 
     /**
      * Crea o extiende una suscripción por IDs (usado por SuscripcionController).
+     * Transaccional porque llama a extenderOcrearSuscripcion desde la misma clase (sin pasar por el proxy de Spring).
      */
+    @Transactional
     public Suscripcion crearSuscripcion(Long idUsuario, Long idPlan) {
         Usuario usuario = usuarioRepository.findById(idUsuario)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));

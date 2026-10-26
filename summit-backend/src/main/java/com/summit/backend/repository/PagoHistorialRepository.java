@@ -43,6 +43,11 @@ public interface PagoHistorialRepository extends JpaRepository<PagoHistorial, Lo
 
     boolean existsByMpPaymentId(String mpPaymentId);
 
+    // ¿Tiene un cobro reciente a verificar que ya resolvió la matrícula (cobrada o bonificada)? No se le vuelve a cobrar
+    boolean existsByUsuarioIdUsuarioAndEstadoPagoAndMatriculaMontoIsNotNullAndFechaPagoAfter(Long idUsuario,
+                                                                                            EstadoPago estadoPago,
+                                                                                            LocalDateTime desde);
+
     // Métricas: cobros aprobados de un rango, como filas [fechaPago, monto, metodoPago, nombrePlan]
     @Query("SELECT p.fechaPago, p.montoAbonado, p.metodoPago, p.plan.nombrePlan FROM PagoHistorial p "
             + "WHERE p.estadoPago = com.summit.backend.model.EstadoPago.APROBADO AND p.fechaPago >= :desde AND p.fechaPago < :hasta")

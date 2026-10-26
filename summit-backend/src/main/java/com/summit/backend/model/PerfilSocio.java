@@ -56,4 +56,10 @@ public class PerfilSocio {
     // Cuándo se sacó la foto: es su "versión", para que el navegador no muestre una vieja
     @Column(name = "foto_actualizada")
     private LocalDateTime fotoActualizada;
+
+    // Descuento que se le propone en cada cobro (null = sin descuento). Sale en la API por SocioResponseDTO
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "descuento_id")
+    private Descuento descuento;
 }

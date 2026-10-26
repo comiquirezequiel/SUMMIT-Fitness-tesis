@@ -32,6 +32,11 @@ public class SocioResponseDTO {
     private String planActual;
     private boolean membresiaAlDia;
     private LocalDate vencimientoMembresia;
+    // Último día de un congelamiento que rige hoy (null si no está congelada)
+    private LocalDate congeladaHasta;
+    // Descuento que se le propone en cada cobro (null = sin descuento)
+    private Long idDescuentoHabitual;
+    private String descuentoHabitual;
 
     // --- Perfil ---
     private LocalDate fechaNacimiento;

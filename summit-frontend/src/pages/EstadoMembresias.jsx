@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, CalendarX, Clock, CheckCircle2, UserX, Wallet, Phone } from 'lucide-react';
+import { AlertTriangle, CalendarX, Clock, CheckCircle2, UserX, Wallet, Phone, Snowflake } from 'lucide-react';
 import CobroModal from '../components/socios/CobroModal';
 import { apiFetch } from '../services/api';
 import { formatFecha, diasHasta, textoVencimiento, usuarioActual } from '../utils/formato';
 
-// Categoría de cada socio según los días que faltan para que venza su membresía
+// Categoría de cada socio según los días que faltan para que venza su membresía. Los que tienen la membresía
+// congelada hoy van aparte (su vencimiento ya incluye los días congelados)
 const TABS = [
-  { id: 'vencidas', label: 'Vencidas', icon: CalendarX, color: 'rose', incluye: (d) => d !== null && d < 0 },
-  { id: '0-7', label: '0-7 días', icon: AlertTriangle, color: 'orange', incluye: (d) => d !== null && d >= 0 && d <= 7 },
-  { id: '8-15', label: '8-15 días', icon: Clock, color: 'yellow', incluye: (d) => d !== null && d >= 8 && d <= 15 },
-  { id: '15+', label: '15+ días', icon: CheckCircle2, color: 'emerald', incluye: (d) => d !== null && d > 15 },
-  { id: 'sin-plan', label: 'Sin membresía', icon: UserX, color: 'slate', incluye: (d) => d === null },
+  { id: 'vencidas', label: 'Vencidas', icon: CalendarX, color: 'rose', incluye: (s) => !s.congeladaHasta && s.dias !== null && s.dias < 0 },
+  { id: '0-7', label: '0-7 días', icon: AlertTriangle, color: 'orange', incluye: (s) => !s.congeladaHasta && s.dias !== null && s.dias >= 0 && s.dias <= 7 },
+  { id: '8-15', label: '8-15 días', icon: Clock, color: 'yellow', incluye: (s) => !s.congeladaHasta && s.dias !== null && s.dias >= 8 && s.dias <= 15 },
+  { id: '15+', label: '15+ días', icon: CheckCircle2, color: 'emerald', incluye: (s) => !s.congeladaHasta && s.dias !== null && s.dias > 15 },
+  { id: 'congeladas', label: 'Congeladas', icon: Snowflake, color: 'cyan', incluye: (s) => !!s.congeladaHasta },
+  { id: 'sin-plan', label: 'Sin membresía', icon: UserX, color: 'slate', incluye: (s) => !s.congeladaHasta && s.dias === null },
 ];
 
 const COLORES = {
@@ -18,6 +20,7 @@ const COLORES = {
   orange: { border: 'border-orange-200', text: 'text-orange-600', activeBg: 'bg-orange-50', activeBorder: 'border-orange-500' },
   yellow: { border: 'border-yellow-200', text: 'text-yellow-600', activeBg: 'bg-yellow-50', activeBorder: 'border-yellow-500' },
   emerald: { border: 'border-emerald-200', text: 'text-emerald-600', activeBg: 'bg-emerald-50', activeBorder: 'border-emerald-500' },
+  cyan: { border: 'border-cyan-200', text: 'text-cyan-700', activeBg: 'bg-cyan-50', activeBorder: 'border-cyan-500' },
   slate: { border: 'border-slate-200', text: 'text-slate-600', activeBg: 'bg-slate-50', activeBorder: 'border-slate-500' },
 };
 
@@ -46,7 +49,7 @@ const EstadoMembresias = () => {
 
   const conDias = socios.map(s => ({ ...s, dias: diasHasta(s.vencimientoMembresia) }));
   const tabActiva = TABS.find(t => t.id === activeTab);
-  const lista = conDias.filter(s => tabActiva.incluye(s.dias)).sort((a, b) => (a.dias ?? 0) - (b.dias ?? 0));
+  const lista = conDias.filter(s => tabActiva.incluye(s)).sort((a, b) => (a.dias ?? 0) - (b.dias ?? 0));
 
   const getTabColors = (tab, isActive) => {
     const theme = COLORES[tab.color];
@@ -67,11 +70,11 @@ const EstadoMembresias = () => {
       {error && <div className="p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>}
 
       <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
           {TABS.map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
-            const cantidad = conDias.filter(s => tab.incluye(s.dias)).length;
+            const cantidad = conDias.filter(s => tab.incluye(s)).length;
             return (
               <button
                 key={tab.id}
@@ -122,7 +125,12 @@ const EstadoMembresias = () => {
                     <td className="px-4 py-3 text-slate-700">{s.planActual}</td>
                     <td className="px-4 py-3">
                       {s.vencimientoMembresia
-                        ? <><p className="text-slate-700">{formatFecha(s.vencimientoMembresia)}</p><p className={`text-xs ${s.dias < 0 ? 'text-rose-600' : 'text-slate-500'}`}>{textoVencimiento(s.dias)}</p></>
+                        ? <><p className="text-slate-700">{formatFecha(s.vencimientoMembresia)}</p><p className={`text-xs ${s.dias < 0 ? 'text-rose-600' : 'text-slate-500'}`}>{textoVencimiento(s.dias)}</p>
+                            {s.congeladaHasta && (
+                              <p className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-cyan-200 bg-cyan-50 text-cyan-700 text-[11px] font-semibold">
+                                <Snowflake className="w-3 h-3" /> Congelada hasta el {formatFecha(s.congeladaHasta)}
+                              </p>
+                            )}</>
                         : <span className="text-slate-400">—</span>}
                     </td>
                     {puedeCobrar && (

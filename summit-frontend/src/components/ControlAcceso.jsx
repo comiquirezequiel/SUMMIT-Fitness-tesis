@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ScanLine, ShieldCheck, XCircle, UserX, DoorOpen, Camera } from 'lucide-react';
+import { ScanLine, ShieldCheck, XCircle, UserX, DoorOpen, Camera, Snowflake } from 'lucide-react';
 import FotoSocio from './socios/FotoSocio';
 import CapturaFoto from './socios/CapturaFoto';
 import { FaltasIngreso, AvisosIngreso, DatosFicha } from './FichaIngreso';
 import { apiFetch } from '../services/api';
 import { subirFotoSocio } from '../services/fotos';
+import { terminarCongelamiento } from '../services/membresias';
 
 /**
  * Control de acceso de recepción: el recepcionista escanea o escribe el DNI y ve la notificación
@@ -16,6 +17,7 @@ const ControlAcceso = ({ onIngreso }) => {
   const [resultado, setResultado] = useState(null); // respuesta del backend
   const [error, setError] = useState('');
   const [excepcion, setExcepcion] = useState(null); // { motivo, enviando, error } mientras se autoriza una excepción
+  const [terminando, setTerminando] = useState(null); // { enviando, error } mientras se termina un congelamiento
   const [sacandoFoto, setSacandoFoto] = useState(false);
   const inputRef = useRef(null);
 
@@ -49,18 +51,33 @@ const ControlAcceso = ({ onIngreso }) => {
     }
   };
 
+  // Volvió antes con la membresía congelada: se termina el congelamiento y se verifica de nuevo
+  const terminarYVerificar = async () => {
+    if (!window.confirm(`¿Terminar el congelamiento de ${resultado.nombreSocio}? Se le descuentan del vencimiento los días que no usó.`)) return;
+    setTerminando({ enviando: true, error: '' });
+    try {
+      await terminarCongelamiento(resultado.idUsuario, resultado.idCongelamiento);
+      await verificar(resultado.dni);
+    } catch (err) {
+      setTerminando({ enviando: false, error: err.message });
+    }
+  };
+
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     const dniLimpio = dni.trim();
-    if (!dniLimpio) return;
+    if (dniLimpio) verificar(dniLimpio);
+  };
 
+  const verificar = async (dniLimpio) => {
     setLoading(true);
     setError('');
     setExcepcion(null);
+    setTerminando(null);
     try {
       const response = await apiFetch('/asistencia/molinete/verificar', {
         method: 'POST',
@@ -176,6 +193,17 @@ const ControlAcceso = ({ onIngreso }) => {
           )}
 
           <FaltasIngreso faltas={resultado.faltas} />
+
+          {!resultado.permitido && resultado.idCongelamiento && (
+            <div className="mt-3 rounded-xl border border-cyan-200 bg-white p-3 space-y-2">
+              <button type="button" onClick={terminarYVerificar} disabled={terminando?.enviando}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-bold transition-colors disabled:opacity-50">
+                <Snowflake className="w-4 h-4" /> {terminando?.enviando ? 'Terminando...' : 'Volvió antes: terminar el congelamiento'}
+              </button>
+              <p className="text-xs text-slate-500">Se le descuentan del vencimiento los días que no usó y se vuelve a verificar el ingreso.</p>
+              {terminando?.error && <p className="text-xs text-rose-600 font-medium">{terminando.error}</p>}
+            </div>
+          )}
 
           {!resultado.permitido && resultado.excepcionPosible && (
             <div className="mt-3 rounded-xl border border-amber-200 bg-white p-3">

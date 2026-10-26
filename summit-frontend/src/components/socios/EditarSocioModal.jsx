@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Save, UserX, UserCheck } from 'lucide-react';
 import Modal from '../Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../Campo';
 import { apiFetch } from '../../services/api';
+import { listarDescuentos, textoValorDescuento } from '../../services/membresias';
 import { hoyIso } from '../../utils/formato';
 import { GENEROS, OBJETIVOS } from '../../utils/constantes';
 
@@ -20,9 +21,17 @@ const EditarSocioModal = ({ socio, onClose, onGuardado }) => {
     ciudad: socio.ciudad || '',
     objetivo: socio.objetivo || '',
     observaciones: socio.observaciones || '',
+    idDescuento: socio.idDescuentoHabitual ? String(socio.idDescuentoHabitual) : '',
   });
+  const [descuentos, setDescuentos] = useState([]);
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    listarDescuentos(true).then(setDescuentos).catch(() => setDescuentos([]));
+  }, []);
+  // El que ya tiene puede haberse desactivado: igual se muestra para poder dejarlo
+  const habitualDesactivado = socio.idDescuentoHabitual && !descuentos.some(d => d.idDescuento === socio.idDescuentoHabitual);
 
   const set = (campo, valor) => setDatos(prev => ({ ...prev, [campo]: valor }));
 
@@ -48,7 +57,11 @@ const EditarSocioModal = ({ socio, onClose, onGuardado }) => {
     e.preventDefault();
     ejecutar(() => apiFetch(`/socios/${socio.idSocio}`, {
       method: 'PUT',
-      body: JSON.stringify({ ...datos, fechaNacimiento: datos.fechaNacimiento || null }),
+      body: JSON.stringify({
+        ...datos,
+        fechaNacimiento: datos.fechaNacimiento || null,
+        idDescuento: datos.idDescuento ? Number(datos.idDescuento) : null,
+      }),
     }));
   };
 
@@ -110,10 +123,21 @@ const EditarSocioModal = ({ socio, onClose, onGuardado }) => {
         <Campo label="Ciudad">
           <input value={datos.ciudad} onChange={e => set('ciudad', e.target.value)} className={inputClass} />
         </Campo>
-        <Campo label="Objetivo" className="md:col-span-2">
+        <Campo label="Objetivo">
           <select value={datos.objetivo} onChange={e => set('objetivo', e.target.value)} className={inputClass}>
             <option value="">Sin especificar</option>
             {OBJETIVOS.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </Campo>
+        <Campo label="Descuento habitual" ayuda="Se le propone en cada cobro">
+          <select value={datos.idDescuento} onChange={e => set('idDescuento', e.target.value)} className={inputClass}>
+            <option value="">Sin descuento</option>
+            {habitualDesactivado && (
+              <option value={socio.idDescuentoHabitual}>{socio.descuentoHabitual} (desactivado)</option>
+            )}
+            {descuentos.map(d => (
+              <option key={d.idDescuento} value={d.idDescuento}>{d.nombre} ({textoValorDescuento(d)})</option>
+            ))}
           </select>
         </Campo>
         <Campo label="Observaciones" className="md:col-span-2">

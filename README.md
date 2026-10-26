@@ -125,6 +125,9 @@ Para revisar si todo el backend compila sin arrancarlo: `.\mvnw.cmd compile` den
   contraseña de `application-local.properties`.
 - Débito automático con Mercado Pago (opcional): se activa con `MP_ACCESS_TOKEN` en
   `application-local.properties`.
+- La app del socio está suspendida hasta después de la tesis (`summit.app-socios.habilitada=false` en
+  `application.properties`): los socios no pueden entrar y el panel oculta lo que es solo para la app. Para volver a
+  usarla, se pone en `true` y se reinicia el backend.
 - Notificaciones de la app del socio: funcionan con la app servida por HTTPS (en el iPhone, además, agregada a la
   pantalla de inicio). Las claves se generan solas la primera vez y quedan en la base: no hay que configurar nada.
   Conviene cargar el email del gimnasio en *Ajustes > Datos del gimnasio*, porque va como contacto en cada aviso.

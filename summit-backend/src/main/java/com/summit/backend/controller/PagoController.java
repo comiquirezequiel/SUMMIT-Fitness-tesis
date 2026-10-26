@@ -1,9 +1,9 @@
 package com.summit.backend.controller;
 
 import com.summit.backend.dto.CajaResumenDTO;
+import com.summit.backend.dto.CobroRequestDTO;
 import com.summit.backend.dto.PagoListadoDTO;
 import com.summit.backend.model.EstadoPago;
-import com.summit.backend.model.MetodoPago;
 import com.summit.backend.service.PagoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -30,24 +29,30 @@ public class PagoController {
     private final PagoService pagoService;
 
     /**
-     * Registra un cobro. "aVerificar": true deja una transferencia o un QR pendiente hasta que el admin lo confirme.
-     * Quién cobró sale del token, nunca del body.
+     * Registra un cobro (ver CobroRequestDTO). El total lo calcula el backend; si no coincide con el que vio
+     * recepción (totalMostrado), responde 409 sin registrar nada. "aVerificar": true deja una transferencia o un QR
+     * pendiente hasta que el admin lo confirme. Quién cobró sale del token, nunca del body.
      */
     @PostMapping
-    public ResponseEntity<?> registrar(@RequestBody Map<String, Object> request, Authentication auth) {
+    public ResponseEntity<?> registrar(@RequestBody CobroRequestDTO pedido, Authentication auth) {
         try {
-            Long idUsuario = Long.valueOf(obligatorio(request, "idUsuario"));
-            Long idPlan = Long.valueOf(obligatorio(request, "idPlan"));
-            BigDecimal monto = new BigDecimal(obligatorio(request, "monto"));
-            MetodoPago metodoPago = MetodoPago.valueOf(obligatorio(request, "metodoPago").toUpperCase());
-            Object comprobante = request.get("comprobante");
-            boolean aVerificar = Boolean.parseBoolean(String.valueOf(request.get("aVerificar")));
-
-            PagoListadoDTO pago = pagoService.registrarPago(idUsuario, idPlan, monto, metodoPago,
-                    comprobante == null ? "" : comprobante.toString(), aVerificar, auth.getName());
+            PagoListadoDTO pago = pagoService.registrarPago(pedido, auth.getName());
             return ResponseEntity.status(HttpStatus.CREATED).body(pago);
-        } catch (NumberFormatException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Datos numéricos inválidos en el cobro"));
+        } catch (PagoService.TotalCambiadoException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", String.valueOf(e.getMessage())));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", String.valueOf(e.getMessage())));
+        }
+    }
+
+    /**
+     * Detalle de un cobro antes de confirmarlo: precio del plan, descuento, matrícula y total. Mismo body que el
+     * cobro; sin idUsuario es el de un socio nuevo.
+     */
+    @PostMapping("/presupuesto")
+    public ResponseEntity<?> presupuesto(@RequestBody CobroRequestDTO pedido) {
+        try {
+            return ResponseEntity.ok(pagoService.presupuesto(pedido));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", String.valueOf(e.getMessage())));
         }
@@ -91,13 +96,5 @@ public class PagoController {
     @GetMapping("/socio/{idUsuario}")
     public ResponseEntity<?> historial(@PathVariable Long idUsuario) {
         return ResponseEntity.ok(pagoService.historialPorSocio(idUsuario));
-    }
-
-    private static String obligatorio(Map<String, Object> request, String campo) {
-        Object valor = request.get(campo);
-        if (valor == null || valor.toString().isBlank()) {
-            throw new IllegalArgumentException("Falta el campo " + campo);
-        }
-        return valor.toString();
     }
 }

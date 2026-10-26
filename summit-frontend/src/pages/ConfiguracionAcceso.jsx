@@ -3,6 +3,7 @@ import { Save, Settings, Info, AlertTriangle, CheckCircle, QrCode, MapPin, Print
 import { QRCodeSVG } from 'qrcode.react';
 import { apiFetch } from '../services/api';
 import { PREFIJO_QR_INGRESO } from '../utils/constantes';
+import { useFunciones } from '../services/funciones';
 
 // Interruptor de las reglas (mismo estilo en toda la pantalla)
 const Interruptor = ({ activo, onChange }) => (
@@ -15,6 +16,7 @@ const Interruptor = ({ activo, onChange }) => (
 const claseCampo = 'w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium text-slate-800';
 
 const ConfiguracionAcceso = () => {
+  const { appSocios } = useFunciones();
   const [config, setConfig] = useState({
     requerirMembresiaActiva: true,
     requerirCertificadoMedico: true,
@@ -246,7 +248,8 @@ const ConfiguracionAcceso = () => {
         </div>
       </div>
 
-      {/* Sección: Ingreso con QR desde la app del socio (PLAN-APP-SOCIOS.md, A4) */}
+      {/* Sección: Ingreso con QR desde la app del socio (PLAN-APP-SOCIOS.md, A4). Con la app suspendida no aparece */}
+      {appSocios && (
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
         <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-100">
           <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
@@ -316,9 +319,10 @@ const ConfiguracionAcceso = () => {
           </div>
         </div>
       </div>
+      )}
 
       {/* Lo único que se imprime (ver .zona-impresion en index.css): el QR grande con las instrucciones */}
-      {contenidoQr && (
+      {appSocios && contenidoQr && (
         <div className="zona-impresion hidden print:flex flex-col items-center justify-center gap-8 text-center">
           <p className="text-4xl font-black tracking-[0.3em]">SUMMIT</p>
           <QRCodeSVG value={contenidoQr} size={420} level="M" />

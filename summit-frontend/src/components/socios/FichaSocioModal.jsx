@@ -6,8 +6,10 @@ import Campo, { inputClass, botonPrimario, botonSecundario } from '../Campo';
 import FotoSocio from './FotoSocio';
 import CapturaFoto from './CapturaFoto';
 import { apiFetch } from '../../services/api';
+import { useFunciones } from '../../services/funciones';
 import { subirFotoSocio, quitarFotoSocio } from '../../services/fotos';
 import DebitoSocio from '../debito/DebitoSocio';
+import CongelamientoSocio from './CongelamientoSocio';
 import { subirCertificado, validarArchivoApto, verArchivoCertificado } from '../../services/certificados';
 import { analizarArchivo, analizarCertificado, guardarObservaciones } from '../../services/ia';
 import { useEstadoIa, BotonIa, ResultadoAnalisis, AvisoIaNoDisponible } from '../ia/AsistenteIa';
@@ -33,6 +35,7 @@ const Seccion = ({ icon: Icon, titulo, children }) => (
  * Ficha del socio: datos, membresía, certificados médicos (con carga de uno nuevo) y últimos ingresos.
  */
 const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
+  const { appSocios } = useFunciones();
   const [certificados, setCertificados] = useState([]);
   const [ingresos, setIngresos] = useState([]);
   const [nuevoApto, setNuevoApto] = useState({ archivo: null, fechaEmision: '', patologias: '', resumenIa: '' });
@@ -243,7 +246,8 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
             </div>
           </div>
           {errorFoto && <p className="text-sm font-medium text-rose-600">{errorFoto}</p>}
-          {puedeEditar && (
+          {/* Acceso a la app del socio (con la app suspendida no aparece) */}
+          {puedeEditar && appSocios && (
             <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
               <p className="text-sm text-slate-500">
                 Entra a la app con su email.{' '}
@@ -265,11 +269,13 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
         )}
 
         <Seccion icon={Wallet} titulo="Membresía">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Dato label="Plan" valor={socio.planActual} />
             <Dato label="Vencimiento" valor={socio.vencimientoMembresia && `${formatFecha(socio.vencimientoMembresia)} (${textoVencimiento(diasHasta(socio.vencimientoMembresia))})`} />
-            <Dato label="Estado" valor={socio.membresiaAlDia ? 'Al día' : 'Vencida o sin plan'} />
+            <Dato label="Estado" valor={socio.congeladaHasta ? `Congelada hasta el ${formatFecha(socio.congeladaHasta)}` : socio.membresiaAlDia ? 'Al día' : 'Vencida o sin plan'} />
+            <Dato label="Descuento habitual" valor={socio.descuentoHabitual || 'Sin descuento'} />
           </div>
+          {puedeEditar && <CongelamientoSocio socio={socio} onCambio={onActualizado} />}
           {puedeEditar && <DebitoSocio socio={socio} />}
         </Seccion>
 

@@ -5,14 +5,20 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
 /**
- * Fechas en palabras para los avisos de la app: "hoy", "mañana" o "el jueves 30/10".
+ * Fechas en palabras para los avisos de la app ("hoy", "mañana" o "el jueves 30/10") y completas para los mensajes
+ * del panel ("30/10/2026").
  */
 final class TextoFechas {
 
     private static final String[] DIAS = {"lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"};
     private static final DateTimeFormatter DIA_MES = DateTimeFormatter.ofPattern("dd/MM");
+    private static final DateTimeFormatter COMPLETA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private TextoFechas() {
+    }
+
+    static String completa(LocalDate fecha) {
+        return fecha.format(COMPLETA);
     }
 
     static String cuando(LocalDate fecha, LocalDate hoy) {

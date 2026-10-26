@@ -6,15 +6,17 @@ import {
   Dumbbell, CalendarCheck, History, ClipboardList, ListChecks,
   Calendar, CalendarDays, BookOpen, Settings,
   LogOut, LayoutDashboard, ChevronDown, ChevronUp, GitBranch, Clipboard,
-  MessageCircle, CheckSquare, UserX, Home, ScanLine, Repeat, Building2, Megaphone
+  MessageCircle, CheckSquare, UserX, Home, ScanLine, Repeat, Building2, Megaphone, BadgePercent
 } from 'lucide-react';
 import { usuarioActual } from '../utils/formato';
 import { cerrarSesion } from '../services/auth';
 import { useSinLeerChat } from '../services/chat';
+import { useFunciones } from '../services/funciones';
 
 // Roles que ven cada opción (los mismos permisos que exige el backend).
 // demo: pantallas que todavía muestran datos de ejemplo (no están conectadas al backend).
 // contador: globito con un número (por ahora, las conversaciones del chat con mensajes sin leer).
+// soloConApp: existe solo para la app del socio; mientras está suspendida no aparece.
 const STAFF = ['ADMIN', 'RECEPCION'];
 const MENU_ITEMS = [
   {
@@ -23,8 +25,8 @@ const MENU_ITEMS = [
       { icon: User, text: "Lista de Socios", path: "/socios", roles: ['ADMIN', 'RECEPCION', 'PROFESOR'] },
       { icon: Dumbbell, text: "Constructor de Rutinas", path: "/rutinas/constructor", roles: ['ADMIN', 'PROFESOR'] },
       { icon: BarChart2, text: "Analítica de Socios", path: "/socios/metricas", roles: STAFF },
-      { icon: Megaphone, text: "Novedades", path: "/socios/novedades", roles: STAFF },
-      { icon: MessageCircle, text: "Chat", path: "/socios/chat", roles: STAFF, contador: 'chat' },
+      { icon: Megaphone, text: "Novedades", path: "/socios/novedades", roles: STAFF, soloConApp: true },
+      { icon: MessageCircle, text: "Chat", path: "/socios/chat", roles: STAFF, contador: 'chat', soloConApp: true },
       { icon: CheckSquare, text: "Tareas CRM", path: "/socios/tareas", roles: STAFF, demo: true },
       { icon: UserX, text: "Inactividad", path: "/socios/inactividad", roles: STAFF, demo: true },
     ]
@@ -41,6 +43,7 @@ const MENU_ITEMS = [
       { icon: Tag, text: "Planes", path: "/planes", roles: STAFF },
       { icon: AlertTriangle, text: "Estado de Membresías", path: "/membresias/estado", roles: STAFF },
       { icon: Repeat, text: "Débitos automáticos", path: "/membresias/debitos", roles: STAFF },
+      { icon: BadgePercent, text: "Descuentos y reglas", path: "/membresias/reglas", roles: ['ADMIN'] },
       { icon: TrendingUp, text: "Métricas de Planes", path: "/membresias/metricas", roles: ['ADMIN'] },
     ]
   },
@@ -71,9 +74,10 @@ const MENU_ITEMS = [
   }
 ];
 
-// Menú filtrado por el rol del usuario: se ocultan los grupos que quedan vacíos
-const menuParaRol = (rol) => MENU_ITEMS
-  .map(item => ({ ...item, subItems: item.subItems.filter(sub => sub.roles.includes(rol)) }))
+// Menú filtrado por el rol del usuario (y sin lo de la app del socio si está suspendida): se ocultan los grupos que
+// quedan vacíos
+const menuParaRol = (rol, appSocios) => MENU_ITEMS
+  .map(item => ({ ...item, subItems: item.subItems.filter(sub => sub.roles.includes(rol) && (appSocios || !sub.soloConApp)) }))
   .filter(item => item.subItems.length > 0);
 
 const Globito = ({ cantidad }) => (
@@ -154,7 +158,8 @@ const SidebarItem = ({ icon: Icon, text, path, subItems, activePath, onNavigate,
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const location = useLocation();
   const rol = usuarioActual()?.rol;
-  const contadores = { chat: useSinLeerChat(STAFF.includes(rol)) };
+  const { appSocios } = useFunciones();
+  const contadores = { chat: useSinLeerChat(appSocios && STAFF.includes(rol)) };
 
   return (
     <aside 
@@ -176,7 +181,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       )}
 
       <div className="flex-1 overflow-y-auto p-3 sidebar-scroll">
-        {menuParaRol(rol).map((item, idx) => (
+        {menuParaRol(rol, appSocios).map((item, idx) => (
           <SidebarItem 
             key={idx} 
             icon={item.icon} 

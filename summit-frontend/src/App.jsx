@@ -3,10 +3,13 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './pages/Login';
 import AvisoActualizacion from './components/AvisoActualizacion';
 import { sesionVigente, limpiarSesion } from './services/auth';
+import { useFunciones } from './services/funciones';
 import { usuarioActual } from './utils/formato';
 
-// Portal del socio (pensado para el celular): se descarga aparte, el personal no lo necesita
+// Portal del socio (pensado para el celular): se descarga aparte, el personal no lo necesita. Mientras la app del
+// socio está suspendida, el socio ve AppSuspendida
 const PortalSocio = lazy(() => import('./portal/PortalSocio'));
+const AppSuspendida = lazy(() => import('./cuenta/AppSuspendida'));
 
 // Contraseñas: elegir la propia al entrar con una temporal, "¿Olvidaste tu contraseña?" y el link del mail.
 // Las usan el socio y el personal (por eso están en cuenta/ y no en pages/)
@@ -27,6 +30,7 @@ const Inactividad = lazy(() => import('./pages/Inactividad'));
 const Caja = lazy(() => import('./pages/Caja'));
 const Planes = lazy(() => import('./pages/Planes'));
 const EstadoMembresias = lazy(() => import('./pages/EstadoMembresias'));
+const DescuentosReglas = lazy(() => import('./pages/DescuentosReglas'));
 const MetricasPlanes = lazy(() => import('./pages/MetricasPlanes'));
 const DebitosAutomaticos = lazy(() => import('./pages/DebitosAutomaticos'));
 const ConstructorRutinas = lazy(() => import('./pages/ConstructorRutinas'));
@@ -53,6 +57,7 @@ const DeLaCuenta = ({ children }) => (
 
 // Rutas protegidas: sin token, o con el token vencido, vuelve al login
 const ProtectedRoute = ({ children }) => {
+  const { appSocios } = useFunciones();
   if (!sesionVigente()) {
     const habiaSesion = !!localStorage.getItem('token');
     limpiarSesion();
@@ -62,8 +67,12 @@ const ProtectedRoute = ({ children }) => {
   if (usuarioActual()?.debeCambiarPassword) {
     return <Navigate to="/cambiar-password" replace />;
   }
-  // El socio usa su portal (pensado para el celular); el panel es para el personal
+  // El socio usa su portal (pensado para el celular); el panel es para el personal. Con la app del socio suspendida,
+  // una sesión de socio que quedó abierta ve el aviso
   if (usuarioActual()?.rol === 'SOCIO') {
+    if (!appSocios) {
+      return <DeLaCuenta><AppSuspendida /></DeLaCuenta>;
+    }
     return (
       <Suspense fallback={<div className="min-h-screen bg-slate-50" />}>
         <PortalSocio />
@@ -72,6 +81,9 @@ const ProtectedRoute = ({ children }) => {
   }
   return children;
 };
+
+// Pantallas que existen solo para la app del socio (chat, novedades): suspendida, vuelven al inicio
+const SoloConAppSocios = ({ children }) => (useFunciones().appSocios ? children : <Navigate to="/" replace />);
 
 // Inicio según el rol: el tablero de recepción no le sirve al profesor
 const Inicio = () => (usuarioActual()?.rol === 'PROFESOR'
@@ -101,8 +113,8 @@ function App() {
           <Route path="rutinas/constructor" element={<Diferida><ConstructorRutinas /></Diferida>} />
           <Route path="socios/metricas" element={<Diferida><MetricasGenerales /></Diferida>} />
           <Route path="socios/nuevo" element={<Diferida><NuevoSocio /></Diferida>} />
-          <Route path="socios/novedades" element={<Diferida><Novedades /></Diferida>} />
-          <Route path="socios/chat" element={<Diferida><Chat /></Diferida>} />
+          <Route path="socios/novedades" element={<SoloConAppSocios><Diferida><Novedades /></Diferida></SoloConAppSocios>} />
+          <Route path="socios/chat" element={<SoloConAppSocios><Diferida><Chat /></Diferida></SoloConAppSocios>} />
           <Route path="socios/tareas" element={<Diferida><TareasCRM /></Diferida>} />
           <Route path="socios/inactividad" element={<Diferida><Inactividad /></Diferida>} />
 
@@ -114,6 +126,7 @@ function App() {
           <Route path="membresias/metricas" element={<Diferida><MetricasPlanes /></Diferida>} />
           <Route path="membresias/estado" element={<Diferida><EstadoMembresias /></Diferida>} />
           <Route path="membresias/debitos" element={<Diferida><DebitosAutomaticos /></Diferida>} />
+          <Route path="membresias/reglas" element={<Diferida><DescuentosReglas /></Diferida>} />
 
           {/* Entrenamiento */}
           <Route path="entrenamiento/hoy" element={<Diferida><EntrenamientoHoy /></Diferida>} />

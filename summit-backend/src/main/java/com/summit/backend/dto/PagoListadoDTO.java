@@ -29,4 +29,11 @@ public class PagoListadoDTO {
     private String registradoPor;   // empleado que cobró (null en los débitos automáticos)
     private String verificadoPor;   // quién confirmó o rechazó un pago a verificar
     private LocalDateTime fechaVerificacion;
+
+    // Detalle (null en los cobros anteriores al detalle y en los débitos automáticos): monto = precioLista -
+    // descuentoMonto + matriculaMonto
+    private BigDecimal precioLista;
+    private String descuentoNombre;
+    private BigDecimal descuentoMonto;
+    private BigDecimal matriculaMonto; // null = no correspondía; 0 = bonificada
 }
