@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Users, CheckCircle, AlertTriangle, UserPlus,
+  Users, CheckCircle, AlertTriangle, UserPlus, FileSpreadsheet,
   Search, Filter, ChevronDown, Download, RefreshCw, Layers,
   Eye, Edit2, Activity, Wallet, Repeat
 } from 'lucide-react';
@@ -22,6 +22,7 @@ const FILTROS_ESTADO = [
 const Socios = () => {
   const navigate = useNavigate();
   const puedeEditar = ['ADMIN', 'RECEPCION'].includes(usuarioActual()?.rol);
+  const esAdmin = usuarioActual()?.rol === 'ADMIN';
   const [socios, setSocios] = useState([]);
   const [planes, setPlanes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -120,9 +121,17 @@ const Socios = () => {
           <p className="text-sm text-slate-500">Gestiona los socios de tu gimnasio</p>
         </div>
         {puedeEditar && (
-          <button onClick={() => navigate('/socios/nuevo')} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm whitespace-nowrap">
-            <UserPlus className="w-4 h-4" /> Nuevo Socio
-          </button>
+          <div className="flex flex-wrap justify-end gap-2">
+            {esAdmin && (
+              <button onClick={() => navigate('/socios/importar')} title="Importar socios desde una planilla de Excel o CSV"
+                className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm whitespace-nowrap">
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600" /> Importar
+              </button>
+            )}
+            <button onClick={() => navigate('/socios/nuevo')} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm whitespace-nowrap">
+              <UserPlus className="w-4 h-4" /> Nuevo Socio
+            </button>
+          </div>
         )}
       </div>
 

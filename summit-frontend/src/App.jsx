@@ -23,6 +23,7 @@ const Layout = lazy(() => import('./components/Layout'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Socios = lazy(() => import('./pages/Socios'));
 const NuevoSocio = lazy(() => import('./pages/NuevoSocio'));
+const ImportarSocios = lazy(() => import('./pages/ImportarSocios'));
 const MetricasGenerales = lazy(() => import('./pages/MetricasGenerales'));
 const Chat = lazy(() => import('./pages/Chat'));
 const TareasCRM = lazy(() => import('./pages/TareasCRM'));
@@ -112,6 +113,7 @@ function App() {
           <Route path="rutinas/constructor" element={<Diferida><ConstructorRutinas /></Diferida>} />
           <Route path="socios/metricas" element={<Diferida><MetricasGenerales /></Diferida>} />
           <Route path="socios/nuevo" element={<Diferida><NuevoSocio /></Diferida>} />
+          <Route path="socios/importar" element={<Diferida><ImportarSocios /></Diferida>} />
           <Route path="socios/novedades" element={<SoloConAppSocios><Diferida><Novedades /></Diferida></SoloConAppSocios>} />
           <Route path="socios/chat" element={<SoloConAppSocios><Diferida><Chat /></Diferida></SoloConAppSocios>} />
           <Route path="socios/tareas" element={<Diferida><TareasCRM /></Diferida>} />

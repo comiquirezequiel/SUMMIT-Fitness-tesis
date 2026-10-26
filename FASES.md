@@ -73,7 +73,10 @@ electrónica de ARCA (ex AFIP) va al final, después de explicar cómo hacerla.
    tocando el cuerpo, y la rutina se imprime, se descarga o se comparte por WhatsApp como un PDF A4 con los datos del
    gimnasio. La base de PDF, en `summit-frontend/src/components/pdf/`, queda para los comprobantes).
 8. Terminaciones: logo del gimnasio (Fase 11), importar socios desde Excel, los botones decorativos de arriba y
-   las limpiezas chicas (hecho el 26/10/2026, salvo importar desde Excel).
+   las limpiezas chicas (hecho el 26/10/2026). La importación (botón *Importar* de la lista de socios, solo admin) lee
+   un .xlsx o el CSV que guarda Excel, reconoce las columnas por su título, muestra una vista previa con lo que está
+   mal y después el resultado de cada fila; un DNI que ya estaba no se toca, y con Plan y Vence el socio queda con su
+   membresía hasta esa fecha.
 9. Dejarlo listo para el gimnasio: instalación, copias de seguridad cifradas (Fase 12) y tests automáticos
    (Fase 7).
 10. Factura electrónica de ARCA.

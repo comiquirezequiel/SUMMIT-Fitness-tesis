@@ -86,6 +86,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
 
                 // Socios y certificados: el PROFESOR solo consulta (lo necesita el constructor de rutinas)
+                // Importar socios desde una planilla: solo el admin
+                .requestMatchers(HttpMethod.POST, "/api/socios/importar").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/socios/**").hasAnyRole("ADMIN", "RECEPCION", "PROFESOR")
                 .requestMatchers("/api/socios/**").hasAnyRole("ADMIN", "RECEPCION")
 

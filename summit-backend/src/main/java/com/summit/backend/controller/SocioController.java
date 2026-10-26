@@ -1,8 +1,10 @@
 package com.summit.backend.controller;
 
+import com.summit.backend.dto.ImportacionSociosDTO;
 import com.summit.backend.dto.SocioRequestDTO;
 import com.summit.backend.dto.SocioResponseDTO;
 import com.summit.backend.dto.SocioUpdateRequestDTO;
+import com.summit.backend.service.ImportacionSociosService;
 import com.summit.backend.service.SocioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ import java.util.Map;
 public class SocioController {
 
     private final SocioService socioService;
+    private final ImportacionSociosService importacionSociosService;
 
     @GetMapping
     public ResponseEntity<List<SocioResponseDTO>> listarSocios() {
@@ -38,6 +41,15 @@ public class SocioController {
     public ResponseEntity<SocioResponseDTO> crearSocio(@Valid @RequestBody SocioRequestDTO request) {
         SocioResponseDTO nuevoSocio = socioService.crearSocio(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(nuevoSocio);
+    }
+
+    /**
+     * Importa socios desde una planilla (solo ADMIN: lo exige SecurityConfig). Devuelve el resultado de cada fila:
+     * CREADO, EXISTE (ese DNI ya estaba) o ERROR, con el motivo.
+     */
+    @PostMapping("/importar")
+    public ResponseEntity<List<ImportacionSociosDTO.Resultado>> importar(@RequestBody ImportacionSociosDTO.Pedido pedido) {
+        return ResponseEntity.ok(importacionSociosService.importar(pedido.filas()));
     }
 
     @PutMapping("/{id}")
