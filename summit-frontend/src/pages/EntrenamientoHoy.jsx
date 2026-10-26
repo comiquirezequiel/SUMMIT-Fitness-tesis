@@ -107,7 +107,7 @@ const EntrenamientoHoy = () => {
             <p className="text-xs text-slate-400 mt-0.5">Socios que registraron algo hoy{enSala.hora && ` · actualizado ${enSala.hora}`}</p>
           </div>
           <button onClick={cargarEnSala} title="Actualizar" aria-label="Actualizar quiénes entrenan hoy"
-            className="border border-slate-200 rounded-lg p-2 text-slate-500 hover:bg-slate-50">
+            className="border border-slate-200 rounded-lg p-2 tactil:w-11 tactil:h-11 flex items-center justify-center shrink-0 text-slate-500 hover:bg-slate-50">
             <RefreshCw className={`w-4 h-4 ${enSala.cargando ? 'animate-spin' : ''}`} />
           </button>
         </div>
@@ -176,7 +176,7 @@ const EntrenamientoHoy = () => {
                   <Vacio icono={ClipboardList} titulo={`${socio?.nombreCompleto || 'El socio'} no tiene una rutina activa`}>
                     {puedeCargar && (
                       <button onClick={() => navigate(`/rutinas/constructor?socio=${idSocio}`)}
-                        className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg">
+                        className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 tactil:min-h-11 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg">
                         <Plus className="w-4 h-4" /> Armarle una rutina
                       </button>
                     )}
@@ -207,7 +207,7 @@ const EntrenamientoHoy = () => {
                           <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Día de la rutina">
                             {Array.from({ length: rutina.totalDias }, (_, i) => i + 1).map((d) => (
                               <button key={d} role="tab" aria-selected={rutina.diaNumero === d} onClick={() => elegirDia(d)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${rutina.diaNumero === d
+                                className={`px-3 py-1.5 tactil:min-h-11 tactil:px-4 rounded-lg text-xs tactil:text-sm font-semibold border ${rutina.diaNumero === d
                                   ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>
                                 Día {d}{sugerido === d ? ' · hoy' : ''}
                               </button>
@@ -216,12 +216,12 @@ const EntrenamientoHoy = () => {
                         )}
                         <div className="flex gap-2">
                           <button onClick={() => navigate(`/entrenamiento/historial?socio=${idSocio}`)}
-                            className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1.5">
+                            className="px-3 py-1.5 tactil:min-h-11 tactil:px-4 text-xs tactil:text-sm font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1.5">
                             <History className="w-3.5 h-3.5" /> Historial
                           </button>
                           {puedeCargar && (
                             <button onClick={() => navigate(`/rutinas/constructor?rutina=${rutina.idRutina}`)}
-                              className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1.5">
+                              className="px-3 py-1.5 tactil:min-h-11 tactil:px-4 text-xs tactil:text-sm font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1.5">
                               <Pencil className="w-3.5 h-3.5" /> Editar rutina
                             </button>
                           )}

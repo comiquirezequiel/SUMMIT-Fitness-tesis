@@ -16,6 +16,8 @@
     min-height: 650px;
     box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.07), 0 1px 2px -1px rgb(0 0 0 / 0.07);
     border: 1px solid #e2e8f0;
+    /* El modelo se acomoda al lugar que tiene (la pantalla o una ventana), no al ancho de la pantalla: ver el final */
+    container: catalogo / inline-size;
 }
 
 .contenedor-catalogo {
@@ -330,10 +332,14 @@
 }
 
 .columna-lista.visible {
-    width: 420px;
-    min-width: 360px;
+    /* Con poco lugar (tablet acostada) el panel y el modelo se reparten mitad y mitad */
+    width: min(420px, 50%);
+    min-width: 0;
     opacity: 1;
     padding: 36px 30px;
+    /* Si el texto, los ejercicios y las regiones no entran, el panel se desplaza (antes quedaban cortados) */
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 /* ─────────────────────────────────────────────
@@ -370,8 +376,13 @@
     scrollbar-color: #cbd5e1 transparent;
 }
 
-.info-mecanica p,
-.info-mecanica div {
+/* Solo el texto del músculo y la instrucción: lo que se agrega al panel (contenidoExtra) usa sus propios estilos */
+.texto-mecanico,
+.texto-mecanico p,
+.texto-mecanico div,
+.instruccion-inicial,
+.instruccion-inicial p,
+.instruccion-inicial div {
     font-size: 0.95rem;
     line-height: 1.75;
     color: #475569;
@@ -450,7 +461,7 @@
         flex-direction: column;
     }
     .columna-visual.con-panel {
-        flex: auto;
+        flex: none;
         height: 50%;
     }
     .columna-lista.visible {
@@ -470,6 +481,55 @@
     .catalogo-humano-wrapper {
         min-height: auto;
         height: 80vh;
+    }
+}
+
+/* Lugar angosto (celular, tablet parada o una ventana chica): el modelo arriba y el panel abajo. Va por el ancho del
+   contenedor; la regla de arriba, por el de la pantalla, queda para los navegadores sin consultas de contenedor. */
+@container catalogo (max-width: 640px) {
+    .contenedor-catalogo {
+        flex-direction: column;
+    }
+    /* El panel se lleva un poco más de la mitad: ahí están los ejercicios. flex: none, porque con flex: auto el modelo
+       además crecía y el panel quedaba con un cuarto del alto */
+    .columna-visual.con-panel {
+        flex: none;
+        height: 44%;
+    }
+    .columna-lista.visible {
+        width: 100%;
+        flex: 1;
+        min-height: 0;
+        border-left: none;
+        border-top: 1px solid #e2e8f0;
+        padding: 16px 15px;
+    }
+    .panel-header {
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+    }
+    .panel-titulo {
+        font-size: 1.35rem;
+    }
+    .btn-volver {
+        top: 10px;
+        left: 10px;
+        padding: 6px 12px;
+        font-size: 0.75rem;
+    }
+}
+
+/* Celular y tablet: botones de 44 px o más para el dedo */
+@media (pointer: coarse) {
+    .btn-volver,
+    .leyenda-item {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+    .btn-volver {
+        font-size: 0.85rem;
+        padding: 0 16px;
     }
 }
 

@@ -64,7 +64,10 @@ electrónica de ARCA (ex AFIP) va al final, después de explicar cómo hacerla.
 5. Membresías flexibles: congelar una membresía, descuentos y matrícula de inscripción (hecho el 26/10/2026, ver
    abajo).
 6. Asistencia del personal (Fase 9, hecha el 26/10/2026).
-7. Rutinas desde tablet o celular, e impresas o en PDF bien diseñado.
+7. Rutinas desde tablet o celular, e impresas o en PDF bien diseñado (hecho el 26/10/2026: las pantallas del profesor
+   tienen botones y campos para el dedo en tablet y celular, el constructor busca ejercicios por palabra, por grupo o
+   tocando el cuerpo, y la rutina se imprime, se descarga o se comparte por WhatsApp como un PDF A4 con los datos del
+   gimnasio. La base de PDF, en `summit-frontend/src/components/pdf/`, queda para los comprobantes).
 8. Terminaciones: logo del gimnasio (Fase 11), importar socios desde Excel, los botones decorativos de arriba y
    las limpiezas chicas.
 9. Dejarlo listo para el gimnasio: instalación, copias de seguridad cifradas (Fase 12) y tests automáticos

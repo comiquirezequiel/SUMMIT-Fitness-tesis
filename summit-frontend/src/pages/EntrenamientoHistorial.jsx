@@ -137,18 +137,19 @@ const EntrenamientoHistorial = () => {
       </div>
 
       <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
-        <div className="flex flex-col md:flex-row md:items-center gap-3">
+        {/* En fila recién desde 1024 px: con el menú lateral, la tablet parada deja poco ancho para el buscador */}
+        <div className="flex flex-col lg:flex-row lg:items-center gap-3">
           <div className="flex-1 min-w-0">
             <BuscadorSocio socios={socios} cargando={cargandoSocios} error={errorSocios} seleccionado={socio} onSeleccionar={elegirSocio} />
           </div>
           {socio && (
             <div className="flex gap-2 shrink-0">
               <label className="sr-only" htmlFor="periodo">Período</label>
-              <select id="periodo" value={periodo} onChange={(e) => setPeriodo(Number(e.target.value))} className={`${inputClass} w-auto`}>
+              <select id="periodo" value={periodo} onChange={(e) => setPeriodo(Number(e.target.value))} className={`${inputClass} flex-1 lg:flex-none lg:w-auto min-w-0`}>
                 {PERIODOS.map((p) => <option key={p} value={p}>Últimos {p} días</option>)}
               </select>
               <button onClick={() => navigate(`/entrenamiento/hoy?socio=${socio.idSocio}`)}
-                className="px-3 py-2 text-sm font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1.5 whitespace-nowrap">
+                className="px-3 py-2 tactil:min-h-11 text-sm font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1.5 whitespace-nowrap">
                 <CalendarClock className="w-4 h-4" /> Rutina de hoy
               </button>
             </div>
@@ -183,8 +184,10 @@ const EntrenamientoHistorial = () => {
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-5 gap-6 items-start">
-            {/* Gráfico de progreso */}
-            <section className="xl:col-span-3 bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-sm space-y-4 min-w-0">
+            {/* Gráfico de progreso. GraficoProgreso lo comparte la app del socio: sus botones se agrandan acá, en el celular
+                y la tablet, sin cambiar el componente */}
+            <section className="xl:col-span-3 bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-sm space-y-4 min-w-0 tactil:[&_button]:min-h-11 tactil:[&_button]:px-3.5">
+
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <h2 className="font-bold text-slate-800 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-blue-600" /> Progreso por ejercicio</h2>
                 {ejercicios.datos.length > 0 && (
@@ -214,7 +217,7 @@ const EntrenamientoHistorial = () => {
               <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-4 border-b border-slate-100">
                 <h2 className="font-bold text-slate-800 flex items-center gap-2"><History className="w-5 h-5 text-blue-600" /> Sesiones</h2>
                 <button onClick={exportar} disabled={sesiones.datos.length === 0}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 flex items-center gap-1.5">
+                  className="px-3 py-1.5 tactil:min-h-11 tactil:px-4 text-xs tactil:text-sm font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 flex items-center gap-1.5">
                   <Download className="w-3.5 h-3.5" /> Exportar CSV
                 </button>
               </div>

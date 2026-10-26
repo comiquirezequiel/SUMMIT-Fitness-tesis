@@ -89,6 +89,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/socios/**").hasAnyRole("ADMIN", "RECEPCION", "PROFESOR")
                 .requestMatchers("/api/socios/**").hasAnyRole("ADMIN", "RECEPCION")
 
+                // Datos del gimnasio: también los lee el PROFESOR (van en el encabezado del PDF de las rutinas)
+                .requestMatchers(HttpMethod.GET, "/api/configuracion/gimnasio/**").hasAnyRole("ADMIN", "RECEPCION", "PROFESOR")
                 // Reglas de acceso del gimnasio: RECEPCION consulta, solo ADMIN modifica
                 .requestMatchers(HttpMethod.GET, "/api/configuracion/**").hasAnyRole("ADMIN", "RECEPCION")
                 .requestMatchers("/api/configuracion/**").hasRole("ADMIN")

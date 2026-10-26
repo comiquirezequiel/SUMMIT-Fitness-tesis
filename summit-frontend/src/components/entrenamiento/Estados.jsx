@@ -23,7 +23,7 @@ export const ErrorCaja = ({ mensaje, onReintentar }) => (
     <p className="text-sm font-medium">{mensaje}</p>
     {onReintentar && (
       <button onClick={onReintentar}
-        className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold bg-white border border-rose-200 rounded-lg hover:bg-rose-100">
+        className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 tactil:min-h-11 tactil:px-4 text-sm font-semibold bg-white border border-rose-200 rounded-lg hover:bg-rose-100">
         <RefreshCw className="w-3.5 h-3.5" /> Reintentar
       </button>
     )}
@@ -45,7 +45,8 @@ export const Aviso = ({ tipo = 'info', children, onCerrar, className = '' }) => 
       <Icono className="w-4 h-4 mt-0.5 shrink-0" />
       <div className="flex-1 min-w-0">{children}</div>
       {onCerrar && (
-        <button onClick={onCerrar} className="p-0.5 rounded hover:bg-black/5 shrink-0" aria-label="Cerrar aviso">
+        // En el celular y la tablet, 44 px para el dedo sin agrandar el aviso (los márgenes negativos lo compensan)
+        <button onClick={onCerrar} className="p-0.5 tactil:p-3.5 tactil:-m-3 rounded hover:bg-black/5 shrink-0" aria-label="Cerrar aviso">
           <X className="w-4 h-4" />
         </button>
       )}

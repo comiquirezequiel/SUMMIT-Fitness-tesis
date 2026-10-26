@@ -16,6 +16,11 @@ export default {
   ],
   theme: {
     extend: {
+      // tactil: celulares y tablets (el dedo es el puntero principal). Ahí los botones van de 44 px o más y los campos
+      // con letra de 16 px (con menos, el iPhone agranda la pantalla al escribir). En la PC no cambia nada.
+      screens: {
+        tactil: { raw: '(pointer: coarse)' },
+      },
       colors: {
         // MODO OSCURO del portal del socio (index.css, html.tema-portal): se invierten los grises, los tonos claros
         // que se usan de fondo y borde (50 a 200) y los oscuros que se usan como texto (700 a 900). Los tonos medios,

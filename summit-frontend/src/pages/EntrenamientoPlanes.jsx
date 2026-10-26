@@ -8,6 +8,8 @@ import Modal from '../components/Modal';
 import { botonPrimario, botonSecundario } from '../components/Campo';
 import DetalleRutina from '../components/entrenamiento/DetalleRutina';
 import { Cargando, ErrorCaja, Vacio, Aviso } from '../components/entrenamiento/Estados';
+import BotonesPdf from '../components/pdf/BotonesPdf';
+import { documentoRutina } from '../components/pdf/rutina';
 import {
   obtenerJson, enviarJson, puedeEditarEntrenamiento, haceCuanto, coincide,
 } from '../components/entrenamiento/comun';
@@ -99,6 +101,12 @@ const EntrenamientoPlanes = () => {
       f.rutina?.objetivo, f.rutina?.nombreProfesor);
   });
 
+  // PDF de la rutina abierta en "Ver" (se arma una vez por rutina cargada)
+  const documentoPdf = useMemo(
+    () => (detalle?.rutina ? documentoRutina(detalle.rutina, { objetivoSocio: detalle.fila.socio.objetivo }) : null),
+    [detalle?.rutina, detalle?.fila],
+  );
+
   const ver = async (fila) => {
     setDetalle({ fila, rutina: null, cargando: true, error: '' });
     try {
@@ -135,19 +143,21 @@ const EntrenamientoPlanes = () => {
       ]));
   };
 
-  const acciones = (fila) => {
+  // En las tarjetas (celular y tablet) los botones se reparten el ancho; en la tabla van a la derecha
+  const acciones = (fila, enTarjeta = false) => {
     const { socio, rutina } = fila;
-    const boton = 'px-2.5 py-1.5 text-xs font-semibold rounded-lg border flex items-center gap-1.5 transition-colors disabled:opacity-50';
+    // tactil: (tailwind.config.js) en el celular y la tablet, 44 px de alto y letra más grande
+    const boton = 'px-2.5 py-1.5 tactil:min-h-11 tactil:px-3.5 text-xs tactil:text-sm font-semibold rounded-lg border flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50';
     if (!rutina) {
       return puedeEditar ? (
         <button onClick={() => navigate(`/rutinas/constructor?socio=${socio.idSocio}`)}
-          className={`${boton} border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100`}>
+          className={`${boton} border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 ${enTarjeta ? 'w-full sm:w-auto' : ''}`}>
           <Plus className="w-3.5 h-3.5" /> Nueva rutina
         </button>
       ) : <span className="text-xs text-slate-400">—</span>;
     }
     return (
-      <div className="flex flex-wrap gap-1.5 md:justify-end">
+      <div className={enTarjeta ? 'grid grid-cols-2 gap-2' : 'flex flex-wrap gap-1.5 justify-end'}>
         <button onClick={() => ver(fila)} className={`${boton} border-slate-200 text-slate-600 hover:bg-slate-50`}>
           <Eye className="w-3.5 h-3.5" /> Ver
         </button>
@@ -215,28 +225,28 @@ const EntrenamientoPlanes = () => {
       </div>
 
       <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] space-y-3">
-        <div className="flex flex-col md:flex-row gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input type="text" value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar por socio, DNI, rutina o profesor..." aria-label="Buscar rutinas"
-              className="w-full pl-9 pr-4 py-2 border-0 bg-slate-50 hover:bg-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all" />
+              className="w-full pl-9 pr-4 py-2 tactil:min-h-11 border-0 bg-slate-50 hover:bg-slate-100 rounded-lg text-sm tactil:text-base focus:outline-none focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all" />
           </div>
           <div className="flex gap-2 shrink-0">
             <button onClick={exportar} disabled={visibles.length === 0}
-              className="border border-slate-200 rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50 bg-white">
+              className="flex-1 sm:flex-none justify-center border border-slate-200 rounded-lg px-3 py-2 tactil:min-h-11 text-sm font-semibold text-slate-700 flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50 bg-white">
               <Download className="w-4 h-4 text-slate-500" /> Exportar
             </button>
             <button onClick={cargar} title="Actualizar" aria-label="Actualizar"
-              className="border border-slate-200 rounded-lg p-2 text-slate-500 hover:bg-slate-50 bg-white">
+              className="border border-slate-200 rounded-lg p-2 tactil:w-11 tactil:h-11 flex items-center justify-center text-slate-500 hover:bg-slate-50 bg-white">
               <RefreshCw className={`w-4 h-4 ${cargando ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Filtrar socios">
+        <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar" role="tablist" aria-label="Filtrar socios">
           {filtros.map((f) => (
             <button key={f.valor} role="tab" aria-selected={filtro === f.valor} onClick={() => setFiltro(f.valor)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors ${filtro === f.valor
+              className={`px-3 py-1.5 tactil:min-h-11 tactil:px-4 rounded-full text-xs tactil:text-sm font-semibold whitespace-nowrap border transition-colors shrink-0 ${filtro === f.valor
                 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>
               {f.texto} ({conteo[f.valor]})
             </button>
@@ -255,31 +265,32 @@ const EntrenamientoPlanes = () => {
           </Vacio>
         ) : (
           <>
-            {/* Celular: tarjetas */}
-            <ul className="md:hidden divide-y divide-slate-100">
+            {/* Celular y tablet: tarjetas, de a dos cuando entran (con el menú lateral, una tablet acostada deja unos
+                720 px: la tabla no entra sin apretar todo) */}
+            <ul className="xl:hidden p-3 grid gap-3 grid-cols-[repeat(auto-fill,minmax(min(100%,19rem),1fr))]">
               {visibles.map((fila) => (
-                <li key={fila.socio.idSocio} className="p-4 space-y-2.5">
+                <li key={fila.socio.idSocio} className="p-4 rounded-xl border border-slate-200 flex flex-col gap-3">
                   <div className="flex justify-between gap-3">
                     <div className="min-w-0">
                       <p className="font-semibold text-slate-800 truncate">{fila.socio.nombreCompleto}</p>
                       <p className="text-xs text-slate-500">DNI {fila.socio.dni || '—'}</p>
                     </div>
-                    {!fila.rutina && <span className="text-[11px] font-bold px-2 py-0.5 h-fit rounded bg-slate-100 text-slate-500">SIN RUTINA</span>}
+                    {!fila.rutina && <span className="text-[11px] font-bold px-2 py-0.5 h-fit rounded bg-slate-100 text-slate-500 shrink-0">SIN RUTINA</span>}
                   </div>
                   {fila.rutina && (
-                    <div className="text-sm text-slate-600 space-y-1">
+                    <div className="text-sm text-slate-600 space-y-1 flex-1">
                       <p><span className="font-semibold text-slate-800">{fila.rutina.nombre}</span>{fila.rutina.objetivo ? ` · ${fila.rutina.objetivo}` : ''}</p>
                       <p className="text-xs">{fila.rutina.totalDias} {fila.rutina.totalDias === 1 ? 'día' : 'días'} · {fila.rutina.cantidadEjercicios} ejercicios · {fila.rutina.nombreProfesor || 'Sin profesor'} · desde {formatFecha(fila.rutina.fechaCreacion)}</p>
-                      <div className="text-xs flex gap-1">Último entrenamiento: {ultimoEntrenamiento(fila.rutina)}</div>
+                      <div className="text-xs flex flex-wrap gap-x-1">Último entrenamiento: {ultimoEntrenamiento(fila.rutina)}</div>
                     </div>
                   )}
-                  {acciones(fila)}
+                  {acciones(fila, true)}
                 </li>
               ))}
             </ul>
 
-            {/* Escritorio: tabla */}
-            <div className="hidden md:block overflow-x-auto">
+            {/* PC: tabla */}
+            <div className="hidden xl:block overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
                   <tr>
@@ -342,7 +353,12 @@ const EntrenamientoPlanes = () => {
         >
           {detalle.cargando ? <Cargando texto="Cargando rutina..." />
             : detalle.error ? <ErrorCaja mensaje={detalle.error} onReintentar={() => ver(detalle.fila)} />
-              : <DetalleRutina rutina={detalle.rutina} />}
+              : (
+                <div className="space-y-4">
+                  {documentoPdf && <BotonesPdf documento={documentoPdf} className="pb-4 border-b border-slate-100" />}
+                  <DetalleRutina rutina={detalle.rutina} />
+                </div>
+              )}
         </Modal>
       )}
     </div>
