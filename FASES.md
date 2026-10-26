@@ -63,7 +63,7 @@ electrónica de ARCA (ex AFIP) va al final, después de explicar cómo hacerla.
 4. Seguimiento de socios: inactividad con datos reales, tareas automáticas y contacto por WhatsApp (Fase 8).
 5. Membresías flexibles: congelar una membresía, descuentos y matrícula de inscripción (hecho el 26/10/2026, ver
    abajo).
-6. Asistencia del personal (Fase 9).
+6. Asistencia del personal (Fase 9, hecha el 26/10/2026).
 7. Rutinas desde tablet o celular, e impresas o en PDF bien diseñado.
 8. Terminaciones: logo del gimnasio (Fase 11), importar socios desde Excel, los botones decorativos de arriba y
    las limpiezas chicas.
@@ -123,12 +123,18 @@ Dos pantallas "Demo" de Socios (Inactividad y Tareas CRM) muestran datos de ejem
 - Contacto por WhatsApp con un enlace que abre el mensaje ya escrito (sin servicios pagos).
 - **Chat**: hecho en la A8 de la app (bandeja de recepción en el panel y pestaña Mensajes en la app).
 
-### Fase 9: asistencia del personal
+### Fase 9: asistencia del personal (hecha el 26/10/2026)
 
-"Asistencia Staff" es demo. El ingreso del personal por recepción ya queda registrado como presentismo;
-falta la salida.
-
-- Registrar la salida, calcular las horas trabajadas por día y por mes, y exportarlas a CSV.
+- El equipo (recepción, profesores y admin) marca la entrada y la salida pasando el DNI por el *Control de acceso* del
+  Dashboard, igual que los socios: si tiene un turno en curso, su paso es la salida; si no, una entrada. La ficha dice
+  "Entrada" o "Salida" con la hora y, en la salida, cuánto trabajó. Para los socios no cambia nada.
+- Casos raros: turno partido (dos turnos el mismo día), turnos que pasan la medianoche (cuentan en el día en que
+  empezaron) y salidas olvidadas (a las 16 horas el turno queda "sin salida" y no suma hasta que se corrige; nunca se
+  inventa una hora). Si el sistema toma un paso al revés, recepción lo corrige en el momento ("Es una entrada" / "Es una
+  salida"). El mismo DNI dos veces seguidas no registra nada.
+- *Ajustes > Asistencia del personal* (solo el admin): quién está trabajando ahora, los turnos sin salida y las horas de
+  cada persona por día, semana o mes, con filtro por persona y exportación a CSV (resumen y detalle por turno). Ahí se
+  cargan turnos olvidados, se corrigen horas y se anulan turnos: queda quién, cuándo, por qué y las horas de antes.
 
 ### Fase 10: caja completa
 

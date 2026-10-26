@@ -5,6 +5,7 @@ import CapturaFoto from './socios/CapturaFoto';
 import CobroRapido from './socios/CobroRapido';
 import { formatMoneda } from '../utils/formato';
 import { FaltasIngreso, AvisosIngreso, DatosFicha } from './FichaIngreso';
+import FichaPersonal from './asistencia/FichaPersonal';
 import { apiFetch } from '../services/api';
 import { subirFotoSocio } from '../services/fotos';
 import { terminarCongelamiento } from '../services/membresias';
@@ -20,6 +21,7 @@ const cuotaParaCobrar = (r) => r.rol === 'SOCIO' && !r.idCongelamiento
  * Control de acceso de recepción: el recepcionista escanea o escribe el DNI y ve la notificación
  * con el nombre del socio, las faltas que bloquean el ingreso, los avisos y los días que le quedan.
  * Si la cuota está vencida o por vencer, se la puede cobrar desde la misma ficha.
+ * Si el DNI es de alguien del equipo, su paso es su entrada o su salida (Asistencia del personal).
  */
 const ControlAcceso = ({ onIngreso }) => {
   const [dni, setDni] = useState('');
@@ -31,7 +33,28 @@ const ControlAcceso = ({ onIngreso }) => {
   const [cobrando, setCobrando] = useState(false);
   const [cobrado, setCobrado] = useState(null); // el cobro recién registrado desde la ficha
   const [sacandoFoto, setSacandoFoto] = useState(false);
+  const [invirtiendo, setInvirtiendo] = useState({ enviando: false, error: '' }); // "Es una entrada / una salida"
   const inputRef = useRef(null);
+
+  // Personal: el sistema tomó su paso al revés (por ejemplo, se había olvidado de marcar la salida). Queda registrado
+  const invertirFichada = async () => {
+    setInvirtiendo({ enviando: true, error: '' });
+    try {
+      const response = await apiFetch('/asistencia/molinete/invertir-fichada', {
+        method: 'POST',
+        body: JSON.stringify({ idTurno: resultado.idTurno, fichada: resultado.fichada }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'No se pudo corregir');
+      setResultado(data);
+      setInvirtiendo({ enviando: false, error: '' });
+      onIngreso?.();
+    } catch (err) {
+      setInvirtiendo({ enviando: false, error: err.message });
+    } finally {
+      inputRef.current?.focus();
+    }
+  };
 
   // Socio sin foto: se la saca ahí mismo, mientras está en recepción
   const guardarFoto = async (foto) => {
@@ -99,6 +122,7 @@ const ControlAcceso = ({ onIngreso }) => {
     setExcepcion(null);
     setTerminando(null);
     setCobrado(null);
+    setInvirtiendo({ enviando: false, error: '' });
     try {
       const response = await apiFetch('/asistencia/molinete/verificar', {
         method: 'POST',
@@ -133,7 +157,7 @@ const ControlAcceso = ({ onIngreso }) => {
           <h2 className="font-bold text-slate-800 flex items-center gap-2">
             <ScanLine className="w-5 h-5 text-blue-600" /> Control de acceso
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">Escaneá o escribí el DNI del socio y presioná Enter</p>
+          <p className="text-xs text-slate-500 mt-0.5">Escaneá o escribí el DNI y presioná Enter. El equipo marca así su entrada y su salida</p>
         </div>
         <form onSubmit={handleSubmit} className="flex gap-2 w-full md:w-auto">
           <input
@@ -143,7 +167,7 @@ const ControlAcceso = ({ onIngreso }) => {
             inputMode="numeric"
             value={dni}
             onChange={(e) => setDni(e.target.value)}
-            placeholder="DNI del socio"
+            placeholder="DNI"
             className="flex-1 md:w-64 text-lg font-bold tracking-widest px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-normal placeholder:tracking-normal"
             autoComplete="off"
             disabled={loading}
@@ -171,7 +195,11 @@ const ControlAcceso = ({ onIngreso }) => {
         </div>
       )}
 
-      {resultado && (
+      {resultado?.fichada && (
+        <FichaPersonal ficha={resultado} onInvertir={invertirFichada} invirtiendo={invirtiendo} />
+      )}
+
+      {resultado && !resultado.fichada && (
         <div className={`p-4 md:p-5 ${resultado.permitido ? 'bg-emerald-50/60' : 'bg-rose-50/60'}`}>
           <div className="flex items-start gap-4">
             {resultado.fotoVersion ? (

@@ -3,6 +3,7 @@ package com.summit.backend.dto;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,4 +52,13 @@ public class CheckInResponse {
     // Congelamiento que rige hoy (null si no tiene): si volvió antes, recepción lo termina desde la ficha
     private Long idCongelamiento;
     private LocalDate congeladaHasta;
+
+    // --- Personal del gimnasio: cada paso por recepción es su entrada o su salida (AsistenciaPersonalService) ---
+    private String fichada;             // "ENTRADA" o "SALIDA" (null en los socios)
+    private Long idTurno;               // el turno que abrió o cerró
+    private LocalDateTime entradaTurno; // en una salida: a qué hora había entrado
+    private Long minutosTrabajados;     // en una salida: cuánto duró el turno
+    private boolean fichadaRepetida;    // el mismo DNI otra vez enseguida: no se registró nada nuevo
+    // Recepción puede corregir en el momento un paso que el sistema tomó al revés ("Es una entrada" / "Es una salida")
+    private boolean inversionPosible;
 }

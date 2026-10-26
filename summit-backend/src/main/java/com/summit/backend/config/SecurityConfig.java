@@ -115,6 +115,8 @@ public class SecurityConfig {
                 // Débito automático desde recepción (el socio usa /api/portal/debito)
                 .requestMatchers("/api/debitos/**").hasAnyRole("ADMIN", "RECEPCION")
 
+                // Asistencia del personal (horas trabajadas y correcciones): solo ADMIN
+                .requestMatchers("/api/asistencia/personal/**").hasRole("ADMIN")
                 // Asistencia / Check-in y tablero de recepción: ADMIN y RECEPCION
                 .requestMatchers("/api/asistencia/**").hasAnyRole("ADMIN", "RECEPCION")
 
