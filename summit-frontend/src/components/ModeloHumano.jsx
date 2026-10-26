@@ -2,7 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MUSCULOS_DATA } from '../data/musculos';
 import './modelo-humano.css';
 
-const ModeloHumano = ({ onMuscleSelect }) => {
+/**
+ * Modelo del cuerpo: se toca una zona, después el músculo, y el panel muestra su función y ejercicios clave.
+ * - onMuscleSelect(id, titulo): al elegir un músculo (id de data/musculos.js, igual al svgTargetId del catálogo)
+ * - contenidoExtra(id): algo más para el panel del músculo elegido (por ejemplo, los ejercicios del catálogo);
+ *   extraAntes lo pone arriba del texto
+ * - estilo: para cambiar el alto (por ejemplo, adentro de una ventana)
+ */
+const ModeloHumano = ({ onMuscleSelect, contenidoExtra, extraAntes = false, estilo }) => {
   const [activeDetail, setActiveDetail] = useState(null); // 'vista-pecho', 'vista-brazos-frente', etc.
   const [activeSubMusculo, setActiveSubMusculo] = useState(null);
   const [currentTitle, setCurrentTitle] = useState('—');
@@ -12,6 +19,7 @@ const ModeloHumano = ({ onMuscleSelect }) => {
 
   const lastViewedTitleRef = useRef('');
   const badgeTimeoutRef = useRef(null);
+  const panelRef = useRef(null);
 
   const infoMecanicaData = MUSCULOS_DATA.musculos;
   const leyendasPorVista = MUSCULOS_DATA.leyendas;
@@ -61,6 +69,8 @@ const ModeloHumano = ({ onMuscleSelect }) => {
 
   const handleSubMusculoClick = (subId) => {
     setActiveSubMusculo(subId);
+    // El panel vuelve arriba para mostrar el músculo elegido (si se tocó desde las regiones, quedaba más abajo)
+    panelRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     const datos = infoMecanicaData[subId];
     if (datos) {
       setCurrentTitle(datos.titulo);
@@ -89,7 +99,7 @@ const ModeloHumano = ({ onMuscleSelect }) => {
   const currentLeyendaIds = activeDetail ? leyendasPorVista[activeDetail] || [] : [];
 
   return (
-    <div className="catalogo-humano-wrapper">
+    <div className="catalogo-humano-wrapper" style={estilo}>
       <div className="contenedor-catalogo">
         {/* Columna Visual */}
         <div className={`columna-visual ${activeDetail ? 'con-panel' : ''}`}>
@@ -477,7 +487,7 @@ const ModeloHumano = ({ onMuscleSelect }) => {
         </div>
 
         {/* Columna Lista (Panel de Información) */}
-        <div className={`columna-lista ${activeDetail ? 'visible' : ''}`}>
+        <div ref={panelRef} className={`columna-lista ${activeDetail ? 'visible' : ''}`}>
           <div className="panel-inner">
             <div className="panel-header">
               <div className="panel-subtitulo">Análisis Biomecánico</div>
@@ -491,10 +501,14 @@ const ModeloHumano = ({ onMuscleSelect }) => {
                   <p>Seleccioná una de las regiones coloreadas para ver su análisis biomecánico y ejercicios recomendados.</p>
                 </div>
               ) : (
-                <div
-                  className="texto-mecanico"
-                  dangerouslySetInnerHTML={{ __html: selectedMuscleData.mecanica }}
-                />
+                <>
+                  {extraAntes && contenidoExtra?.(activeSubMusculo)}
+                  <div
+                    className="texto-mecanico"
+                    dangerouslySetInnerHTML={{ __html: selectedMuscleData.mecanica }}
+                  />
+                  {!extraAntes && contenidoExtra?.(activeSubMusculo)}
+                </>
               )}
             </div>
 
@@ -507,9 +521,11 @@ const ModeloHumano = ({ onMuscleSelect }) => {
                   if (!datos) return null;
                   const isActivo = activeSubMusculo === id;
                   return (
-                    <div
+                    <button
+                      type="button"
                       key={id}
-                      className={`leyenda-item ${isActivo ? 'font-bold text-blue-700 bg-blue-50/80 border border-blue-100' : ''}`}
+                      aria-pressed={isActivo}
+                      className={`leyenda-item w-full text-left ${isActivo ? 'font-bold text-blue-700 bg-blue-50/80 border border-blue-100' : ''}`}
                       onClick={() => handleSubMusculoClick(id)}
                     >
                       <span
@@ -520,7 +536,7 @@ const ModeloHumano = ({ onMuscleSelect }) => {
                         }}
                       />
                       <span>{datos.titulo}</span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>

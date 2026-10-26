@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 /**
- * Datos del gimnasio (Ajustes > Datos del gimnasio). Permisos de SecurityConfig para /api/configuracion/**:
- * los ven ADMIN y RECEPCION; los cambia solo ADMIN. La app del socio los pide a /api/portal/gimnasio.
+ * Datos del gimnasio (Ajustes > Datos del gimnasio). Permisos de SecurityConfig: los ven ADMIN, RECEPCION y PROFESOR
+ * (para el encabezado del PDF de las rutinas); los cambia solo ADMIN. La app del socio los pide a /api/portal/gimnasio.
  */
 @RestController
 @RequestMapping("/api/configuracion/gimnasio")

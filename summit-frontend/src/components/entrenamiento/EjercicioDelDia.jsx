@@ -105,10 +105,10 @@ const EjercicioDelDia = ({ ejercicio: e, numero, puedeCargar, onCambio }) => {
           </p>
           {puedeCargar && (
             <div className="flex gap-2 shrink-0">
-              <button onClick={() => setEditando(true)} className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1">
+              <button onClick={() => setEditando(true)} className="px-2.5 py-1.5 tactil:min-h-11 tactil:px-4 text-xs tactil:text-sm font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1">
                 <Pencil className="w-3.5 h-3.5" /> Editar
               </button>
-              <button onClick={borrar} disabled={guardando} className="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 flex items-center gap-1 disabled:opacity-50">
+              <button onClick={borrar} disabled={guardando} className="px-2.5 py-1.5 tactil:min-h-11 tactil:px-4 text-xs tactil:text-sm font-semibold rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 flex items-center gap-1 disabled:opacity-50">
                 <Trash2 className="w-3.5 h-3.5" /> Borrar
               </button>
             </div>
@@ -139,10 +139,11 @@ const EjercicioDelDia = ({ ejercicio: e, numero, puedeCargar, onCambio }) => {
           </div>
           <div>
             <p className="text-[11px] font-semibold text-slate-500 uppercase mb-1">RPE <span className="normal-case font-normal">(1 muy fácil · 10 al máximo)</span></p>
-            <div className="flex flex-wrap gap-1" role="group" aria-label={`RPE de ${e.nombreEjercicio}`}>
+            {/* En el celular y la tablet, de a cinco por fila y de 44 px, para elegir con el dedo sin errarle */}
+            <div className="flex flex-wrap gap-1 tactil:grid tactil:grid-cols-5 tactil:gap-2 tactil:max-w-sm" role="group" aria-label={`RPE de ${e.nombreEjercicio}`}>
               {RPES.map((n) => (
                 <button key={n} type="button" onClick={() => setForm((f) => ({ ...f, rpe: n }))} aria-pressed={form.rpe === n}
-                  className={`w-8 h-8 rounded-lg text-sm font-bold border transition-colors ${form.rpe === n
+                  className={`w-8 h-8 tactil:w-auto tactil:h-11 rounded-lg text-sm tactil:text-base font-bold border transition-colors ${form.rpe === n
                     ? `${claseRpe(n)} ring-2 ring-offset-1 ring-blue-400` : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>
                   {n}
                 </button>
@@ -155,12 +156,12 @@ const EjercicioDelDia = ({ ejercicio: e, numero, puedeCargar, onCambio }) => {
             <div className="flex gap-2">
               {reg && (
                 <button type="button" onClick={() => { setEditando(false); setError(''); }}
-                  className="px-3 py-2 text-sm font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">
+                  className="px-3 py-2 tactil:min-h-11 tactil:px-4 text-sm font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">
                   Cancelar
                 </button>
               )}
               <button type="submit" disabled={guardando}
-                className="flex-1 sm:flex-none px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 rounded-lg flex items-center justify-center gap-1.5">
+                className="flex-1 sm:flex-none px-4 py-2 tactil:min-h-11 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 rounded-lg flex items-center justify-center gap-1.5">
                 {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 {reg ? 'Guardar cambios' : 'Registrar'}
               </button>

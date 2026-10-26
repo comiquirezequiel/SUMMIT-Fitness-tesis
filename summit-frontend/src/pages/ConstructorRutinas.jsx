@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  User, FileText, AlertTriangle, CheckCircle, Save, Plus, Trash2, ArrowUp, ArrowDown, Pencil, ArrowLeft,
+  User, FileText, AlertTriangle, CheckCircle, CheckCircle2, Save, Plus, Trash2, ArrowUp, ArrowDown, Pencil, ArrowLeft,
   ShieldAlert, Loader2, Dumbbell, CalendarPlus, Sparkles,
 } from 'lucide-react';
 import SugerenciasEjercicios from '../components/ia/SugerenciasEjercicios';
@@ -12,7 +12,10 @@ import DetalleRutina from '../components/entrenamiento/DetalleRutina';
 import ParametrosEjercicio, {
   PARAMETROS_INICIALES, parametrosDe, validarParametros,
 } from '../components/entrenamiento/ParametrosEjercicio';
+import SelectorEjercicio from '../components/entrenamiento/SelectorEjercicio';
 import { Cargando, ErrorCaja, Aviso, Vacio } from '../components/entrenamiento/Estados';
+import BotonesPdf from '../components/pdf/BotonesPdf';
+import { documentoRutina } from '../components/pdf/rutina';
 import {
   useSocios, obtenerJson, enviarJson, cargarCatalogo, cargarPatologias, riesgosLocales, puedeEditarEntrenamiento,
   nombreGrupo, formatKg, formatDescanso, seriesPorReps, DIAS_MAXIMOS,
@@ -24,8 +27,10 @@ const nuevaClave = () => `borrador-${++ultimaClave}`;
 const diaDe = (item) => item.diaNumero || 1;
 const mayorDia = (items) => items.reduce((m, i) => Math.max(m, diaDe(i)), 0);
 const CAMPOS_PARAMETROS = ['series', 'repeticiones', 'pesoSugeridoKg', 'descansoSegundos', 'observaciones'];
-const botonIcono = 'p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent flex items-center justify-center';
-const tarjeta = 'bg-white rounded-2xl p-5 border border-slate-200 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]';
+// tactil: (tailwind.config.js) en el celular y la tablet los botones van de 44 px o más
+const botonIcono = 'w-10 h-10 tactil:w-11 tactil:h-11 shrink-0 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent flex items-center justify-center';
+const botonChico = 'px-3 py-1.5 tactil:min-h-11 tactil:px-4 text-xs tactil:text-sm font-semibold';
+const tarjeta = 'bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]';
 
 /**
  * Constructor de rutinas por días, con el cruce preventivo de patologías (RF-09).
@@ -60,6 +65,8 @@ const Constructor = () => {
   const [alta, setAlta] = useState({ idEjercicio: '', ...PARAMETROS_INICIALES });
   const [validacion, setValidacion] = useState({ idEjercicio: '', cargando: false, riesgos: [] });
   const [errorAlta, setErrorAlta] = useState('');
+  // Confirmación al lado del formulario: en el celular, el aviso de arriba queda fuera de la vista
+  const [ultimoAgregado, setUltimoAgregado] = useState(null);
   const [editando, setEditando] = useState(null);
   const [ocupado, setOcupado] = useState(false);
   const [creando, setCreando] = useState(false);
@@ -150,21 +157,24 @@ const Constructor = () => {
   const delDia = items.filter((i) => diaDe(i) === dia);
   const diasVacios = Array.from({ length: totalDias }, (_, i) => i + 1).filter((d) => !items.some((i) => diaDe(i) === d));
   const catalogoPorId = useMemo(() => new Map(catalogo.datos.map((e) => [e.idEjercicio, e])), [catalogo.datos]);
-  const gruposCatalogo = useMemo(() => {
-    const grupos = new Map();
-    for (const e of catalogo.datos) {
-      const g = e.grupoMuscular || 'OTRO';
-      if (!grupos.has(g)) grupos.set(g, []);
-      grupos.get(g).push(e);
-    }
-    return [...grupos.entries()].sort((a, b) => nombreGrupo(a[0]).localeCompare(nombreGrupo(b[0]), 'es'));
-  }, [catalogo.datos]);
   const riesgosDe = (idEjercicio) => riesgosLocales(ficha.patologias, catalogoPorId.get(idEjercicio)?.patologiasContraindicadas);
+  // Marca de cada ejercicio en el buscador: ⚠ regla firme (bloquea y pide confirmación) o ✦ solo lo sugiere la IA
+  // (informativo). Si tiene las dos, se muestra ⚠ porque es la que manda.
+  const marcaDe = (e) => {
+    const riesgos = riesgosDe(e.idEjercicio);
+    if (riesgos.length > 0) return { tipo: 'riesgo', texto: `Contraindicado: ${riesgos.join(', ')}` };
+    return sugerenciasIa.has(e.idEjercicio) ? { tipo: 'ia', texto: 'La IA sugiere evitarlo' } : null;
+  };
   const riesgosAlta = validacion.idEjercicio === alta.idEjercicio ? validacion.riesgos : [];
   const validando = Boolean(alta.idEjercicio) && (validacion.cargando || validacion.idEjercicio !== alta.idEjercicio);
   const datosCambiaron = modoEdicion && rutina.datos
     && (nombre.trim() !== rutina.datos.nombre || (objetivo.trim() || null) !== (rutina.datos.objetivo || null));
   const socioInactivo = !modoEdicion && socio && socio.estado && socio.estado !== 'ACTIVO';
+  // PDF de la rutina guardada: se vuelve a armar cada vez que cambia (cada cambio la relee del backend)
+  const documentoPdf = useMemo(
+    () => (rutina.datos ? documentoRutina(rutina.datos, { objetivoSocio: socio?.objetivo }) : null),
+    [rutina.datos, socio?.objetivo],
+  );
 
   // ---- Acciones ----
 
@@ -191,13 +201,18 @@ const Constructor = () => {
     setDiaActivo(1);
     setAviso(null);
     setErrorAlta('');
+    setUltimoAgregado(null);
     setParams(s ? { socio: String(s.idSocio) } : {});
   };
 
   const cambiarAlta = (campo, valor) => {
     setErrorAlta('');
+    if (campo === 'idEjercicio') setUltimoAgregado(null);
     setAlta((a) => ({ ...a, [campo]: valor }));
   };
+
+  // Después de agregar: series, repeticiones y descanso quedan para el próximo (suelen repetirse); carga y notas no
+  const limpiarAlta = () => setAlta((a) => ({ ...a, idEjercicio: '', pesoSugeridoKg: '', observaciones: '' }));
 
   const agregar = async (forzar) => {
     setErrorAlta('');
@@ -207,12 +222,14 @@ const Constructor = () => {
     if (error) { setErrorAlta(error); return; }
     if (riesgosAlta.length > 0 && !forzar) return; // se confirma con "Agregar igual"
 
+    const agregado = { nombre: ejercicio.nombre, detalle: `${seriesPorReps(datos.series, datos.repeticiones)} · ${formatKg(datos.pesoSugeridoKg)}`, dia };
     if (!modoEdicion) {
       setBorrador((b) => [...b, {
         clave: nuevaClave(), idEjercicio: ejercicio.idEjercicio, nombreEjercicio: ejercicio.nombre,
         grupoMuscular: ejercicio.grupoMuscular, diaNumero: dia, ...datos, forzar, riesgos: riesgosAlta,
       }]);
-      setAlta({ idEjercicio: '', ...PARAMETROS_INICIALES });
+      limpiarAlta();
+      setUltimoAgregado(agregado);
       return;
     }
 
@@ -225,9 +242,10 @@ const Constructor = () => {
       setErrorAlta(r.data?.error || 'No se pudo agregar el ejercicio.');
       return;
     }
-    setAlta({ idEjercicio: '', ...PARAMETROS_INICIALES });
+    limpiarAlta();
     await recargarRutina();
     setOcupado(false);
+    setUltimoAgregado(agregado);
     setAviso({ tipo: 'exito', texto: `${ejercicio.nombre} agregado al Día ${dia}${forzar ? ' (riesgo asumido)' : ''}.` });
   };
 
@@ -370,25 +388,37 @@ const Constructor = () => {
     const reemplazo = rutinaVigente ? ` "${rutinaVigente.nombre}" quedó inactiva.` : '';
     const nuevoAviso = rechazados.length > 0
       ? { tipo: 'error', texto: `Rutina creada, pero no se pudieron agregar: ${rechazados.join(' | ')}.${reemplazo}` }
-      : { tipo: 'exito', texto: `Rutina "${nombre.trim()}" creada para ${socio.nombreCompleto} con ${ordenados.length} ejercicios.${reemplazo} Desde acá podés seguir ajustándola: los cambios se guardan al momento.` };
+      : { tipo: 'exito', texto: `Rutina "${nombre.trim()}" creada para ${socio.nombreCompleto} con ${ordenados.length} ejercicios.${reemplazo} Ya podés imprimirla o mandársela en PDF, y seguir ajustándola desde acá: los cambios se guardan al momento.` };
     navigate(`/rutinas/constructor?rutina=${idNueva}`, { replace: true, state: { aviso: nuevoAviso } });
   };
 
   // ---- Vista ----
 
   const encabezado = (
-    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800 mb-1">{modoEdicion ? 'Editar rutina' : 'Constructor de rutinas'}</h1>
-        <p className="text-sm text-slate-500">
-          {modoEdicion
-            ? 'Cada cambio se guarda al momento: agregá, mové o quitá ejercicios de cada día.'
-            : 'Armá la rutina por días. El cruce con la ficha médica avisa si un ejercicio está contraindicado.'}
-        </p>
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-slate-800 mb-1">{modoEdicion ? 'Editar rutina' : 'Constructor de rutinas'}</h1>
+          <p className="text-sm text-slate-500">
+            {modoEdicion
+              ? 'Cada cambio se guarda al momento: agregá, mové o quitá ejercicios de cada día.'
+              : 'Armá la rutina por días. El cruce con la ficha médica avisa si un ejercicio está contraindicado.'}
+          </p>
+        </div>
+        <button onClick={() => navigate('/entrenamiento/rutinas')} className={`${botonSecundario} whitespace-nowrap bg-white shrink-0`}>
+          <ArrowLeft className="w-4 h-4" /> Ver todas las rutinas
+        </button>
       </div>
-      <button onClick={() => navigate('/entrenamiento/rutinas')} className={`${botonSecundario} whitespace-nowrap bg-white`}>
-        <ArrowLeft className="w-4 h-4" /> Ver todas las rutinas
-      </button>
+      {/* La rutina guardada se imprime o se le manda al socio en PDF (en el celular, por WhatsApp con Compartir) */}
+      {documentoPdf && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-3 sm:p-4 flex flex-col lg:flex-row lg:items-center gap-3 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
+          <div className="flex items-center gap-2 lg:flex-1 min-w-0">
+            <FileText className="w-5 h-5 text-blue-600 shrink-0" />
+            <p className="text-sm text-slate-600"><b className="text-slate-800">Rutina en PDF</b> para imprimir o mandarle al socio</p>
+          </div>
+          <BotonesPdf documento={documentoPdf} className="lg:shrink-0" />
+        </div>
+      )}
     </div>
   );
 
@@ -421,40 +451,46 @@ const Constructor = () => {
           </span>
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <p className="font-bold text-slate-800">{item.nombreEjercicio}</p>
+              <p className="font-bold text-slate-800 leading-snug">{item.nombreEjercicio}</p>
               {riesgos.length > 0 && (
                 <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" /> {item.forzar ? 'Riesgo asumido' : 'Contraindicado'}: {riesgos.join(', ')}
                 </span>
               )}
             </div>
-            <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">{nombreGrupo(item.grupoMuscular)}</p>
+            <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wide">{nombreGrupo(item.grupoMuscular)}</p>
             <p className="text-sm text-slate-600 mt-1">
               <b className="text-slate-800">{seriesPorReps(item.series, item.repeticiones)}</b> · {formatKg(item.pesoSugeridoKg)}
               {descanso && ` · ${descanso} de descanso`}
             </p>
             {item.observaciones && <p className="text-xs text-slate-500 italic mt-0.5">{item.observaciones}</p>}
           </div>
-          {!soloLectura && (
-            <div className="grid grid-cols-2 sm:flex gap-1 shrink-0">
-              <button onClick={() => mover(item, -1)} disabled={indice === 0 || ocupado} className={botonIcono} aria-label={`Subir ${item.nombreEjercicio}`} title="Subir">
-                <ArrowUp className="w-4 h-4" />
-              </button>
-              <button onClick={() => mover(item, 1)} disabled={indice === delDia.length - 1 || ocupado} className={botonIcono} aria-label={`Bajar ${item.nombreEjercicio}`} title="Bajar">
-                <ArrowDown className="w-4 h-4" />
-              </button>
-              <button onClick={() => abrirEdicion(item)} disabled={ocupado} className={botonIcono} aria-label={`Editar ${item.nombreEjercicio}`} title="Editar o mover de día">
-                <Pencil className="w-4 h-4" />
-              </button>
-              <button onClick={() => quitar(item)} disabled={ocupado} className={`${botonIcono} hover:!text-rose-600 hover:!bg-rose-50`} aria-label={`Quitar ${item.nombreEjercicio}`} title="Quitar">
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          )}
+          {/* Desde la tablet, los botones al costado (de a dos hasta que hay lugar para los cuatro en fila) */}
+          {!soloLectura && <div className="hidden sm:grid grid-cols-2 lg:flex gap-1.5 shrink-0">{accionesFila(item, indice)}</div>}
         </div>
+        {/* En el celular, abajo y separados, para no tocar uno por otro */}
+        {!soloLectura && <div className="sm:hidden flex items-center gap-2 mt-3 pt-3 border-t border-slate-100">{accionesFila(item, indice, true)}</div>}
       </li>
     );
   };
+
+  const accionesFila = (item, indice, conTexto = false) => (
+    <>
+      <button onClick={() => mover(item, -1)} disabled={indice === 0 || ocupado} className={botonIcono} aria-label={`Subir ${item.nombreEjercicio}`} title="Subir">
+        <ArrowUp className="w-4 h-4" />
+      </button>
+      <button onClick={() => mover(item, 1)} disabled={indice === delDia.length - 1 || ocupado} className={botonIcono} aria-label={`Bajar ${item.nombreEjercicio}`} title="Bajar">
+        <ArrowDown className="w-4 h-4" />
+      </button>
+      <button onClick={() => abrirEdicion(item)} disabled={ocupado} aria-label={`Editar ${item.nombreEjercicio}`} title="Editar o mover de día"
+        className={conTexto ? `${botonIcono} !w-auto px-4 gap-2 ml-auto text-sm font-semibold text-slate-700` : botonIcono}>
+        <Pencil className="w-4 h-4" />{conTexto && 'Editar'}
+      </button>
+      <button onClick={() => quitar(item)} disabled={ocupado} className={`${botonIcono} hover:!text-rose-600 hover:!bg-rose-50`} aria-label={`Quitar ${item.nombreEjercicio}`} title="Quitar">
+        <Trash2 className="w-4 h-4" />
+      </button>
+    </>
+  );
 
   const opcionesDia = Array.from({ length: Math.min(DIAS_MAXIMOS, totalDias + 1) }, (_, i) => i + 1);
 
@@ -467,9 +503,11 @@ const Constructor = () => {
         rutina.cargando ? <Cargando texto="Cargando rutina..." />
           : <ErrorCaja mensaje={rutina.error || 'No se encontró la rutina.'} onReintentar={cargarInicial} />
       ) : (
-        <div className="flex flex-col lg:flex-row gap-6 items-start">
+        // Dos columnas recién desde 1280 px: con el menú lateral, una tablet acostada deja unos 720 px y la rutina
+        // quedaría angosta. Hasta ahí, socio y ficha van arriba, de a dos tarjetas cuando entran.
+        <div className="flex flex-col xl:flex-row gap-4 sm:gap-6 items-start">
           {/* Socio, ficha médica y rutina vigente */}
-          <aside className="w-full lg:w-80 xl:w-96 shrink-0 space-y-4">
+          <aside className="w-full xl:w-80 2xl:w-96 shrink-0 grid gap-4 items-start grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] xl:grid-cols-1">
             <div className={tarjeta}>
               <h2 className="text-base font-bold text-slate-800 mb-3 flex items-center gap-2"><User className="w-5 h-5 text-blue-600" /> Socio</h2>
               {!modoEdicion && idSocio && !socio && cargandoSocios ? <Cargando texto="Cargando socio..." /> : (
@@ -525,7 +563,7 @@ const Constructor = () => {
                 <p><b>{socio.nombreCompleto}</b> ya tiene la rutina activa <b>“{rutinaVigente.nombre}”</b> ({rutinaVigente.totalDias} {rutinaVigente.totalDias === 1 ? 'día' : 'días'} · {rutinaVigente.ejercicios.length} ejercicios, desde el {formatFecha(rutinaVigente.fechaCreacion)}).</p>
                 <p className="mt-1">Si creás una nueva, esa pasa a <b>inactiva</b> y queda en el historial.</p>
                 <button onClick={() => navigate(`/rutinas/constructor?rutina=${rutinaVigente.idRutina}`)}
-                  className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white border border-amber-300 rounded-lg hover:bg-amber-100">
+                  className={`mt-2 inline-flex items-center gap-1.5 ${botonChico} bg-white border border-amber-300 rounded-lg hover:bg-amber-100`}>
                   <Pencil className="w-3.5 h-3.5" /> Editar la rutina actual
                 </button>
               </Aviso>
@@ -534,7 +572,7 @@ const Constructor = () => {
               <Aviso tipo="alerta">
                 <p>Esta rutina está <b>inactiva</b> (fue reemplazada o desactivada): se conserva como historial y no se puede modificar.</p>
                 <button onClick={() => navigate(`/rutinas/constructor?socio=${rutina.datos.idSocio}`)}
-                  className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white border border-amber-300 rounded-lg hover:bg-amber-100">
+                  className={`mt-2 inline-flex items-center gap-1.5 ${botonChico} bg-white border border-amber-300 rounded-lg hover:bg-amber-100`}>
                   <Plus className="w-3.5 h-3.5" /> Armar una nueva
                 </button>
               </Aviso>
@@ -543,8 +581,8 @@ const Constructor = () => {
 
           {/* Rutina por días */}
           <section className={`flex-1 min-w-0 w-full bg-white rounded-2xl border border-slate-200 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] ${socio ? '' : 'opacity-60'}`}>
-            <div className="p-5 border-b border-slate-100 bg-slate-50/50 rounded-t-2xl">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-4 sm:p-5 border-b border-slate-100 bg-slate-50/50 rounded-t-2xl">
+              <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))]">
                 <Campo label="Nombre de la rutina" required>
                   <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={100}
                     placeholder="Ej.: Fuerza 3 días" disabled={!socio || soloLectura || ocupado} className={inputClass} />
@@ -561,22 +599,22 @@ const Constructor = () => {
                     <span className={rutina.datos.activa ? 'text-emerald-700 font-semibold' : 'text-slate-500 font-semibold'}>{rutina.datos.activa ? 'Activa' : 'Inactiva'}</span>
                   </p>
                   {datosCambiaron && !soloLectura && (
-                    <div className="flex gap-2">
-                      <button onClick={() => { setNombre(rutina.datos.nombre); setObjetivo(rutina.datos.objetivo || ''); }} disabled={ocupado} className={botonSecundario}>Descartar</button>
-                      <button onClick={guardarDatos} disabled={ocupado} className={botonPrimario}><Save className="w-4 h-4" /> Guardar nombre y objetivo</button>
+                    <div className="flex flex-wrap gap-2">
+                      <button onClick={() => { setNombre(rutina.datos.nombre); setObjetivo(rutina.datos.objetivo || ''); }} disabled={ocupado} className={`${botonSecundario} flex-1 sm:flex-none`}>Descartar</button>
+                      <button onClick={guardarDatos} disabled={ocupado} className={`${botonPrimario} flex-1 sm:flex-none`}><Save className="w-4 h-4" /> Guardar nombre y objetivo</button>
                     </div>
                   )}
                 </div>
               )}
             </div>
 
-            {/* Pestañas de días */}
-            <div className="px-5 pt-4 flex items-center gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Días de la rutina">
+            {/* Pestañas de días: en pantallas chicas se deslizan de costado */}
+            <div className="px-4 sm:px-5 pt-4 flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar" role="tablist" aria-label="Días de la rutina">
               {Array.from({ length: totalDias }, (_, i) => i + 1).map((d) => {
                 const cantidad = items.filter((i) => diaDe(i) === d).length;
                 return (
                   <button key={d} role="tab" aria-selected={d === dia} onClick={() => setDiaActivo(d)}
-                    className={`px-3.5 py-2 rounded-lg text-sm font-semibold whitespace-nowrap border transition-colors flex items-center gap-2 ${d === dia
+                    className={`px-3.5 py-2 tactil:min-h-11 tactil:px-4 rounded-lg text-sm font-semibold whitespace-nowrap border transition-colors flex items-center gap-2 shrink-0 ${d === dia
                       ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>
                     Día {d}
                     <span className={`text-[11px] px-1.5 rounded-full ${d === dia ? 'bg-white/20' : 'bg-slate-100 text-slate-500'}`}>{cantidad}</span>
@@ -585,20 +623,26 @@ const Constructor = () => {
               })}
               {!soloLectura && totalDias < DIAS_MAXIMOS && (
                 <button onClick={agregarDia} disabled={!socio || ocupado}
-                  className="px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50 flex items-center gap-1.5 disabled:opacity-50">
+                  className="px-3 py-2 tactil:min-h-11 tactil:px-4 rounded-lg text-sm font-semibold whitespace-nowrap border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50 flex items-center gap-1.5 shrink-0 disabled:opacity-50">
                   <CalendarPlus className="w-4 h-4" /> Agregar día
-                </button>
-              )}
-              {!soloLectura && totalDias > 1 && (
-                <button onClick={quitarDia} disabled={ocupado}
-                  className="ml-auto px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap text-rose-600 hover:bg-rose-50 flex items-center gap-1.5 disabled:opacity-50">
-                  <Trash2 className="w-4 h-4" /> Quitar Día {dia}
                 </button>
               )}
             </div>
 
             {/* Ejercicios del día */}
-            <div className="p-5 space-y-3">
+            <div className="p-4 sm:p-5 space-y-3">
+              {/* Quitar el día va acá, a la vista, y no al final de las pestañas (en el celular quedaría fuera de la pantalla) */}
+              <div className="flex items-center justify-between gap-3 min-h-11">
+                <h3 className="font-bold text-slate-800">
+                  Día {dia} <span className="font-medium text-slate-500 text-sm">· {delDia.length} {delDia.length === 1 ? 'ejercicio' : 'ejercicios'}</span>
+                </h3>
+                {!soloLectura && totalDias > 1 && (
+                  <button onClick={quitarDia} disabled={ocupado}
+                    className="px-3 py-2 tactil:min-h-11 rounded-lg text-sm font-semibold whitespace-nowrap text-rose-600 hover:bg-rose-50 flex items-center gap-1.5 disabled:opacity-50">
+                    <Trash2 className="w-4 h-4" /> Quitar este día
+                  </button>
+                )}
+              </div>
               {delDia.length === 0 ? (
                 <Vacio icono={Dumbbell} titulo={`El Día ${dia} no tiene ejercicios`}>
                   {!soloLectura && (socio ? 'Agregalos con el formulario de abajo.' : 'Primero elegí el socio.')}
@@ -615,27 +659,20 @@ const Constructor = () => {
 
             {/* Agregar ejercicio */}
             {!soloLectura && (
-              <div className="mx-5 mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+              <div className="mx-3 sm:mx-5 mb-4 sm:mb-5 p-3 sm:p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                 <h3 className="text-sm font-bold text-slate-700">Agregar ejercicio al Día {dia}</h3>
+                {ultimoAgregado && !alta.idEjercicio && (
+                  <p className="text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 flex items-start gap-2" role="status">
+                    <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+                    <span><b>{ultimoAgregado.nombre}</b> ({ultimoAgregado.detalle}) agregado al Día {ultimoAgregado.dia}. Elegí el siguiente.</span>
+                  </p>
+                )}
                 {catalogo.error ? <ErrorCaja mensaje={catalogo.error} /> : (
                   <>
                     <Campo label="Ejercicio" required>
-                      <select value={alta.idEjercicio} onChange={(e) => cambiarAlta('idEjercicio', e.target.value)}
-                        disabled={!socio || catalogo.cargando || ocupado || socioInactivo} className={inputClass}>
-                        <option value="">{catalogo.cargando ? 'Cargando catálogo...' : 'Elegí un ejercicio del catálogo...'}</option>
-                        {gruposCatalogo.map(([grupo, ejercicios]) => (
-                          <optgroup key={grupo} label={nombreGrupo(grupo)}>
-                            {ejercicios.map((e) => (
-                              <option key={e.idEjercicio} value={e.idEjercicio}>
-                                {/* ⚠ = regla firme (bloquea y pide confirmación); ✦ = solo lo sugiere la IA (informativo).
-                                    Si un ejercicio tiene las dos marcas, se muestra ⚠ porque es la que manda. */}
-                                {e.nombre}{riesgosDe(e.idEjercicio).length > 0 ? ' ⚠ contraindicado'
-                                  : sugerenciasIa.has(e.idEjercicio) ? ' ✦ la IA sugiere evitarlo' : ''}
-                              </option>
-                            ))}
-                          </optgroup>
-                        ))}
-                      </select>
+                      <SelectorEjercicio catalogo={catalogo.datos} cargando={catalogo.cargando} elegido={alta.idEjercicio}
+                        onElegir={(id) => cambiarAlta('idEjercicio', id)} marca={marcaDe}
+                        deshabilitado={!socio || ocupado || socioInactivo} />
                     </Campo>
                     <ParametrosEjercicio valores={alta} onChange={cambiarAlta} deshabilitado={!socio || ocupado || socioInactivo} />
 
@@ -666,11 +703,11 @@ const Constructor = () => {
 
                     <div className="flex flex-col sm:flex-row justify-end gap-2">
                       {riesgosAlta.length > 0 && (
-                        <button onClick={() => cambiarAlta('idEjercicio', '')} disabled={ocupado} className={botonSecundario}>Elegir otro</button>
+                        <button onClick={() => cambiarAlta('idEjercicio', '')} disabled={ocupado} className={`${botonSecundario} bg-white`}>Elegir otro</button>
                       )}
                       {riesgosAlta.length > 0 ? (
                         <button onClick={() => agregar(true)} disabled={ocupado}
-                          className="px-4 py-2.5 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 rounded-lg flex items-center justify-center gap-2">
+                          className="px-4 py-2.5 tactil:min-h-11 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 rounded-lg flex items-center justify-center gap-2">
                           <ShieldAlert className="w-4 h-4" /> Agregar igual
                         </button>
                       ) : (
@@ -686,7 +723,7 @@ const Constructor = () => {
             )}
 
             {/* Pie */}
-            <div className="px-5 py-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="px-4 sm:px-5 py-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <p className="text-sm text-slate-500">
                 {totalDias} {totalDias === 1 ? 'día' : 'días'} · {items.length} {items.length === 1 ? 'ejercicio' : 'ejercicios'}
                 {ocupado && <span className="inline-flex items-center gap-1 ml-2 text-blue-600"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando...</span>}
@@ -709,7 +746,7 @@ const Constructor = () => {
           titulo={`Editar: ${editando.item.nombreEjercicio}`}
           subtitulo={`${nombreGrupo(editando.item.grupoMuscular)} · Día ${diaDe(editando.item)}`}
           onClose={() => { if (!editando.guardando) setEditando(null); }}
-          ancho="max-w-xl"
+          ancho="max-w-2xl"
           pie={(
             <>
               <button onClick={() => setEditando(null)} disabled={editando.guardando} className={botonSecundario}>Cancelar</button>

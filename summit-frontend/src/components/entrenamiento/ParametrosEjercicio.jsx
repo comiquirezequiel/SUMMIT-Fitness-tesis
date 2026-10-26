@@ -1,5 +1,7 @@
 import React from 'react';
 import Campo, { inputClass } from '../Campo';
+import Contador from './Contador';
+import { formatDescanso } from './comun';
 
 export const PARAMETROS_INICIALES = { series: '4', repeticiones: '10', pesoSugeridoKg: '', descansoSegundos: '90', observaciones: '' };
 
@@ -43,32 +45,32 @@ export const validarParametros = (p) => {
 };
 
 /**
- * Campos de series, repeticiones, peso sugerido, descanso y observaciones.
+ * Series, repeticiones, carga, descanso y notas. Los números van con botones − y + para cargarlos con el dedo.
+ * Las columnas se acomodan al ancho disponible (2 en el celular, 4 en la tablet acostada y en la PC).
  */
 const ParametrosEjercicio = ({ valores, onChange, deshabilitado }) => {
-  const cambiar = (campo) => (e) => onChange(campo, e.target.value);
+  const descanso = String(valores.descansoSegundos).trim() === '' ? null : formatDescanso(Number(valores.descansoSegundos));
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(8rem,1fr))]">
         <Campo label="Series" required>
-          <input type="number" inputMode="numeric" min="1" max="20" value={valores.series} onChange={cambiar('series')}
-            disabled={deshabilitado} className={inputClass} />
+          <Contador etiqueta="series" valor={valores.series} onChange={(v) => onChange('series', v)} min={1} max={20} deshabilitado={deshabilitado} />
         </Campo>
         <Campo label="Repeticiones" required>
-          <input type="number" inputMode="numeric" min="1" max="100" value={valores.repeticiones} onChange={cambiar('repeticiones')}
-            disabled={deshabilitado} className={inputClass} />
+          <Contador etiqueta="repeticiones" valor={valores.repeticiones} onChange={(v) => onChange('repeticiones', v)} min={1} max={100}
+            deshabilitado={deshabilitado} />
         </Campo>
-        <Campo label="Peso sug. (kg)">
-          <input type="number" inputMode="decimal" min="0" max="500" step="0.5" value={valores.pesoSugeridoKg}
-            onChange={cambiar('pesoSugeridoKg')} placeholder="Corporal" disabled={deshabilitado} className={inputClass} />
+        <Campo label="Carga (kg)" ayuda={String(valores.pesoSugeridoKg).trim() === '' ? 'Vacía: peso corporal' : null}>
+          <Contador etiqueta="carga en kilos" valor={valores.pesoSugeridoKg} onChange={(v) => onChange('pesoSugeridoKg', v)} paso={2.5} min={0} max={500}
+            vacioPermitido decimales placeholder="Corporal" deshabilitado={deshabilitado} />
         </Campo>
-        <Campo label="Descanso (seg)">
-          <input type="number" inputMode="numeric" min="0" max="600" step="15" value={valores.descansoSegundos}
-            onChange={cambiar('descansoSegundos')} disabled={deshabilitado} className={inputClass} />
+        <Campo label="Descanso (seg)" ayuda={descanso && Number(valores.descansoSegundos) >= 60 ? descanso : null}>
+          <Contador etiqueta="segundos de descanso" valor={valores.descansoSegundos} onChange={(v) => onChange('descansoSegundos', v)} paso={15} min={0}
+            max={600} vacioPermitido placeholder="—" deshabilitado={deshabilitado} />
         </Campo>
       </div>
-      <Campo label="Observaciones">
-        <input type="text" maxLength={300} value={valores.observaciones} onChange={cambiar('observaciones')}
+      <Campo label="Notas para el socio">
+        <input type="text" maxLength={300} value={valores.observaciones} onChange={(e) => onChange('observaciones', e.target.value)}
           placeholder="Ej.: bajar lento, rango corto, usar banco" disabled={deshabilitado} className={inputClass} />
       </Campo>
     </div>

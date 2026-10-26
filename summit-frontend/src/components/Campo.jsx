@@ -1,13 +1,14 @@
 import React from 'react';
 
+// tactil: (tailwind.config.js) en el celular y la tablet, letra de 16 px en los campos y botones de 44 px de alto
 export const inputClass =
-  "w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-shadow placeholder:text-slate-300 disabled:bg-slate-50";
+  "w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm tactil:text-base text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-shadow placeholder:text-slate-300 disabled:bg-slate-50";
 
 export const botonPrimario =
-  "px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 rounded-lg transition-colors flex items-center justify-center gap-2";
+  "px-4 py-2.5 tactil:min-h-11 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 rounded-lg transition-colors flex items-center justify-center gap-2";
 
 export const botonSecundario =
-  "px-4 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors flex items-center justify-center gap-2";
+  "px-4 py-2.5 tactil:min-h-11 text-sm font-semibold text-slate-600 border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors flex items-center justify-center gap-2";
 
 /**
  * Etiqueta + control de formulario + ayuda o error.

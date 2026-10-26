@@ -11,6 +11,7 @@
     "generar-iconos": "pwa-assets-generator"
   },
   "dependencies": {
+    "@react-pdf/renderer": "4.9.0",
     "barcode-detector": "3.2.2",
     "clsx": "^2.1.1",
     "lucide-react": "^0.441.0",

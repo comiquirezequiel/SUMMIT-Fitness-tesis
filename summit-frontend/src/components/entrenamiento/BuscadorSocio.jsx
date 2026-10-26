@@ -35,7 +35,7 @@ const BuscadorSocio = ({ socios, cargando, error, seleccionado, onSeleccionar, d
         </div>
         {permitirCambiar && (
           <button onClick={() => { onSeleccionar(null); setTexto(''); }}
-            className="text-sm font-semibold text-blue-700 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg shrink-0">
+            className="text-sm font-semibold text-blue-700 hover:bg-blue-100 px-2.5 py-1.5 tactil:px-3 tactil:min-h-11 rounded-lg shrink-0">
             Cambiar
           </button>
         )}
@@ -62,23 +62,26 @@ const BuscadorSocio = ({ socios, cargando, error, seleccionado, onSeleccionar, d
 
   return (
     <div className="relative" ref={cajaRef}>
-      <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-      <input
-        type="text"
-        value={texto}
-        onChange={(e) => { setTexto(e.target.value); setAbierto(true); setActivo(0); }}
-        onFocus={() => setAbierto(true)}
-        onKeyDown={teclas}
-        placeholder={placeholder}
-        aria-label="Buscar socio"
-        className="w-full pl-9 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 focus:bg-white"
-      />
-      {cargando && <Loader2 className="w-4 h-4 text-slate-400 absolute right-3 top-3 animate-spin" />}
-      {!cargando && texto && (
-        <button onClick={() => setTexto('')} className="absolute right-2.5 top-2.5 p-0.5 text-slate-400 hover:text-slate-600" aria-label="Borrar búsqueda">
-          <X className="w-4 h-4" />
-        </button>
-      )}
+      {/* En el celular y la tablet: letra de 16 px (si no, el iPhone agranda la pantalla) y 44 px para el dedo */}
+      <div className="relative">
+        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <input
+          type="text"
+          value={texto}
+          onChange={(e) => { setTexto(e.target.value); setAbierto(true); setActivo(0); }}
+          onFocus={() => setAbierto(true)}
+          onKeyDown={teclas}
+          placeholder={placeholder}
+          aria-label="Buscar socio"
+          className="w-full pl-9 pr-10 py-2.5 tactil:min-h-11 bg-slate-50 border border-slate-200 rounded-xl text-sm tactil:text-base focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 focus:bg-white"
+        />
+        {cargando && <Loader2 className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 animate-spin" />}
+        {!cargando && texto && (
+          <button onClick={() => setTexto('')} className="absolute right-0 top-0 h-full w-10 tactil:w-11 flex items-center justify-center text-slate-400 hover:text-slate-600" aria-label="Borrar búsqueda">
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
       {abierto && (
         <div className="absolute z-30 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
           {error ? (
