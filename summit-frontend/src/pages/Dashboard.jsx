@@ -8,6 +8,7 @@ import StatCard from '../components/StatCard';
 import ControlAcceso from '../components/ControlAcceso';
 import { FaltasIngreso, AvisosIngreso, DatosFicha } from '../components/FichaIngreso';
 import FotoSocio from '../components/socios/FotoSocio';
+import CobroRapido from '../components/socios/CobroRapido';
 import { apiFetch } from '../services/api';
 import { formatHora, usuarioActual } from '../utils/formato';
 
@@ -159,6 +160,7 @@ const Dashboard = () => {
   const [resumen, setResumen] = useState(null);
   const [ingresos, setIngresos] = useState([]);
   const [busqueda, setBusqueda] = useState('');
+  const [cobroRapido, setCobroRapido] = useState(false);
   const [error, setError] = useState('');
   const [ahora, setAhora] = useState(() => Date.now());
   const [ocultosHasta, setOcultosHasta] = useState(0); // "Ocultar" en los ingresos con la app: hasta qué idLog
@@ -244,6 +246,9 @@ const Dashboard = () => {
       </div>
 
       <ControlAcceso onIngreso={cargarDatos} />
+      {cobroRapido && (
+        <CobroRapido onClose={() => setCobroRapido(false)} onCobrado={() => { setCobroRapido(false); cargarDatos(); }} />
+      )}
 
       {recientesConApp.length > 0 && (
         <IngresosConApp ingresos={recientesConApp} ahora={ahora} onOcultar={() => setOcultosHasta(recientesConApp[0].idLog)} />
@@ -264,7 +269,7 @@ const Dashboard = () => {
         <h2 className="text-sm font-semibold text-slate-700 mb-3">Acciones rápidas</h2>
         <div className="flex flex-wrap gap-4">
           <QuickAction icon={UserPlus} text="Nuevo socio" onClick={() => navigate('/socios/nuevo')} />
-          <QuickAction icon={DollarSign} text="Registrar pago" onClick={() => navigate('/socios')} />
+          <QuickAction icon={DollarSign} text="Cobrar cuota" onClick={() => setCobroRapido(true)} />
           <QuickAction icon={CalendarCheck} text="Registrar ingreso" onClick={enfocarControlAcceso} />
         </div>
       </div>

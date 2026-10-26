@@ -1,15 +1,25 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ScanLine, ShieldCheck, XCircle, UserX, DoorOpen, Camera, Snowflake } from 'lucide-react';
+import { ScanLine, ShieldCheck, XCircle, UserX, DoorOpen, Camera, Snowflake, Wallet, CheckCircle2 } from 'lucide-react';
 import FotoSocio from './socios/FotoSocio';
 import CapturaFoto from './socios/CapturaFoto';
+import CobroRapido from './socios/CobroRapido';
+import { formatMoneda } from '../utils/formato';
 import { FaltasIngreso, AvisosIngreso, DatosFicha } from './FichaIngreso';
 import { apiFetch } from '../services/api';
 import { subirFotoSocio } from '../services/fotos';
 import { terminarCongelamiento } from '../services/membresias';
 
+// Días antes del vencimiento en que la ficha ya ofrece cobrar la cuota
+const DIAS_PARA_OFRECER_COBRO = 7;
+
+// Socio sin membresía, con la cuota vencida (aunque esté en los días de gracia) o por vencer: se le puede cobrar ahí
+const cuotaParaCobrar = (r) => r.rol === 'SOCIO' && !r.idCongelamiento
+  && (!r.vencimientoCuota || r.resultado === 'DENEGADO_CUOTA_VENCIDA' || r.diasParaVencerCuota <= DIAS_PARA_OFRECER_COBRO);
+
 /**
  * Control de acceso de recepción: el recepcionista escanea o escribe el DNI y ve la notificación
  * con el nombre del socio, las faltas que bloquean el ingreso, los avisos y los días que le quedan.
+ * Si la cuota está vencida o por vencer, se la puede cobrar desde la misma ficha.
  */
 const ControlAcceso = ({ onIngreso }) => {
   const [dni, setDni] = useState('');
@@ -18,6 +28,8 @@ const ControlAcceso = ({ onIngreso }) => {
   const [error, setError] = useState('');
   const [excepcion, setExcepcion] = useState(null); // { motivo, enviando, error } mientras se autoriza una excepción
   const [terminando, setTerminando] = useState(null); // { enviando, error } mientras se termina un congelamiento
+  const [cobrando, setCobrando] = useState(false);
+  const [cobrado, setCobrado] = useState(null); // el cobro recién registrado desde la ficha
   const [sacandoFoto, setSacandoFoto] = useState(false);
   const inputRef = useRef(null);
 
@@ -63,6 +75,14 @@ const ControlAcceso = ({ onIngreso }) => {
     }
   };
 
+  // Cobró desde la ficha: si no lo dejaba pasar, se verifica de nuevo (con la cuota al día, ahora puede entrar)
+  const alCobrar = async (pago) => {
+    setCobrando(false);
+    if (!resultado.permitido) await verificar(resultado.dni);
+    setCobrado(pago);
+    onIngreso?.();
+  };
+
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
@@ -78,6 +98,7 @@ const ControlAcceso = ({ onIngreso }) => {
     setError('');
     setExcepcion(null);
     setTerminando(null);
+    setCobrado(null);
     try {
       const response = await apiFetch('/asistencia/molinete/verificar', {
         method: 'POST',
@@ -193,6 +214,22 @@ const ControlAcceso = ({ onIngreso }) => {
           )}
 
           <FaltasIngreso faltas={resultado.faltas} />
+
+          {cobrado && (
+            <p className="mt-3 flex items-start gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg px-3 py-2 text-sm font-semibold">
+              <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" /> Cobro de {formatMoneda(cobrado.monto)} registrado ({cobrado.plan}).
+            </p>
+          )}
+
+          {!cobrado && cuotaParaCobrar(resultado) && (
+            <button type="button" onClick={() => setCobrando(true)}
+              className="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-colors">
+              <Wallet className="w-4 h-4" /> {resultado.vencimientoCuota ? 'Cobrar la cuota' : 'Cobrar un plan'}
+            </button>
+          )}
+          {cobrando && (
+            <CobroRapido idSocio={resultado.idUsuario} onClose={() => setCobrando(false)} onCobrado={alCobrar} />
+          )}
 
           {!resultado.permitido && resultado.idCongelamiento && (
             <div className="mt-3 rounded-xl border border-cyan-200 bg-white p-3 space-y-2">
