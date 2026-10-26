@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -21,6 +22,7 @@ public class PagoListadoDTO {
     private Long idSocio;
     private String nombreSocio;
     private String dniSocio;
+    private String telefonoSocio;   // para mandarle el comprobante por WhatsApp
     private String plan;
     private BigDecimal monto;
     private String metodoPago;
@@ -36,4 +38,5 @@ public class PagoListadoDTO {
     private String descuentoNombre;
     private BigDecimal descuentoMonto;
     private BigDecimal matriculaMonto; // null = no correspondía; 0 = bonificada
+    private LocalDate venceMembresia;  // hasta cuándo quedó paga la membresía con este cobro (null si no la extendió)
 }

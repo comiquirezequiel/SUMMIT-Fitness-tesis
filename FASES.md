@@ -58,8 +58,10 @@ que poder usarlos desde una tablet o un celular; por ahora no se venden producto
 electrónica de ARCA (ex AFIP) va al final, después de explicar cómo hacerla.
 
 1. Suspender la app del socio (hecho el 25/10/2026).
-2. Cobro rápido desde el tablero y desde el control de acceso (hecho el 26/10/2026), y comprobante de pago imprimible
-   o en PDF.
+2. Cobro rápido desde el tablero y desde el control de acceso, y comprobante de pago imprimible o en PDF (hecho el
+   26/10/2026: después de cobrar se muestra el comprobante A5 con los datos del gimnasio, el detalle, el total y
+   hasta cuándo quedó paga la membresía; se imprime, se descarga, se comparte o se le avisa al socio por WhatsApp, y
+   desde la caja se vuelve a abrir el de cualquier cobro. Dice que no es una factura).
 3. Caja completa: gastos y cierre de caja diario por medio de pago (Fase 10, sin productos; hecho el 26/10/2026).
 4. Seguimiento de socios: inactividad con datos reales, tareas automáticas y contacto por WhatsApp (Fase 8).
 5. Membresías flexibles: congelar una membresía, descuentos y matrícula de inscripción (hecho el 26/10/2026, ver
@@ -153,12 +155,12 @@ Dos pantallas "Demo" de Socios (Inactividad y Tareas CRM) muestran datos de ejem
 - Venta de productos en recepción (agua, suplementos) con un stock simple: el 25/10/2026 se decidió no hacerla por
   ahora.
 
-### Fase 11: datos del gimnasio (hecha en la A5 de la app, salvo el logo y los comprobantes)
+### Fase 11: datos del gimnasio (hecha en la A5 de la app, salvo el logo)
 
 "Ajustes > General" ofrecía formatos de fecha, moneda y zona horaria de varios países, pero el sistema es para
 Argentina. El 20/10/2026 se reemplazó por *Ajustes > Datos del gimnasio* (nombre, dirección, contacto, horarios,
-capacidad y reglamento), que ya usa la app del socio. Quedan el logo (todavía no está decidido) y usar estos
-datos en los comprobantes.
+capacidad y reglamento), que ya usa la app del socio. Desde el 26/10/2026 también van en el encabezado de los PDF
+(rutinas y comprobantes de pago). Queda el logo.
 
 ### Fase 12: puesta en producción
 

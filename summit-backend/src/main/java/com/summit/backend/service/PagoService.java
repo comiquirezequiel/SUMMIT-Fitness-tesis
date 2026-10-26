@@ -132,12 +132,10 @@ public class PagoService {
                 .matriculaMonto(!detalle.isMatriculaCorresponde() ? null
                         : detalle.isMatriculaBonificada() ? BigDecimal.ZERO : detalle.getMatriculaMonto())
                 .build();
-        PagoHistorial pagoGuardado = pagoHistorialRepository.save(pago);
-
-        if (pagoGuardado.getEstadoPago() == EstadoPago.APROBADO) {
-            suscripcionService.extenderOcrearSuscripcion(usuario, plan);
+        if (pago.getEstadoPago() == EstadoPago.APROBADO) {
+            pago.setVenceMembresia(suscripcionService.extenderOcrearSuscripcion(usuario, plan).getFechaVencimiento());
         }
-        return aDto(pagoGuardado);
+        return aDto(pagoHistorialRepository.save(pago));
     }
 
     /**
@@ -156,7 +154,8 @@ public class PagoService {
         pago.setVerificadoPor(usuarioPorEmail(emailVerificador));
         pago.setFechaVerificacion(LocalDateTime.now());
         if (aprobado) {
-            suscripcionService.extenderOcrearSuscripcion(pago.getUsuario(), pago.getPlan());
+            pago.setVenceMembresia(suscripcionService.extenderOcrearSuscripcion(pago.getUsuario(), pago.getPlan())
+                    .getFechaVencimiento());
         }
         return aDto(pagoHistorialRepository.save(pago));
     }
@@ -181,8 +180,8 @@ public class PagoService {
                 .estadoPago(EstadoPago.APROBADO)
                 .mpPaymentId(mpPaymentId)
                 .fechaPago(fechaCobro)
+                .venceMembresia(suscripcionService.extenderOcrearSuscripcion(usuario, plan).getFechaVencimiento())
                 .build());
-        suscripcionService.extenderOcrearSuscripcion(usuario, plan);
         return true;
     }
 
@@ -239,6 +238,7 @@ public class PagoService {
                 .idSocio(p.getUsuario().getIdUsuario())
                 .nombreSocio(p.getUsuario().getNombreCompleto())
                 .dniSocio(p.getUsuario().getDni())
+                .telefonoSocio(p.getUsuario().getTelefono())
                 .plan(p.getPlan().getNombrePlan())
                 .monto(p.getMontoAbonado())
                 .metodoPago(p.getMetodoPago().name())
@@ -251,6 +251,7 @@ public class PagoService {
                 .descuentoNombre(p.getDescuentoNombre())
                 .descuentoMonto(p.getDescuentoMonto())
                 .matriculaMonto(p.getMatriculaMonto())
+                .venceMembresia(p.getVenceMembresia())
                 .build();
     }
 

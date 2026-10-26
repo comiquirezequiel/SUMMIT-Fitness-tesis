@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Wallet, TrendingUp, TrendingDown, CalendarDays, Calendar, Search, Plus, Download, RefreshCw, Hourglass, Check, X, Lock, Receipt } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, CalendarDays, Calendar, Search, Plus, Download, RefreshCw, Hourglass, Check, X, Lock, Receipt, FileText } from 'lucide-react';
+import Modal from '../components/Modal';
 import CobroRapido from '../components/socios/CobroRapido';
+import ComprobantePago from '../components/socios/ComprobantePago';
 import GastoModal from '../components/caja/GastoModal';
 import CierreCajaModal from '../components/caja/CierreCajaModal';
 import TablaGastos from '../components/caja/TablaGastos';
@@ -52,6 +54,7 @@ const Caja = () => {
   const esAdmin = usuarioActual()?.rol === 'ADMIN';
   const [pestana, setPestana] = useState('cobros');
   const [modal, setModal] = useState(null); // 'cobro' | 'gasto' | 'cierre'
+  const [comprobante, setComprobante] = useState(null); // el cobro cuyo comprobante se está mirando
   const [turno, setTurno] = useState(null);
   const [version, setVersion] = useState(0); // cambiarla recarga las tablas de gastos y cierres
   const [resumen, setResumen] = useState(null);
@@ -302,6 +305,12 @@ const Caja = () => {
                         {p.estado === 'APROBADO' && <span className="font-bold text-emerald-600">+{formatMoneda(p.monto)}</span>}
                         {p.estado === 'PENDIENTE' && <span className="font-bold text-amber-600">{formatMoneda(p.monto)}</span>}
                         {p.estado === 'RECHAZADO' && <span className="font-medium text-slate-400 line-through">{formatMoneda(p.monto)}</span>}
+                        {p.estado !== 'RECHAZADO' && (
+                          <button onClick={() => setComprobante(p)}
+                            className="flex items-center gap-1 ml-auto mt-1 text-[11px] font-semibold text-slate-500 hover:text-blue-600">
+                            <FileText className="w-3 h-3" /> Comprobante
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -318,6 +327,12 @@ const Caja = () => {
         {pestana === 'cierres' && <TablaCierres version={version} />}
       </div>
 
+      {comprobante && (
+        <Modal titulo="Comprobante de pago" subtitulo={`${comprobante.nombreSocio} · ${formatFecha(comprobante.fechaPago)}`}
+          onClose={() => setComprobante(null)}>
+          <ComprobantePago pago={comprobante} />
+        </Modal>
+      )}
       {modal === 'cobro' && (
         <CobroRapido onClose={() => setModal(null)}
           onCobrado={(pago, socio) => { setModal(null); setAviso(`Cobro de ${formatMoneda(pago.monto)} a ${socio.nombreCompleto} registrado.`); cargar(); }} />

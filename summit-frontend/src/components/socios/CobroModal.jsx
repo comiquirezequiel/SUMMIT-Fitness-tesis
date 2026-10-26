@@ -3,6 +3,7 @@ import { Wallet } from 'lucide-react';
 import Modal from '../Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../Campo';
 import DetalleCobro from './DetalleCobro';
+import ComprobantePago from './ComprobantePago';
 import { formatMoneda } from '../../utils/formato';
 import { METODOS_PAGO, METODOS_VERIFICABLES } from '../../utils/constantes';
 import { listarDescuentos, registrarCobro, textoValorDescuento, usePresupuesto } from '../../services/membresias';
@@ -15,6 +16,7 @@ const ESPECIAL = 'ESPECIAL';
  * confirmar. El descuento puede ser uno del catálogo (se propone el habitual del socio) o uno especial con motivo.
  * Una transferencia o un QR que todavía no se ve acreditado puede quedar "a verificar": no extiende
  * la membresía hasta que el admin lo confirme.
+ * Después de cobrar muestra el comprobante (PDF y WhatsApp); onGuardado(pago) se llama al cerrarlo.
  */
 const CobroModal = ({ socio, planes, onClose, onGuardado }) => {
   const [datos, setDatos] = useState({
@@ -25,6 +27,7 @@ const CobroModal = ({ socio, planes, onClose, onGuardado }) => {
   const verificable = METODOS_VERIFICABLES.includes(datos.metodoPago);
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState('');
+  const [registrado, setRegistrado] = useState(null); // el cobro ya registrado: se muestra su comprobante
 
   const planesActivos = planes.filter(p => p.activo);
   const cambiar = (campo, valor) => setDatos(prev => ({ ...prev, [campo]: valor }));
@@ -67,7 +70,7 @@ const CobroModal = ({ socio, planes, onClose, onGuardado }) => {
         aVerificar: datos.aVerificar,
         totalMostrado: presupuesto.total,
       });
-      onGuardado(pago);
+      setRegistrado(pago);
     } catch (err) {
       setError(err.message);
       if (err.status === 409) recalcular(); // cambió un precio: se muestra el total nuevo
@@ -75,6 +78,15 @@ const CobroModal = ({ socio, planes, onClose, onGuardado }) => {
       setProcesando(false);
     }
   };
+
+  if (registrado) {
+    return (
+      <Modal titulo="Cobro registrado" subtitulo="Imprimí el comprobante o mandáselo al socio" onClose={() => onGuardado(registrado)}
+        pie={<button type="button" onClick={() => onGuardado(registrado)} className={botonPrimario}>Listo</button>}>
+        <ComprobantePago pago={registrado} />
+      </Modal>
+    );
+  }
 
   return (
     <Modal

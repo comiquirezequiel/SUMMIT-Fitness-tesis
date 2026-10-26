@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -85,6 +86,11 @@ public class PagoHistorial {
     // null = no correspondía matrícula; 0 = correspondía y se bonificó; más de 0 = se cobró
     @Column(name = "matricula_monto", precision = 10, scale = 2)
     private BigDecimal matriculaMonto;
+
+    // Hasta cuándo quedó paga la membresía con este cobro (para el comprobante). null mientras está a verificar, en los
+    // rechazados y en los cobros anteriores a este dato
+    @Column(name = "vence_membresia")
+    private LocalDate venceMembresia;
 
     @PrePersist
     public void prePersist() {
