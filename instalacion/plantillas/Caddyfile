@@ -1,0 +1,75 @@
+# Caddyfile de SUMMIT (servicio SUMMIT-Web)
+#
+# Caddy hace dos cosas: muestra la app compilada (carpeta web) y le pasa al backend todo lo que empieza con /api. Así
+# la app y la API quedan en una sola dirección, igual que con "npm run dev" en desarrollo (vite.config.js).
+# Después de cambiar este archivo, reiniciá el servicio SUMMIT-Web (services.msc > SUMMIT-Web > Reiniciar).
+#
+# Los {$NOMBRE:valor} toman el valor de una variable de entorno si existe y, si no, el que está después de los dos
+# puntos. En la PC del gimnasio valen los de acá; las variables solo se usan para probar en otra PC.
+{
+	# Sin panel de administración ni copia automática de la configuración: los cambios se aplican reiniciando el servicio
+	admin off
+	persist_config off
+	# Dónde guarda Caddy sus certificados (solo se usan con https en la red local, ver al final)
+	storage file_system {$SUMMIT_CADDY_DATOS:C:/SUMMIT/caddy/datos}
+	# El certificado raíz de Caddy se instala a mano en cada PC que lo necesite (INSTALACION.md): Caddy no lo intenta
+	skip_install_trust
+	servers {
+		# Solo se acepta la IP real que informa otro programa de esta misma PC (por ejemplo, un túnel de Cloudflare)
+		trusted_proxies static 127.0.0.1/32 ::1/128
+	}
+}
+
+(summit) {
+	encode zstd gzip
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		-Server
+	}
+
+	# La app compilada (el frontend)
+	root * {$SUMMIT_WEB:C:/SUMMIT/web}
+	# Los archivos de /assets llevan un código en el nombre y nunca cambian: el navegador los guarda un año
+	@inmutables {
+		path /assets/*
+		file
+	}
+	header @inmutables Cache-Control "public, max-age=31536000, immutable"
+	# Todo lo demás de la app (la página, el service worker, el manifiesto): el navegador pregunta siempre si hay una
+	# versión nueva. /api queda afuera: el backend pone sus propias reglas (no guardar nada)
+	@revisar not path /assets/* /api/*
+	header @revisar Cache-Control "no-cache"
+
+	# La API va al backend, que solo escucha en esta PC
+	handle /api/* {
+		reverse_proxy {$SUMMIT_BACKEND:127.0.0.1:8080} {
+			# El backend compara la dirección del pedido con la de la página (CORS): con el puerto real, los pedidos
+			# de la propia app pasan aunque Caddy no esté en el puerto 80
+			header_up X-Forwarded-Port {http.request.port}
+		}
+	}
+	# Un archivo de /assets que no existe da 404 (y no la página de la app)
+	handle /assets/* {
+		file_server
+	}
+	# Cualquier otra dirección de la app (/login, /socios, ...) abre index.html
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+# Red del gimnasio, sin certificados: http://IP-DE-ESTA-PC desde las otras PC y http://localhost en esta
+{$SUMMIT_SITIO::80} {
+	import summit
+}
+
+# Opcional: https en la red local, que hace falta para usar la cámara desde las otras PC de recepción. Reemplazá
+# 192.168.1.50 por la IP fija de esta PC, sacá los # de las 4 líneas y reiniciá SUMMIT-Web. Después instalá el
+# certificado raíz de Caddy en cada PC de recepción (INSTALACION.md, apéndice "https en la red local").
+#https://192.168.1.50 {
+#	tls internal
+#	import summit
+#}
