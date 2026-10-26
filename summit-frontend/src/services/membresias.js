@@ -1,25 +1,9 @@
 import { useEffect, useState } from 'react';
-import { apiFetch } from './api';
+import { pedirJson as pedir, conJson as json } from './api';
 import { formatMoneda } from '../utils/formato';
 
 // Membresías flexibles: catálogo de descuentos, reglas (matrícula y congelamientos), detalle de un cobro antes de
 // confirmarlo y congelamientos de la membresía de un socio.
-
-// Pedido JSON: devuelve los datos, o lanza un Error con el mensaje del backend (y su status)
-const pedir = async (ruta, opciones = {}, mensajeError = 'No se pudo completar la operación') => {
-  const res = await apiFetch(ruta, opciones);
-  if (res.status === 204) return null;
-  const datos = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const detalle = datos.detalles ? Object.values(datos.detalles).join(' · ') : '';
-    const error = new Error(detalle || datos.error || (res.status === 403 ? 'No tenés permiso para hacer esto' : mensajeError));
-    error.status = res.status;
-    throw error;
-  }
-  return datos;
-};
-
-const json = (metodo, cuerpo) => ({ method: metodo, body: JSON.stringify(cuerpo) });
 
 export const obtenerReglas = () => pedir('/configuracion/membresias', {}, 'No se pudieron leer las reglas');
 export const guardarReglas = (reglas) => pedir('/configuracion/membresias', json('PUT', reglas), 'No se pudieron guardar las reglas');

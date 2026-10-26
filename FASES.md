@@ -58,8 +58,9 @@ que poder usarlos desde una tablet o un celular; por ahora no se venden producto
 electrónica de ARCA (ex AFIP) va al final, después de explicar cómo hacerla.
 
 1. Suspender la app del socio (hecho el 25/10/2026).
-2. Cobro rápido desde el tablero y desde el control de acceso, y comprobante de pago imprimible o en PDF.
-3. Caja completa: gastos y cierre de caja diario por medio de pago (Fase 10, sin productos).
+2. Cobro rápido desde el tablero y desde el control de acceso (hecho el 26/10/2026), y comprobante de pago imprimible
+   o en PDF.
+3. Caja completa: gastos y cierre de caja diario por medio de pago (Fase 10, sin productos; hecho el 26/10/2026).
 4. Seguimiento de socios: inactividad con datos reales, tareas automáticas y contacto por WhatsApp (Fase 8).
 5. Membresías flexibles: congelar una membresía, descuentos y matrícula de inscripción (hecho el 26/10/2026, ver
    abajo).
@@ -139,11 +140,16 @@ Dos pantallas "Demo" de Socios (Inactividad y Tareas CRM) muestran datos de ejem
   cada persona por día, semana o mes, con filtro por persona y exportación a CSV (resumen y detalle por turno). Ahí se
   cargan turnos olvidados, se corrigen horas y se anulan turnos: queda quién, cuándo, por qué y las horas de antes.
 
-### Fase 10: caja completa
+### Fase 10: caja completa (hecha el 26/10/2026, sin productos)
 
-"Tablas del Sistema" anuncia Métodos de pago, Gastos y Productos como "en desarrollo".
-
-- Gastos (egresos) en la caja y cierre de caja diario por medio de pago.
+- Gastos (egresos) con rubro, medio de pago y comprobante. Uno cargado por error se anula con motivo (queda tachado),
+  solo mientras su turno sigue abierto.
+- Turno de caja: desde el último cierre (o desde el comienzo del día, si nunca se cerró). La pantalla de Caja muestra
+  cuánto efectivo tendría que haber: el fondo que dejó el cierre anterior, más los cobros en efectivo, menos los
+  gastos en efectivo.
+- Cierre de caja (arqueo): muestra lo que se movió por cada medio de pago; recepción escribe el efectivo que contó y
+  ve al instante si coincide, falta o sobra (con diferencia, la observación es obligatoria). Lo que no se retira
+  queda de fondo para el turno siguiente. Los cierres quedan en un historial con su detalle.
 - Venta de productos en recepción (agua, suplementos) con un stock simple: el 25/10/2026 se decidió no hacerla por
   ahora.
 

@@ -56,3 +56,23 @@ export const apiFetch = async (path, options = {}) => {
   }
   return response;
 };
+
+/**
+ * Pedido JSON con apiFetch: devuelve los datos (null en un 204) o lanza un Error con el mensaje del backend (y su
+ * status), para las pantallas que solo necesitan "anduvo o qué falló".
+ */
+export const pedirJson = async (ruta, opciones = {}, mensajeError = 'No se pudo completar la operación') => {
+  const res = await apiFetch(ruta, opciones);
+  if (res.status === 204) return null;
+  const datos = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const detalle = datos.detalles ? Object.values(datos.detalles).join(' · ') : '';
+    const error = new Error(detalle || datos.error || (res.status === 403 ? 'No tenés permiso para hacer esto' : mensajeError));
+    error.status = res.status;
+    throw error;
+  }
+  return datos;
+};
+
+/** Opciones de un pedido con cuerpo JSON. */
+export const conJson = (metodo, cuerpo) => ({ method: metodo, body: JSON.stringify(cuerpo) });

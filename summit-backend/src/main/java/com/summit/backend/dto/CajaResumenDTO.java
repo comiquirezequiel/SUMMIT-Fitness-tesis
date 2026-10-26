@@ -24,4 +24,8 @@ public class CajaResumenDTO {
     private long cobrosMes;
     private long pendientesVerificar;
     private BigDecimal montoPendienteVerificar;
+    // Gastos (egresos) no anulados
+    private BigDecimal egresosHoy;
+    private long gastosHoy;
+    private BigDecimal egresosMes;
 }

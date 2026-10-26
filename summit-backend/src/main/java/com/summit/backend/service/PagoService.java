@@ -11,6 +11,7 @@ import com.summit.backend.model.PagoHistorial;
 import com.summit.backend.model.Plan;
 import com.summit.backend.model.ReglasMembresia;
 import com.summit.backend.model.Usuario;
+import com.summit.backend.repository.GastoRepository;
 import com.summit.backend.repository.PagoHistorialRepository;
 import com.summit.backend.repository.PlanRepository;
 import com.summit.backend.repository.SuscripcionRepository;
@@ -58,6 +59,7 @@ public class PagoService {
     }
 
     private final PagoHistorialRepository pagoHistorialRepository;
+    private final GastoRepository gastoRepository;
     private final UsuarioRepository usuarioRepository;
     private final PlanRepository planRepository;
     private final SuscripcionRepository suscripcionRepository;
@@ -224,6 +226,9 @@ public class PagoService {
                 .cobrosMes(pagoHistorialRepository.countByEstadoPagoAndFechaPagoGreaterThanEqual(EstadoPago.APROBADO, inicioMes))
                 .pendientesVerificar(pagoHistorialRepository.countByEstadoPago(EstadoPago.PENDIENTE))
                 .montoPendienteVerificar(pagoHistorialRepository.sumarPorEstado(EstadoPago.PENDIENTE))
+                .egresosHoy(gastoRepository.sumarDesde(inicioDia))
+                .gastosHoy(gastoRepository.countByAnuladoFalseAndFechaGreaterThanEqual(inicioDia))
+                .egresosMes(gastoRepository.sumarDesde(inicioMes))
                 .build();
     }
 

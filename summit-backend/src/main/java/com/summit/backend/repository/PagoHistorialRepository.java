@@ -66,6 +66,12 @@ public interface PagoHistorialRepository extends JpaRepository<PagoHistorial, Lo
             + "GROUP BY p.metodoPago")
     List<Object[]> sumarPorMetodoDesde(@Param("desde") LocalDateTime desde);
 
+    // Cobros aprobados de un turno de caja, como filas [metodoPago, total, cantidad]
+    @Query("SELECT p.metodoPago, COALESCE(SUM(p.montoAbonado), 0), COUNT(p) FROM PagoHistorial p "
+            + "WHERE p.estadoPago = com.summit.backend.model.EstadoPago.APROBADO "
+            + "AND p.fechaPago >= :desde AND p.fechaPago < :hasta GROUP BY p.metodoPago")
+    List<Object[]> aprobadosPorMetodoEntre(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
+
     // Pagos "a verificar": cuántos son y cuánto suman (todavía no cuentan como ingreso)
     long countByEstadoPago(EstadoPago estadoPago);
 

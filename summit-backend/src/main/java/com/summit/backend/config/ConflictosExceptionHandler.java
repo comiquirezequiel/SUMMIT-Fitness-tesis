@@ -1,5 +1,6 @@
 package com.summit.backend.config;
 
+import com.summit.backend.controller.CajaController;
 import com.summit.backend.controller.CongelamientoController;
 import com.summit.backend.controller.MembresiaConfigController;
 import org.springframework.core.Ordered;
@@ -13,12 +14,13 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 /**
- * Errores de descuentos, reglas de membresía y congelamientos: lo que no existe es 404 y lo que choca con el estado
- * actual (ej. un congelamiento que se superpone) es 409. Los datos inválidos siguen en GlobalExceptionHandler (400).
+ * Errores de descuentos, reglas de membresía, congelamientos y caja: lo que no existe es 404 y lo que choca con el
+ * estado actual (ej. un congelamiento que se superpone, o una caja que otra persona acaba de cerrar) es 409. Los datos
+ * inválidos siguen en GlobalExceptionHandler (400).
  */
-@RestControllerAdvice(assignableTypes = {MembresiaConfigController.class, CongelamientoController.class})
+@RestControllerAdvice(assignableTypes = {MembresiaConfigController.class, CongelamientoController.class, CajaController.class})
 @Order(Ordered.HIGHEST_PRECEDENCE)
-public class MembresiasExceptionHandler {
+public class ConflictosExceptionHandler {
 
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<Map<String, String>> noEncontrado(NoSuchElementException e) {

@@ -1,8 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Wallet, TrendingUp, CalendarDays, Receipt, Calendar, Search, Plus, Download, RefreshCw, Hourglass, Check, X } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, CalendarDays, Calendar, Search, Plus, Download, RefreshCw, Hourglass, Check, X, Lock, Receipt } from 'lucide-react';
+import CobroRapido from '../components/socios/CobroRapido';
+import GastoModal from '../components/caja/GastoModal';
+import CierreCajaModal from '../components/caja/CierreCajaModal';
+import TablaGastos from '../components/caja/TablaGastos';
+import TablaCierres from '../components/caja/TablaCierres';
+import Paginador from '../components/caja/Paginador';
 import { apiFetch } from '../services/api';
-import { formatFecha, formatHora, formatMoneda, descargarCsv, usuarioActual } from '../utils/formato';
+import { obtenerTurno } from '../services/caja';
+import { formatFecha, formatHora, formatFechaHora, formatMoneda, descargarCsv, usuarioActual } from '../utils/formato';
 import { textoMetodoPago, ESTADOS_PAGO } from '../utils/constantes';
 
 const TarjetaMonto = ({ title, amount, detalle, icon: Icon, color, onClick, activa }) => (
@@ -31,13 +37,23 @@ const detalleCobro = (p) => {
   return partes.join(' · ');
 };
 
+const PESTANAS = [
+  { id: 'cobros', texto: 'Cobros' },
+  { id: 'gastos', texto: 'Gastos' },
+  { id: 'cierres', texto: 'Cierres de caja' },
+];
+
 /**
- * Caja: ingresos de hoy y del mes, y los cobros registrados (presenciales y débitos automáticos).
+ * Caja: ingresos y egresos de hoy y del mes, el turno abierto (con su cierre), los cobros registrados (presenciales y
+ * débitos automáticos), los gastos y los cierres de caja anteriores.
  * Solo los pagos aprobados suman. Los "a verificar" se listan aparte y el admin los confirma o rechaza.
  */
 const Caja = () => {
-  const navigate = useNavigate();
   const esAdmin = usuarioActual()?.rol === 'ADMIN';
+  const [pestana, setPestana] = useState('cobros');
+  const [modal, setModal] = useState(null); // 'cobro' | 'gasto' | 'cierre'
+  const [turno, setTurno] = useState(null);
+  const [version, setVersion] = useState(0); // cambiarla recarga las tablas de gastos y cierres
   const [resumen, setResumen] = useState(null);
   const [pagina, setPagina] = useState(null); // respuesta paginada de Spring
   const [numeroPagina, setNumeroPagina] = useState(0);
@@ -52,13 +68,15 @@ const Caja = () => {
     setCargando(true);
     try {
       const filtro = soloAVerificar ? '&estado=PENDIENTE' : '';
-      const [resResumen, resPagos] = await Promise.all([
+      const [resResumen, resPagos, turnoActual] = await Promise.all([
         apiFetch('/pagos/resumen'),
         apiFetch(`/pagos?page=${numeroPagina}&size=${TAMANIO_PAGINA}&sort=fechaPago,desc${filtro}`),
+        obtenerTurno(),
       ]);
       if (!resResumen.ok || !resPagos.ok) throw new Error();
       setResumen(await resResumen.json());
       setPagina(await resPagos.json());
+      setTurno(turnoActual);
       setError('');
     } catch {
       setError('No se pudieron cargar los movimientos de caja.');
@@ -119,40 +137,73 @@ const Caja = () => {
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-2">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Caja y Pagos</h1>
-          <p className="text-sm text-slate-500">Cobros presenciales y débitos automáticos. Solo suman los pagos aprobados.</p>
+          <p className="text-sm text-slate-500">Cobros, gastos y cierres de caja. Solo suman los pagos aprobados.</p>
         </div>
-        <div className="flex gap-3">
-          <button onClick={exportar} disabled={pagosFiltrados.length === 0}
-            className="bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50 transition-colors shadow-sm">
-            <Download className="w-4 h-4" /> Exportar
+        <div className="flex flex-wrap gap-3">
+          <button onClick={() => setModal('gasto')}
+            className="bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm">
+            <TrendingDown className="w-4 h-4 text-rose-500" /> Registrar gasto
           </button>
-          <button onClick={() => navigate('/socios')} title="El cobro se registra desde la lista de socios"
+          <button onClick={() => setModal('cobro')}
             className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm">
             <Plus className="w-4 h-4" /> Registrar cobro
           </button>
         </div>
       </div>
 
+      {turno && (
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0"><Wallet className="w-6 h-6" /></div>
+            <div>
+              <p className="text-sm font-medium text-slate-500">Turno abierto desde el {formatFechaHora(turno.desde)}</p>
+              <p className="text-2xl font-bold text-slate-800">{formatMoneda(turno.efectivoEsperado)} <span className="text-sm font-medium text-slate-500">en efectivo en la caja</span></p>
+              <p className="text-xs text-slate-500 mt-1">
+                Fondo {formatMoneda(turno.fondoInicial)} + cobros en efectivo {formatMoneda(turno.ingresosEfectivo)} − gastos en efectivo {formatMoneda(turno.egresosEfectivo)}
+                {turno.ultimoCierre ? ` · último cierre: ${formatFechaHora(turno.ultimoCierre)}${turno.ultimoCierrePor ? ` (${turno.ultimoCierrePor})` : ''}` : ' · todavía no se cerró la caja'}
+              </p>
+            </div>
+          </div>
+          <button onClick={() => setModal('cierre')}
+            className="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm shrink-0">
+            <Lock className="w-4 h-4" /> Cerrar caja
+          </button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <TarjetaMonto title="Ingresos hoy" amount={resumen ? formatMoneda(resumen.ingresosHoy) : '—'}
-          detalle={detalleMetodos} icon={TrendingUp} color="bg-emerald-50 text-emerald-600" />
-        <TarjetaMonto title="Cobros hoy" amount={resumen ? resumen.cobrosHoy : '—'}
-          icon={Receipt} color="bg-blue-50 text-blue-600" />
-        <TarjetaMonto title="Ingresos del mes" amount={resumen ? formatMoneda(resumen.ingresosMes) : '—'}
-          detalle={resumen ? `${resumen.cobrosMes} cobros` : ''} icon={CalendarDays} color="bg-violet-50 text-violet-600" />
+          detalle={resumen ? `${resumen.cobrosHoy} ${resumen.cobrosHoy === 1 ? 'cobro' : 'cobros'} · ${detalleMetodos}` : ''}
+          icon={TrendingUp} color="bg-emerald-50 text-emerald-600" />
+        <TarjetaMonto title="Gastos hoy" amount={resumen ? formatMoneda(resumen.egresosHoy) : '—'}
+          detalle={resumen ? (resumen.gastosHoy ? `${resumen.gastosHoy} ${resumen.gastosHoy === 1 ? 'gasto' : 'gastos'}` : 'Sin gastos hoy') : ''}
+          icon={TrendingDown} color="bg-rose-50 text-rose-600" onClick={() => setPestana('gastos')} />
+        <TarjetaMonto title="Resultado del mes" amount={resumen ? formatMoneda(Number(resumen.ingresosMes) - Number(resumen.egresosMes)) : '—'}
+          detalle={resumen ? `Ingresos ${formatMoneda(resumen.ingresosMes)} − gastos ${formatMoneda(resumen.egresosMes)}` : ''}
+          icon={CalendarDays} color="bg-violet-50 text-violet-600" />
         <TarjetaMonto title="A verificar" amount={resumen ? pendientes : '—'}
           detalle={resumen ? (pendientes > 0 ? `${formatMoneda(resumen.montoPendienteVerificar)} sin confirmar · tocá para ver` : 'Nada pendiente') : ''}
           icon={Hourglass} color="bg-amber-50 text-amber-600"
-          onClick={() => cambiarFiltro(!soloAVerificar)} activa={soloAVerificar} />
+          onClick={() => { setPestana('cobros'); cambiarFiltro(!soloAVerificar); }} activa={soloAVerificar} />
       </div>
 
       {error && <div className="p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>}
       {aviso && <div className="p-3 rounded-lg bg-emerald-50 text-emerald-700 text-sm font-medium">{aviso}</div>}
 
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="px-5 pt-4 border-b border-slate-200 flex gap-1 overflow-x-auto" role="tablist">
+          {PESTANAS.map(p => (
+            <button key={p.id} role="tab" aria-selected={pestana === p.id} onClick={() => setPestana(p.id)}
+              className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px whitespace-nowrap transition-colors ${pestana === p.id ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+              {p.texto}
+            </button>
+          ))}
+        </div>
+
+        {pestana === 'cobros' && (<>
         <div className="p-5 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Wallet className="w-5 h-5 text-slate-400" /> Movimientos</h2>
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Receipt className="w-5 h-5 text-slate-400" /> Cobros</h2>
             <div className="flex bg-slate-100 rounded-lg p-0.5 text-xs font-semibold">
               <button onClick={() => cambiarFiltro(false)}
                 className={`px-3 py-1.5 rounded-md transition-colors ${!soloAVerificar ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500'}`}>Todos</button>
@@ -173,6 +224,10 @@ const Caja = () => {
                 className="pl-9 pr-4 py-2 w-full border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 transition-shadow"
               />
             </div>
+            <button onClick={exportar} disabled={pagosFiltrados.length === 0} title="Exportar esta página a Excel (CSV)"
+              className="p-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50">
+              <Download className="w-4 h-4" />
+            </button>
             <button onClick={cargar} title="Actualizar" className="p-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
               <RefreshCw className={`w-4 h-4 ${cargando ? 'animate-spin' : ''}`} />
             </button>
@@ -256,18 +311,36 @@ const Caja = () => {
           </div>
         )}
 
-        {pagina && pagina.totalElements > 0 && (
-          <div className="p-4 border-t border-slate-200 flex items-center justify-between bg-slate-50 text-sm text-slate-500">
-            <span>Página {pagina.number + 1} de {pagina.totalPages} · {pagina.totalElements} cobros</span>
-            <div className="flex gap-1">
-              <button onClick={() => setNumeroPagina(n => n - 1)} disabled={pagina.first}
-                className="px-3 py-1 border border-slate-200 rounded hover:bg-white transition-colors disabled:opacity-50">Anterior</button>
-              <button onClick={() => setNumeroPagina(n => n + 1)} disabled={pagina.last}
-                className="px-3 py-1 border border-slate-200 rounded hover:bg-white transition-colors disabled:opacity-50">Siguiente</button>
-            </div>
-          </div>
-        )}
+        <Paginador pagina={pagina} nombre="cobros" onCambiar={setNumeroPagina} />
+        </>)}
+
+        {pestana === 'gastos' && <TablaGastos version={version} onCambio={cargar} />}
+        {pestana === 'cierres' && <TablaCierres version={version} />}
       </div>
+
+      {modal === 'cobro' && (
+        <CobroRapido onClose={() => setModal(null)}
+          onCobrado={(pago, socio) => { setModal(null); setAviso(`Cobro de ${formatMoneda(pago.monto)} a ${socio.nombreCompleto} registrado.`); cargar(); }} />
+      )}
+      {modal === 'gasto' && (
+        <GastoModal onClose={() => setModal(null)}
+          onGuardado={(gasto) => {
+            setModal(null);
+            setAviso(`Gasto de ${formatMoneda(gasto.monto)} registrado.`);
+            setPestana('gastos');
+            setVersion(v => v + 1);
+            cargar();
+          }} />
+      )}
+      {modal === 'cierre' && (
+        <CierreCajaModal onClose={() => setModal(null)}
+          onCerrado={(cierre) => {
+            setAviso(`Caja cerrada: el turno nuevo empieza con ${formatMoneda(cierre.fondoSiguiente)} de fondo.`);
+            setPestana('cierres');
+            setVersion(v => v + 1);
+            cargar();
+          }} />
+      )}
     </div>
   );
 };
