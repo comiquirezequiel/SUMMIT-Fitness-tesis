@@ -58,6 +58,13 @@ public interface LogAsistenciaRepository extends JpaRepository<LogAsistencia, Lo
             + "AND l.fechaHora >= :desde AND l.fechaHora < :hasta")
     List<Object[]> ingresosPermitidos(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
 
+    // Seguimiento: último ingreso efectivo de cada socio, como filas [idUsuario, fechaHora]
+    @Query("SELECT l.usuario.idUsuario, MAX(l.fechaHora) FROM LogAsistencia l "
+            + "WHERE l.resultado = com.summit.backend.model.ResultadoAsistencia.PERMITIDO "
+            + "AND l.tipoEvento <> com.summit.backend.model.TipoEventoAsistencia.CHECKOUT "
+            + "AND l.usuario.rol = com.summit.backend.model.Rol.SOCIO GROUP BY l.usuario.idUsuario")
+    List<Object[]> ultimoIngresoPorSocio();
+
     // Ocupación: ingresos efectivos de socios (sin el personal) de un rango, como filas [fechaHora, idUsuario]
     @Query("SELECT l.fechaHora, l.usuario.idUsuario FROM LogAsistencia l "
             + "WHERE l.resultado = com.summit.backend.model.ResultadoAsistencia.PERMITIDO "

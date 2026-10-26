@@ -24,6 +24,11 @@ public interface CertificadoMedicoRepository extends JpaRepository<CertificadoMe
     }
 
     List<CertificadoMedico> findByUsuarioIdUsuario(Long idUsuario);
+
+    // Seguimiento: hasta cuándo tiene apto cada socio (sin contar los rechazados), como filas [idUsuario, vencimiento]
+    @org.springframework.data.jpa.repository.Query("SELECT c.usuario.idUsuario, MAX(c.fechaVencimiento) FROM CertificadoMedico c "
+            + "WHERE c.estadoLegal <> com.summit.backend.model.EstadoLegalCertificado.RECHAZADO GROUP BY c.usuario.idUsuario")
+    List<Object[]> vencimientoAptoPorSocio();
     List<CertificadoMedico> findByUsuarioIdUsuarioOrderByFechaEmisionDesc(Long idUsuario);
     List<CertificadoMedico> findByEstadoLegalAndFechaVencimientoBefore(EstadoLegalCertificado estado, java.time.LocalDate date);
 }

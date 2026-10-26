@@ -11,11 +11,12 @@ import {
 import { usuarioActual } from '../utils/formato';
 import { cerrarSesion } from '../services/auth';
 import { useSinLeerChat } from '../services/chat';
+import { useTareasPendientes } from '../services/seguimiento';
 import { useFunciones } from '../services/funciones';
 
 // Roles que ven cada opción (los mismos permisos que exige el backend).
 // demo: pantallas que todavía muestran datos de ejemplo (no están conectadas al backend).
-// contador: globito con un número (por ahora, las conversaciones del chat con mensajes sin leer).
+// contador: globito con un número (las conversaciones del chat con mensajes sin leer, las tareas de seguimiento pendientes).
 // soloConApp: existe solo para la app del socio; mientras está suspendida no aparece.
 const STAFF = ['ADMIN', 'RECEPCION'];
 const MENU_ITEMS = [
@@ -27,8 +28,8 @@ const MENU_ITEMS = [
       { icon: BarChart2, text: "Analítica de Socios", path: "/socios/metricas", roles: STAFF },
       { icon: Megaphone, text: "Novedades", path: "/socios/novedades", roles: STAFF, soloConApp: true },
       { icon: MessageCircle, text: "Chat", path: "/socios/chat", roles: STAFF, contador: 'chat', soloConApp: true },
-      { icon: CheckSquare, text: "Tareas CRM", path: "/socios/tareas", roles: STAFF, demo: true },
-      { icon: UserX, text: "Inactividad", path: "/socios/inactividad", roles: STAFF, demo: true },
+      { icon: CheckSquare, text: "Tareas de seguimiento", path: "/socios/tareas", roles: STAFF, contador: 'tareas' },
+      { icon: UserX, text: "Inactividad", path: "/socios/inactividad", roles: STAFF },
     ]
   },
   {
@@ -159,7 +160,10 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   const location = useLocation();
   const rol = usuarioActual()?.rol;
   const { appSocios } = useFunciones();
-  const contadores = { chat: useSinLeerChat(appSocios && STAFF.includes(rol)) };
+  const contadores = {
+    chat: useSinLeerChat(appSocios && STAFF.includes(rol)),
+    tareas: useTareasPendientes(STAFF.includes(rol)).pendientes,
+  };
 
   return (
     <aside 

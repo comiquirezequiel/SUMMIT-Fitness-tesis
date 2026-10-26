@@ -116,6 +116,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/pagos/**").hasAnyRole("ADMIN", "RECEPCION")
                 // Caja de recepción: gastos, turno y cierre (arqueo)
                 .requestMatchers("/api/caja/**").hasAnyRole("ADMIN", "RECEPCION")
+                // Seguimiento de socios: inactividad y tareas de contacto
+                .requestMatchers("/api/seguimiento/**").hasAnyRole("ADMIN", "RECEPCION")
                 // Débito automático desde recepción (el socio usa /api/portal/debito)
                 .requestMatchers("/api/debitos/**").hasAnyRole("ADMIN", "RECEPCION")
 

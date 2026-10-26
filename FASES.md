@@ -63,7 +63,8 @@ electrónica de ARCA (ex AFIP) va al final, después de explicar cómo hacerla.
    hasta cuándo quedó paga la membresía; se imprime, se descarga, se comparte o se le avisa al socio por WhatsApp, y
    desde la caja se vuelve a abrir el de cualquier cobro. Dice que no es una factura).
 3. Caja completa: gastos y cierre de caja diario por medio de pago (Fase 10, sin productos; hecho el 26/10/2026).
-4. Seguimiento de socios: inactividad con datos reales, tareas automáticas y contacto por WhatsApp (Fase 8).
+4. Seguimiento de socios: inactividad con datos reales, tareas automáticas y contacto por WhatsApp (Fase 8, hecha el
+   26/10/2026).
 5. Membresías flexibles: congelar una membresía, descuentos y matrícula de inscripción (hecho el 26/10/2026, ver
    abajo).
 6. Asistencia del personal (Fase 9, hecha el 26/10/2026).
@@ -118,15 +119,20 @@ por API que se hicieron en cada fase quedaron solo descriptas en los commits.
 - Tests de las reglas exactas del asistente de IA (`advertencias`).
 - Que se corran con `.\mvnw.cmd test`.
 
-### Fase 8: seguimiento de socios
+### Fase 8: seguimiento de socios (hecha el 26/10/2026)
 
-Dos pantallas "Demo" de Socios (Inactividad y Tareas CRM) muestran datos de ejemplo.
-
-- **Inactividad** con datos reales: los ingresos ya se registran, así que se pueden calcular los días sin
-  venir, el promedio semanal de los últimos 90 días y un nivel de riesgo.
-- **Tareas CRM** que se generan solas: cuota por vencer, apto por vencer, socio inactivo, débito rechazado.
-  Recepción las marca como hechas.
-- Contacto por WhatsApp con un enlace que abre el mensaje ya escrito (sin servicios pagos).
+- **Inactividad** con datos reales: socios con la cuota al día (o vencida hace hasta 30 días), sin los congelados,
+  que hace 7 días o más que no vienen, con su último ingreso, el promedio semanal de los últimos 90 días y un nivel
+  (leve de 7 a 14 días, media de 15 a 29, alta de 30 o más; si nunca vino, desde el alta). Resumen de cuántos socios
+  al día vinieron en la semana y exportación a Excel.
+- **Tareas de seguimiento** que se generan solas cada hora (y al entrar a la pantalla): cuota por vencer en 5 días
+  (sin débito automático), cuota vencida hace hasta 15 días, apto por vencer en 15 días (si el gimnasio lo exige) y
+  socio al día que hace 15 días o más que no viene. La misma situación no genera dos tareas, y una pendiente se
+  resuelve sola cuando el socio renueva, trae el apto o vuelve. Recepción también carga tareas a mano, las marca como
+  hechas (por qué canal y qué dijo el socio) o las descarta. El menú y la campanita muestran cuántas hay pendientes.
+- Contacto por WhatsApp con un enlace que abre el mensaje ya escrito para cada caso (sin servicios pagos), y registro
+  de cada contacto.
+- El "débito rechazado" no se hizo: Mercado Pago no informa los cobros rechazados de una suscripción como un estado.
 - **Chat**: hecho en la A8 de la app (bandeja de recepción en el panel y pestaña Mensajes en la app).
 
 ### Fase 9: asistencia del personal (hecha el 26/10/2026)

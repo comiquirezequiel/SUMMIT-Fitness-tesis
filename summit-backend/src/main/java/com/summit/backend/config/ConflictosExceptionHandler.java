@@ -3,6 +3,7 @@ package com.summit.backend.config;
 import com.summit.backend.controller.CajaController;
 import com.summit.backend.controller.CongelamientoController;
 import com.summit.backend.controller.MembresiaConfigController;
+import com.summit.backend.controller.SeguimientoController;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -18,7 +19,8 @@ import java.util.NoSuchElementException;
  * estado actual (ej. un congelamiento que se superpone, o una caja que otra persona acaba de cerrar) es 409. Los datos
  * inválidos siguen en GlobalExceptionHandler (400).
  */
-@RestControllerAdvice(assignableTypes = {MembresiaConfigController.class, CongelamientoController.class, CajaController.class})
+@RestControllerAdvice(assignableTypes = {MembresiaConfigController.class, CongelamientoController.class, CajaController.class,
+        SeguimientoController.class})
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class ConflictosExceptionHandler {
 

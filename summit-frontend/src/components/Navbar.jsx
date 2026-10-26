@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronLeft, Globe, Moon, Bell, LogOut, Menu, KeyRound, CheckCircle2 } from 'lucide-react';
 import Modal from './Modal';
 import { useSinLeerChat } from '../services/chat';
+import { useTareasPendientes } from '../services/seguimiento';
 import { useFunciones } from '../services/funciones';
 import FormCambiarPassword from '../cuenta/FormCambiarPassword';
 import { cambiarPassword } from '../services/cuenta';
@@ -36,6 +37,9 @@ const Navbar = ({ onMenuClick }) => {
   const { appSocios } = useFunciones();
   const atiendeChat = appSocios && ['ADMIN', 'RECEPCION'].includes(usuario?.rol);
   const sinLeerChat = useSinLeerChat(atiendeChat);
+  // Sin chat (app del socio en pausa), la campanita avisa las tareas de seguimiento pendientes
+  const avisaTareas = !atiendeChat && ['ADMIN', 'RECEPCION'].includes(usuario?.rol);
+  const tareas = useTareasPendientes(avisaTareas);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [cambiandoPassword, setCambiandoPassword] = useState(false);
   const menu = useRef(null);
@@ -94,8 +98,21 @@ const Navbar = ({ onMenuClick }) => {
             )}
           </Link>
         )}
+        {avisaTareas && (
+          <Link to="/socios/tareas" className="relative p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors"
+            title={tareas.pendientes > 0
+              ? `Seguimiento: ${tareas.pendientes} ${tareas.pendientes === 1 ? 'tarea pendiente' : 'tareas pendientes'}${tareas.atrasadas > 0 ? ` (${tareas.atrasadas} atrasadas)` : ''}`
+              : 'Tareas de seguimiento'}>
+            <Bell className="w-4 h-4" />
+            {tareas.pendientes > 0 && (
+              <span className={`absolute -top-0.5 -right-0.5 text-white text-[9px] font-bold px-1.5 rounded-full border-2 border-white ${tareas.atrasadas > 0 ? 'bg-rose-500' : 'bg-blue-500'}`}>
+                {tareas.pendientes > 9 ? '9+' : tareas.pendientes}
+              </span>
+            )}
+          </Link>
+        )}
 
-        <button 
+        <button
           onClick={() => cerrarSesion()}
           title="Cerrar sesión"
           className="hidden sm:flex p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors"
