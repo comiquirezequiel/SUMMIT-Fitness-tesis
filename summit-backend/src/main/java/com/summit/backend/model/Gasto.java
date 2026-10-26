@@ -7,6 +7,7 @@ import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 /**
  * Gasto (egreso) de la caja: un pago del gimnasio. Uno pagado en efectivo sale de la caja de recepción, así que se
@@ -68,6 +69,7 @@ public class Gasto {
 
     @PrePersist
     protected void onCreate() {
-        if (this.fecha == null) this.fecha = LocalDateTime.now();
+        // Con la precisión que guarda la base (microsegundos): así no se redondea y queda exacto para los turnos de caja
+        if (this.fecha == null) this.fecha = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
     }
 }

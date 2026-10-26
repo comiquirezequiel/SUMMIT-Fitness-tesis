@@ -78,7 +78,7 @@ electrónica de ARCA (ex AFIP) va al final, después de explicar cómo hacerla.
    mal y después el resultado de cada fila; un DNI que ya estaba no se toca, y con Plan y Vence el socio queda con su
    membresía hasta esa fecha.
 9. Dejarlo listo para el gimnasio: instalación, copias de seguridad cifradas (Fase 12) y tests automáticos
-   (Fase 7).
+   (Fase 7). Hecho el 26/10/2026; falta solo lo que se hace en la PC del gimnasio (ver Fase 12).
 10. Factura electrónica de ARCA.
 
 #### Membresías flexibles (hecha el 26/10/2026)
@@ -111,16 +111,23 @@ La numeración de las fases siguientes sigue la de la etapa 2.
 - Reglas: 8 caracteres o más, con letras y números. Cambiarla, pedir el mail y usar el link: hasta 5 intentos por
   minuto.
 
-### Fase 7: tests automáticos (prioridad alta)
+### Fase 7: tests automáticos (hecha el 26/10/2026)
 
-No hay ningún test: `summit-backend/src/test` no existe y el frontend no tiene script de pruebas. Las pruebas
-por API que se hicieron en cada fase quedaron solo descriptas en los commits.
+58 tests del backend que se corren con `.\mvnw.cmd test`, en una base aparte (`summit_test`, se crea y se vacía
+sola) y cada uno deshace lo que hizo:
 
-- Tests de integración del backend, con una base aparte, para las reglas críticas: control de acceso (límite
-  semanal, cuota, apto, excepción), cobros (solo los aprobados extienden la membresía), certificados (365
-  días, rechazo), permisos por rol y portal (cada socio ve solo lo suyo).
-- Tests de las reglas exactas del asistente de IA (`advertencias`).
-- Que se corran con `.\mvnw.cmd test`.
+- Control de acceso: límite semanal (volver el mismo día no cuenta otro), cuota vencida con y sin días de gracia,
+  apto médico vencido o rechazado, excepción de recepción, congelamiento y cuenta dada de baja.
+- Cobros: el total lo calcula el backend (descuentos y matrícula, que se puede bonificar o vuelve a cobrarse), solo
+  los aprobados extienden la membresía y un total que cambió no se cobra.
+- Congelamiento (mínimo, máximo por año, sin superponerse, terminarlo antes), caja (efectivo esperado, gastos
+  anulados, diferencia con observación, fondo para el turno siguiente), seguimiento (tareas automáticas que no se
+  repiten y se resuelven solas), certificados (365 días, rechazo) e importación de socios.
+- Permisos por rol y por estado de la cuenta (contraseña temporal, cuenta dada de baja, app del socio en pausa).
+- Las reglas exactas del asistente de IA (`advertencias`).
+
+Los tests encontraron un error real, ya corregido: un cobro o un gasto hecho en el mismo segundo que el cierre de
+caja podía quedar afuera de los dos turnos. Ahora los horarios se guardan con la precisión de la base.
 
 ### Fase 8: seguimiento de socios (hecha el 26/10/2026)
 

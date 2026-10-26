@@ -7,6 +7,7 @@ import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 @Entity
 @Table(name = "pago_historial")
@@ -94,7 +95,8 @@ public class PagoHistorial {
 
     @PrePersist
     public void prePersist() {
-        if (this.fechaPago == null) this.fechaPago = LocalDateTime.now();
+        // Con la precisión que guarda la base (microsegundos): así no se redondea y queda exacto para los turnos de caja
+        if (this.fechaPago == null) this.fechaPago = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
         if (this.estadoPago == null) this.estadoPago = EstadoPago.APROBADO;
     }
 }

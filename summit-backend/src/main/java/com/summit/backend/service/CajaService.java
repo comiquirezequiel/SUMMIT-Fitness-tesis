@@ -171,10 +171,11 @@ public class CajaService {
         return cierreCajaRepository.findAll(pageable).map(this::aDto);
     }
 
-    // El fin del turno con la precisión que guarda la base (microsegundos): es exactamente el comienzo del turno
-    // siguiente, así ningún cobro queda en dos turnos ni en ninguno
+    // El fin del turno (sin incluir) con la precisión que guarda la base (microsegundos), un microsegundo después de
+    // ahora: entra también lo registrado en este mismo microsegundo. Es exactamente el comienzo del turno siguiente, así
+    // ningún cobro queda en dos turnos ni en ninguno (cobros y gastos se guardan con esa misma precisión)
     private static LocalDateTime ahora() {
-        return LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
+        return LocalDateTime.now().truncatedTo(ChronoUnit.MICROS).plus(1, ChronoUnit.MICROS);
     }
 
     private Turno calcularTurno(LocalDateTime hasta) {

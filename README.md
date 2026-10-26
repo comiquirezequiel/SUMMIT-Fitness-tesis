@@ -117,6 +117,15 @@ MySQL y Ollama pueden quedar corriendo: casi no consumen nada mientras no se usa
 Para revisar si todo el backend compila sin arrancarlo: `.\mvnw.cmd compile` dentro de `summit-backend`
 (`BUILD SUCCESS` = sin errores).
 
+## Tests automáticos
+
+- **Backend:** `.\mvnw.cmd test` dentro de `summit-backend`. Necesita MySQL corriendo y el
+  `application-local.properties` (usa el mismo usuario). Los tests trabajan en una base aparte, `summit_test`, que se
+  crea y se vacía sola: nunca tocan la de desarrollo. Revisan el control de acceso, los cobros, el congelamiento, la
+  caja, el seguimiento, los certificados, la importación, los permisos por rol y las reglas del asistente de IA.
+  Termina con `BUILD SUCCESS` si todo anda.
+- **Frontend:** `npm.cmd run lint` dentro de `summit-frontend` revisa el código (sin errores = no muestra nada).
+
 ## Notas
 
 - Para instalar SUMMIT en la PC del gimnasio (servicios que arrancan solos, acceso desde otras PC y copias de
