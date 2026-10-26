@@ -3,6 +3,7 @@ package com.summit.backend.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,6 +53,15 @@ public class DatosGimnasio {
     // Cuántas personas entran a la vez: con eso la ocupación en vivo dice si está tranquilo o lleno
     @Column(name = "capacidad")
     private Integer capacidad;
+
+    // Logo (PNG) dentro de summit.uploads.dir; sale en los PDF. null = sin logo. No va en la API: se pide a
+    // /api/configuracion/gimnasio/logo
+    @Column(name = "logo_url", length = 255)
+    private String logoUrl;
+
+    // Cuándo se subió el logo: es su versión, para que el navegador no muestre uno viejo
+    @Column(name = "logo_actualizado")
+    private LocalDateTime logoActualizado;
 
     // Los 7 días, de lunes a domingo
     @ElementCollection(fetch = FetchType.EAGER)

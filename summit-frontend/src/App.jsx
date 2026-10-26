@@ -42,7 +42,6 @@ const Clases = lazy(() => import('./pages/Clases'));
 const DatosGimnasio = lazy(() => import('./pages/DatosGimnasio'));
 const Novedades = lazy(() => import('./pages/Novedades'));
 const ConfiguracionAcceso = lazy(() => import('./pages/ConfiguracionAcceso'));
-const AjustesTablas = lazy(() => import('./pages/AjustesTablas'));
 const AjustesEquipo = lazy(() => import('./pages/AjustesEquipo'));
 const AjustesAsistencia = lazy(() => import('./pages/AjustesAsistencia'));
 
@@ -140,7 +139,6 @@ function App() {
           {/* Ajustes */}
           <Route path="ajustes/gimnasio" element={<Diferida><DatosGimnasio /></Diferida>} />
           <Route path="ajustes/acceso" element={<Diferida><ConfiguracionAcceso /></Diferida>} />
-          <Route path="ajustes/tablas" element={<Diferida><AjustesTablas /></Diferida>} />
           <Route path="ajustes/equipo" element={<Diferida><AjustesEquipo /></Diferida>} />
           <Route path="ajustes/asistencia" element={<Diferida><AjustesAsistencia /></Diferida>} />
 

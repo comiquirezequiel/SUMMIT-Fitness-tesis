@@ -75,7 +75,9 @@ export const estilosBase = StyleSheet.create({
   },
 });
 
-// Emojis y símbolos de los teclados del celular: las tipografías no los tienen y saldrían cuadraditos
+// Emojis y símbolos de los teclados del celular: las tipografías no los tienen y saldrían cuadraditos.
+// Incluye a propósito los caracteres que unen emojis (ZWJ, selectores de variante), que ESLint marca como sospechosos
+// eslint-disable-next-line no-misleading-character-class
 const SIN_LETRA = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FE0F}\u{200D}\u{20E3}\u{E0020}-\u{E007F}]/gu;
 export const textoPdf = (texto) => (texto === null || texto === undefined ? ''
   : String(texto).replace(SIN_LETRA, '').replace(/[ \t]{2,}/g, ' ').trim());

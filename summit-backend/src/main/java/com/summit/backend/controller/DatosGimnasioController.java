@@ -3,9 +3,14 @@ package com.summit.backend.controller;
 import com.summit.backend.dto.DatosGimnasioDTO;
 import com.summit.backend.service.DatosGimnasioService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Duration;
 import java.util.Map;
 
 /**
@@ -31,5 +36,35 @@ public class DatosGimnasioController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", String.valueOf(e.getMessage())));
         }
+    }
+
+    /** Sube el logo (PNG o JPG, máximo 5 MB) y reemplaza el anterior. Devuelve los datos con el logoUrl nuevo. */
+    @PostMapping("/logo")
+    public ResponseEntity<?> subirLogo(@RequestParam(value = "logo", required = false) MultipartFile logo) {
+        try {
+            return ResponseEntity.ok(datosGimnasioService.guardarLogo(logo));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", String.valueOf(e.getMessage())));
+        }
+    }
+
+    /** El logo en PNG (404 si no hay). El panel lo pide con ?v=versión, así un logo nuevo cambia la dirección. */
+    @GetMapping("/logo")
+    public ResponseEntity<?> logo() {
+        try {
+            return datosGimnasioService.cargarLogo()
+                    .<ResponseEntity<?>>map(logo -> ResponseEntity.ok()
+                            .contentType(MediaType.IMAGE_PNG)
+                            .cacheControl(CacheControl.maxAge(Duration.ofDays(1)).cachePrivate())
+                            .body(logo.recurso()))
+                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "El gimnasio no tiene logo")));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", String.valueOf(e.getMessage())));
+        }
+    }
+
+    @DeleteMapping("/logo")
+    public ResponseEntity<DatosGimnasioDTO> quitarLogo() {
+        return ResponseEntity.ok(datosGimnasioService.eliminarLogo());
     }
 }

@@ -73,7 +73,7 @@ electrónica de ARCA (ex AFIP) va al final, después de explicar cómo hacerla.
    tocando el cuerpo, y la rutina se imprime, se descarga o se comparte por WhatsApp como un PDF A4 con los datos del
    gimnasio. La base de PDF, en `summit-frontend/src/components/pdf/`, queda para los comprobantes).
 8. Terminaciones: logo del gimnasio (Fase 11), importar socios desde Excel, los botones decorativos de arriba y
-   las limpiezas chicas.
+   las limpiezas chicas (hecho el 26/10/2026, salvo importar desde Excel).
 9. Dejarlo listo para el gimnasio: instalación, copias de seguridad cifradas (Fase 12) y tests automáticos
    (Fase 7).
 10. Factura electrónica de ARCA.
@@ -161,12 +161,13 @@ por API que se hicieron en cada fase quedaron solo descriptas en los commits.
 - Venta de productos en recepción (agua, suplementos) con un stock simple: el 25/10/2026 se decidió no hacerla por
   ahora.
 
-### Fase 11: datos del gimnasio (hecha en la A5 de la app, salvo el logo)
+### Fase 11: datos del gimnasio (hecha)
 
 "Ajustes > General" ofrecía formatos de fecha, moneda y zona horaria de varios países, pero el sistema es para
 Argentina. El 20/10/2026 se reemplazó por *Ajustes > Datos del gimnasio* (nombre, dirección, contacto, horarios,
 capacidad y reglamento), que ya usa la app del socio. Desde el 26/10/2026 también van en el encabezado de los PDF
-(rutinas y comprobantes de pago). Queda el logo.
+(rutinas y comprobantes de pago), con el logo del gimnasio: se sube ahí mismo (PNG o JPG; queda como PNG de hasta
+512 px, con transparencia).
 
 ### Fase 12: puesta en producción
 
@@ -179,10 +180,11 @@ capacidad y reglamento), que ya usa la app del socio. Desde el 26/10/2026 tambi�
   HTTPS público (túnel), y poner esa dirección en `summit.cors.origins` y `APP_URL`. La primera corrida de lo que pide
   administrador (servicios, tarea como SYSTEM, firewall) se hace en la PC del gimnasio.
 
-## Limpiezas chicas (en cualquier momento)
+## Limpiezas chicas (hechas el 26/10/2026)
 
-- `summit-frontend/src/pages/Membresias.jsx` no se usa (la ruta usa `EstadoMembresias.jsx`).
-- Avisos al arrancar el backend: `MySQL8Dialect` está deprecado y conviene definir `spring.jpa.open-in-view`.
-- `spring.jpa.show-sql=true` llena la consola de SQL: apagarlo fuera de desarrollo.
-- La rama `pagos-debito-metricas` ya está incluida en `main`: se puede borrar.
-- `npm run lint` falla porque el frontend no tiene archivo de configuración de ESLint.
+- Se borraron `Membresias.jsx` (no se usaba) y la pantalla de ejemplo *Tablas del Sistema*.
+- El backend ya no avisa al arrancar: sin `MySQL8Dialect` (lo detecta Hibernate) y con `spring.jpa.open-in-view`
+  explícito. `spring.jpa.show-sql` quedó en false.
+- Se borró la rama `pagos-debito-metricas`, que ya estaba incluida en `main` (era el commit 5183acf).
+- `npm run lint` pasa: el frontend tiene `.eslintrc.cjs` y se corrigieron los imports sin usar.
+- La barra de arriba ya no tiene los botones de ejemplo (idioma, modo oscuro y la flecha).

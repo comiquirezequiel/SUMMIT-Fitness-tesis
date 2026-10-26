@@ -135,4 +135,54 @@ public final class Fotos {
         }
         return salida.toByteArray();
     }
+
+    // ---- Logo del gimnasio ----
+
+    private static final int LADO_MAXIMO_LOGO = 512;
+    private static final int LADO_MINIMO_LOGO = 48;
+
+    /**
+     * Controla que el logo sea JPG o PNG y lo devuelve como PNG de hasta LADO_MAXIMO_LOGO px, sin deformarlo y con su
+     * transparencia (a diferencia de las fotos de personas, que pasan a JPG con fondo blanco).
+     *
+     * @throws IllegalArgumentException con un mensaje para mostrar si no sirve
+     */
+    public static byte[] normalizarLogo(MultipartFile archivo) {
+        if (archivo == null || archivo.isEmpty()) {
+            throw new IllegalArgumentException("Adjuntá el logo");
+        }
+        byte[] contenido;
+        try {
+            contenido = archivo.getBytes();
+        } catch (IOException e) {
+            throw new RuntimeException("No se pudo leer el logo", e);
+        }
+        String tipo = ArchivoService.tipoDe(Arrays.copyOf(contenido, Math.min(12, contenido.length)));
+        if (!"image/jpeg".equals(tipo) && !"image/png".equals(tipo)) {
+            throw new IllegalArgumentException("Formato no permitido: el logo tiene que ser PNG o JPG");
+        }
+        BufferedImage original = leer(contenido);
+        if (Math.max(original.getWidth(), original.getHeight()) < LADO_MINIMO_LOGO) {
+            throw new IllegalArgumentException("El logo es muy chico: tiene que tener al menos " + LADO_MINIMO_LOGO + " px de lado");
+        }
+        double escala = Math.min(1.0, (double) LADO_MAXIMO_LOGO / Math.max(original.getWidth(), original.getHeight()));
+        int ancho = Math.max(1, (int) Math.round(original.getWidth() * escala));
+        int alto = Math.max(1, (int) Math.round(original.getHeight() * escala));
+        BufferedImage logo = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = logo.createGraphics();
+        try {
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g.drawImage(original, 0, 0, ancho, alto, null);
+        } finally {
+            g.dispose();
+        }
+        ByteArrayOutputStream salida = new ByteArrayOutputStream();
+        try {
+            ImageIO.write(logo, "png", salida);
+        } catch (IOException e) {
+            throw new RuntimeException("No se pudo procesar el logo", e);
+        }
+        return salida.toByteArray();
+    }
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, Globe, Moon, Bell, LogOut, Menu, KeyRound, CheckCircle2 } from 'lucide-react';
+import { Bell, LogOut, Menu, KeyRound, CheckCircle2 } from 'lucide-react';
 import Modal from './Modal';
 import { useSinLeerChat } from '../services/chat';
 import { useTareasPendientes } from '../services/seguimiento';
@@ -68,24 +68,12 @@ const Navbar = ({ onMenuClick }) => {
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="w-auto md:w-60 flex items-center justify-between md:pr-4">
+        <div className="w-auto md:w-60 flex items-center md:pr-4">
           <span className="text-lg md:text-xl font-extrabold text-blue-600 tracking-tight">Summit</span>
-          <button className="hidden md:flex text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-100 transition-colors">
-            <ChevronLeft className="w-4 h-4" />
-          </button>
         </div>
       </div>
 
       <div className="flex items-center gap-2 md:gap-4 text-slate-600">
-        <button className="hidden sm:flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded hover:bg-slate-100 transition-colors text-slate-700">
-          <Globe className="w-4 h-4 text-slate-500" />
-          <span>ES</span>
-        </button>
-        
-        <button className="hidden sm:flex p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors">
-          <Moon className="w-4 h-4" />
-        </button>
-
         {/* Campanita: conversaciones del chat con mensajes de socios sin leer (solo para quien atiende el chat) */}
         {atiendeChat && (
           <Link to="/socios/chat" className="relative p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors"

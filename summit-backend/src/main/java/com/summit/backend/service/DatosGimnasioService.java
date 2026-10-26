@@ -10,12 +10,16 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
@@ -35,6 +39,7 @@ public class DatosGimnasioService {
 
     private final DatosGimnasioRepository repository;
     private final ConfiguracionAccesoService configuracionAccesoService;
+    private final ArchivoService archivoService;
 
     /**
      * Crea los datos por defecto la primera vez: el nombre y un horario típico, para que la app tenga algo que
@@ -171,7 +176,44 @@ public class DatosGimnasioService {
                 .toList();
         return new DatosGimnasioDTO(d.getNombre(), d.getDireccion(), d.getCiudad(), d.getTelefono(), d.getWhatsapp(),
                 d.getEmail(), d.getInstagram(), d.getReglamento(), d.getCapacidad(), horarios,
-                acceso.getLatitudGimnasio(), acceso.getLongitudGimnasio());
+                acceso.getLatitudGimnasio(), acceso.getLongitudGimnasio(),
+                d.getLogoUrl() != null ? "/api/configuracion/gimnasio/logo?v=" + Fotos.version(d.getLogoActualizado()) : null);
+    }
+
+    // ---- Logo ----
+
+    /** Guarda el logo (PNG o JPG; queda como PNG de hasta 512 px) y reemplaza el anterior. */
+    @Transactional
+    public DatosGimnasioDTO guardarLogo(MultipartFile archivo) {
+        byte[] png = Fotos.normalizarLogo(archivo);
+        DatosGimnasio datos = obtener();
+        String anterior = datos.getLogoUrl();
+        datos.setLogoUrl(archivoService.guardarContenido(png, "logo", "logo", ".png"));
+        datos.setLogoActualizado(LocalDateTime.now());
+        repository.save(datos);
+        // Recién con el nuevo guardado se borra el archivo del anterior
+        if (anterior != null) {
+            archivoService.eliminar(anterior);
+        }
+        return aDTO(datos);
+    }
+
+    /** El logo, o vacío si no hay. */
+    public Optional<ArchivoService.Archivo> cargarLogo() {
+        return Optional.ofNullable(obtener().getLogoUrl()).map(archivoService::cargar);
+    }
+
+    @Transactional
+    public DatosGimnasioDTO eliminarLogo() {
+        DatosGimnasio datos = obtener();
+        String ruta = datos.getLogoUrl();
+        if (ruta != null) {
+            datos.setLogoUrl(null);
+            datos.setLogoActualizado(null);
+            repository.save(datos);
+            archivoService.eliminar(ruta);
+        }
+        return aDTO(datos);
     }
 
     private static String texto(String valor) {

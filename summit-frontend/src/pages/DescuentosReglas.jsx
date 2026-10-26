@@ -77,10 +77,11 @@ const DescuentosReglas = () => {
   };
   const cargarDescuentos = () => listarDescuentos().then(setDescuentos).catch(err => mostrar('error', err.message));
 
+  // Solo al entrar a la pantalla
   useEffect(() => {
     obtenerReglas().then(setReglas).catch(err => mostrar('error', err.message));
     cargarDescuentos();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cambiarRegla = (campo, valor) => setReglas(prev => ({ ...prev, [campo]: valor }));
 

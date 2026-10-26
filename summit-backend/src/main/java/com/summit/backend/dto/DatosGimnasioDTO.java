@@ -8,7 +8,8 @@ import java.util.List;
 /**
  * Datos del gimnasio para el panel (para ver y guardar) y para la app del socio.
  * latitud y longitud salen de Reglas de acceso (la ubicación del ingreso con QR): sirven para el botón del mapa.
- * Se ignoran al guardar.
+ * logoUrl es la dirección del logo con su versión (null si no hay): el logo se sube aparte. Los tres se ignoran al
+ * guardar.
  */
 public record DatosGimnasioDTO(
         String nombre,
@@ -22,7 +23,8 @@ public record DatosGimnasioDTO(
         Integer capacidad,
         List<Horario> horarios,
         Double latitud,
-        Double longitud) {
+        Double longitud,
+        String logoUrl) {
 
     /** dia: LUNES a DOMINGO. Sin "abre", ese día está cerrado. Las horas van como "07:00". */
     public record Horario(String dia,

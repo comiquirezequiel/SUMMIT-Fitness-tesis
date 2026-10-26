@@ -284,7 +284,7 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
             <p className="text-sm text-slate-500">No tiene certificados cargados.</p>
           ) : (
             <ul className="divide-y divide-slate-100 border border-slate-200 rounded-lg">
-              {certificados.map((c, i) => (
+              {certificados.map((c) => (
                 <li key={c.idCertificado} className="p-3 space-y-2">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
                   <div className="text-sm">

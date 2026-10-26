@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
-  Users, User, UserPlus, BarChart2,
+  Users, User, BarChart2,
   Wallet, Tag, TrendingUp, AlertTriangle,
   Dumbbell, CalendarCheck, History, ClipboardList, ListChecks,
-  Calendar, CalendarDays, BookOpen, Settings,
-  LogOut, LayoutDashboard, ChevronDown, ChevronUp, GitBranch, Clipboard,
-  MessageCircle, CheckSquare, UserX, Home, ScanLine, Repeat, Building2, Megaphone, BadgePercent
+  Calendar, CalendarDays, Settings,
+  LogOut, LayoutDashboard, ChevronDown, ChevronUp, Clipboard,
+  MessageCircle, CheckSquare, UserX, Repeat, Building2, Megaphone, BadgePercent
 } from 'lucide-react';
 import { usuarioActual } from '../utils/formato';
 import { cerrarSesion } from '../services/auth';
@@ -69,7 +69,6 @@ const MENU_ITEMS = [
       { icon: CheckSquare, text: "Reglas de Acceso", path: "/ajustes/acceso", roles: STAFF },
       { icon: Users, text: "Equipo", path: "/ajustes/equipo", roles: ['ADMIN'] },
       { icon: Building2, text: "Datos del gimnasio", path: "/ajustes/gimnasio", roles: ['ADMIN'] },
-      { icon: GitBranch, text: "Tablas del Sistema", path: "/ajustes/tablas", roles: ['ADMIN'], demo: true },
       { icon: Clipboard, text: "Asistencia del personal", path: "/ajustes/asistencia", roles: ['ADMIN'] },
     ]
   }

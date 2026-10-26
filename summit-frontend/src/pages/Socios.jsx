@@ -72,11 +72,12 @@ const Socios = () => {
     }
   };
 
+  // Solo al entrar a la pantalla (después se recarga con las acciones)
   useEffect(() => {
     fetchSocios();
     fetchPlanes();
     fetchDebitos();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Cerrar el menú de estados al hacer clic afuera
   useEffect(() => {
