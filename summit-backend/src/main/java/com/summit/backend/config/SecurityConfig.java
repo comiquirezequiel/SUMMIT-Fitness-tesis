@@ -120,6 +120,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/caja/**").hasAnyRole("ADMIN", "RECEPCION")
                 // Seguimiento de socios: inactividad y tareas de contacto
                 .requestMatchers("/api/seguimiento/**").hasAnyRole("ADMIN", "RECEPCION")
+                // Factura electrónica: recepción ve los comprobantes y puede mandar ya lo pendiente; el resto, el ADMIN
+                .requestMatchers(HttpMethod.GET, "/api/facturacion/**").hasAnyRole("ADMIN", "RECEPCION")
+                .requestMatchers(HttpMethod.POST, "/api/facturacion/procesar").hasAnyRole("ADMIN", "RECEPCION")
+                .requestMatchers("/api/facturacion/**").hasRole("ADMIN")
                 // Débito automático desde recepción (el socio usa /api/portal/debito)
                 .requestMatchers("/api/debitos/**").hasAnyRole("ADMIN", "RECEPCION")
 

@@ -1,5 +1,6 @@
 package com.summit.backend.controller;
 
+import com.summit.backend.arca.ConfiguracionArca;
 import com.summit.backend.config.AppSocios;
 import com.summit.backend.dto.LoginRequest;
 import com.summit.backend.service.AuthService;
@@ -38,6 +39,7 @@ public class AuthController {
     private final AuthService authService;
     private final PasswordService passwordService;
     private final AppSocios appSocios;
+    private final ConfiguracionArca configuracionArca;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request,
@@ -88,11 +90,13 @@ public class AuthController {
 
     /**
      * Qué funciones opcionales están activas, para que el frontend muestre solo esas: la app del socio (AppSocios)
-     * y "¿Olvidaste tu contraseña?" por email (hace falta un correo saliente configurado).
+     * "¿Olvidaste tu contraseña?" por email (hace falta un correo saliente configurado) y la factura electrónica de
+     * ARCA (summit.arca.habilitada).
      */
     @GetMapping("/funciones")
     public Map<String, Boolean> funciones() {
-        return Map.of("appSocios", appSocios.habilitada(), "recuperacionPorEmail", passwordService.recuperacionDisponible());
+        return Map.of("appSocios", appSocios.habilitada(), "recuperacionPorEmail", passwordService.recuperacionDisponible(),
+                "facturacion", configuracionArca.habilitada());
     }
 
     /**

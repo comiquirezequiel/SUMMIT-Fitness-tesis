@@ -82,6 +82,13 @@
 			<artifactId>pdfbox</artifactId>
 			<version>3.0.3</version>
 		</dependency>
+		<!-- Factura electrónica de ARCA: el pedido de acceso a ARCA (WSAA) va firmado con el certificado del
+		     gimnasio en formato CMS, que Java no trae. BouncyCastle (MIT) es la librería estándar para eso. -->
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcpkix-jdk18on</artifactId>
+			<version>1.86</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>

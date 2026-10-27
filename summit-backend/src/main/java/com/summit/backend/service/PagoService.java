@@ -2,6 +2,7 @@ package com.summit.backend.service;
 
 import com.summit.backend.dto.CajaResumenDTO;
 import com.summit.backend.dto.CobroRequestDTO;
+import com.summit.backend.dto.FacturaResumenDTO;
 import com.summit.backend.dto.PagoListadoDTO;
 import com.summit.backend.dto.PresupuestoDTO;
 import com.summit.backend.model.Descuento;
@@ -66,6 +67,7 @@ public class PagoService {
     private final SuscripcionService suscripcionService;
     private final DescuentoService descuentoService;
     private final ReglasMembresiaService reglasMembresiaService;
+    private final FacturacionService facturacionService;
 
     /**
      * Detalle de un cobro antes de confirmarlo, con el mismo cálculo que registrarPago. Sin socio = socio nuevo
@@ -135,7 +137,9 @@ public class PagoService {
         if (pago.getEstadoPago() == EstadoPago.APROBADO) {
             pago.setVenceMembresia(suscripcionService.extenderOcrearSuscripcion(usuario, plan).getFechaVencimiento());
         }
-        return aDto(pagoHistorialRepository.save(pago));
+        PagoHistorial guardado = pagoHistorialRepository.save(pago);
+        facturacionService.encolarFactura(guardado);
+        return aDtoConFactura(guardado);
     }
 
     /**
@@ -157,7 +161,9 @@ public class PagoService {
             pago.setVenceMembresia(suscripcionService.extenderOcrearSuscripcion(pago.getUsuario(), pago.getPlan())
                     .getFechaVencimiento());
         }
-        return aDto(pagoHistorialRepository.save(pago));
+        PagoHistorial guardado = pagoHistorialRepository.save(pago);
+        facturacionService.encolarFactura(guardado);
+        return aDtoConFactura(guardado);
     }
 
     /**
@@ -171,7 +177,7 @@ public class PagoService {
         if (pagoHistorialRepository.existsByMpPaymentId(mpPaymentId)) {
             return false;
         }
-        pagoHistorialRepository.save(PagoHistorial.builder()
+        facturacionService.encolarFactura(pagoHistorialRepository.save(PagoHistorial.builder()
                 .usuario(usuario)
                 .plan(plan)
                 .montoAbonado(monto)
@@ -181,7 +187,7 @@ public class PagoService {
                 .mpPaymentId(mpPaymentId)
                 .fechaPago(fechaCobro)
                 .venceMembresia(suscripcionService.extenderOcrearSuscripcion(usuario, plan).getFechaVencimiento())
-                .build());
+                .build()));
         return true;
     }
 
@@ -190,9 +196,9 @@ public class PagoService {
      */
     @Transactional(readOnly = true)
     public List<PagoListadoDTO> historialPorSocio(Long idUsuario) {
-        return pagoHistorialRepository.findByUsuarioIdUsuarioOrderByFechaPagoDesc(idUsuario).stream()
+        return conFacturas(pagoHistorialRepository.findByUsuarioIdUsuarioOrderByFechaPagoDesc(idUsuario).stream()
                 .map(this::aDto)
-                .toList();
+                .toList());
     }
 
     /**
@@ -204,7 +210,20 @@ public class PagoService {
         Page<PagoHistorial> pagos = estado == null
                 ? pagoHistorialRepository.findAll(pageable)
                 : pagoHistorialRepository.findByEstadoPago(estado, pageable);
-        return pagos.map(this::aDto);
+        Page<PagoListadoDTO> pagina = pagos.map(this::aDto);
+        conFacturas(pagina.getContent());
+        return pagina;
+    }
+
+    // Le agrega a cada cobro su factura electrónica (una sola consulta para toda la lista)
+    private List<PagoListadoDTO> conFacturas(List<PagoListadoDTO> lista) {
+        Map<Long, FacturaResumenDTO> facturas = facturacionService.resumenes(lista.stream().map(PagoListadoDTO::getIdPago).toList());
+        lista.forEach(p -> p.setFactura(facturas.get(p.getIdPago())));
+        return lista;
+    }
+
+    private PagoListadoDTO aDtoConFactura(PagoHistorial p) {
+        return conFacturas(List.of(aDto(p))).get(0);
     }
 
     public CajaResumenDTO resumen() {

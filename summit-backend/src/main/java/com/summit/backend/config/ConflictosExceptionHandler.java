@@ -2,6 +2,7 @@ package com.summit.backend.config;
 
 import com.summit.backend.controller.CajaController;
 import com.summit.backend.controller.CongelamientoController;
+import com.summit.backend.controller.FacturacionController;
 import com.summit.backend.controller.MembresiaConfigController;
 import com.summit.backend.controller.SeguimientoController;
 import org.springframework.core.Ordered;
@@ -20,7 +21,7 @@ import java.util.NoSuchElementException;
  * inválidos siguen en GlobalExceptionHandler (400).
  */
 @RestControllerAdvice(assignableTypes = {MembresiaConfigController.class, CongelamientoController.class, CajaController.class,
-        SeguimientoController.class})
+        SeguimientoController.class, FacturacionController.class})
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class ConflictosExceptionHandler {
 

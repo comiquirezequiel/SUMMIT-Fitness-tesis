@@ -39,4 +39,5 @@ public class PagoListadoDTO {
     private BigDecimal descuentoMonto;
     private BigDecimal matriculaMonto; // null = no correspondía; 0 = bonificada
     private LocalDate venceMembresia;  // hasta cuándo quedó paga la membresía con este cobro (null si no la extendió)
+    private FacturaResumenDTO factura; // su factura electrónica (null si no tiene o la facturación está apagada)
 }
