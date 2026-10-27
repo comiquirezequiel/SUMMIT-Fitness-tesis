@@ -1,6 +1,0 @@
-{
-  "name": "SUMMIT Fitness",
-  "description": "Sistema de gestión integral para gimnasios con tablero gerencial de KPIs, control de acceso físico con molinete, auditoría de aptos médicos y administración de socios.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
