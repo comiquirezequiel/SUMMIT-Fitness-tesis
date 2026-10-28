@@ -122,7 +122,8 @@ Para revisar si todo el backend compila sin arrancarlo: `.\mvnw.cmd compile` den
 - **Backend:** `.\mvnw.cmd test` dentro de `summit-backend`. Necesita MySQL corriendo y el
   `application-local.properties` (usa el mismo usuario). Los tests trabajan en una base aparte, `summit_test`, que se
   crea y se vacía sola: nunca tocan la de desarrollo. Revisan el control de acceso, los cobros, el congelamiento, la
-  caja, el seguimiento, los certificados, la importación, los permisos por rol y las reglas del asistente de IA.
+  caja, el seguimiento, los certificados, la importación, la factura electrónica (contra el simulador de ARCA), los
+  permisos por rol y las reglas del asistente de IA.
   Termina con `BUILD SUCCESS` si todo anda.
 - **Frontend:** `npm.cmd run lint` dentro de `summit-frontend` revisa el código (sin errores = no muestra nada).
 
@@ -134,6 +135,9 @@ Para revisar si todo el backend compila sin arrancarlo: `.\mvnw.cmd compile` den
   de la extensión de Java del editor compilan mal las clases de Lombok.
 - Para ver la base de datos: MySQL Workbench, conexión `127.0.0.1`, puerto `3306`, con el usuario y la
   contraseña de `application-local.properties`.
+- Factura electrónica de ARCA (opcional, apagada por defecto): se prende con `ARCA_HABILITADA=true` en
+  `application-local.properties`, primero con el simulador. Cómo seguir hasta facturar de verdad, en
+  [FACTURACION.md](FACTURACION.md).
 - Débito automático con Mercado Pago (opcional): se activa con `MP_ACCESS_TOKEN` en
   `application-local.properties`.
 - La app del socio está suspendida hasta después de la tesis (`summit.app-socios.habilitada=false` en

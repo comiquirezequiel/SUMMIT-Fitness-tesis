@@ -79,7 +79,28 @@ electrónica de ARCA (ex AFIP) va al final, después de explicar cómo hacerla.
    membresía hasta esa fecha.
 9. Dejarlo listo para el gimnasio: instalación, copias de seguridad cifradas (Fase 12) y tests automáticos
    (Fase 7). Hecho el 26/10/2026; falta solo lo que se hace en la PC del gimnasio (ver Fase 12).
-10. Factura electrónica de ARCA.
+10. Factura electrónica de ARCA (hecha el 28/10/2026 contra el simulador, ver abajo y [FACTURACION.md](FACTURACION.md)).
+    Falta probarla en homologación con un certificado de prueba y, para usarla de verdad, los trámites del dueño con su
+    contador.
+
+#### Factura electrónica (hecha el 28/10/2026)
+
+- Integración propia con ARCA (WSAA y WSFEv1), sin servicios de terceros: la clave del certificado y los datos de los
+  socios no salen de la PC del gimnasio. Apagada por defecto (`ARCA_HABILITADA`); ambientes simulador, homologación y
+  producción (`ARCA_AMBIENTE`).
+- Cada cobro aprobado deja su factura en la misma transacción y una cola la manda a ARCA enseguida: Factura C si el dueño
+  es monotributista, B con el IVA contenido si es responsable inscripto, a consumidor final o con el DNI del socio.
+  Reintentos cada vez más espaciados; si se corta la conexión al pedir el CAE, se le pregunta a ARCA antes de usar otro
+  número (nunca se duplica ni se saltea). Un rechazo no gasta el número.
+- Nota de crédito de la misma letra para anular, y volver a facturar el cobro (por ejemplo, con el DNI). Ya manda la
+  condición frente al IVA del receptor, obligatoria desde el 1/12/2026.
+- Panel: *Caja & Pagos > Facturas* (estado de cada una, mandar ahora, detalle, reintentar y anular), *Ajustes >
+  Facturación* (datos fiscales, certificado y prueba de conexión), la factura de cada cobro en la caja y en el paso final
+  del cobro. PDF A4 con los datos que pide ARCA, el CAE y el QR (verificado: se lee y trae los datos del comprobante); sin
+  validez fiscal fuera de producción, con marca de agua.
+- Simulador de ARCA adentro del backend (mismos mensajes SOAP, valida numeración, fechas, IVA y notas de crédito) para
+  probar y mostrar sin certificado. 16 tests contra el simulador.
+- Quedan para el contador: Factura A, CAEA de contingencia y duplicados electrónicos (RG 3685).
 
 #### Membresías flexibles (hecha el 26/10/2026)
 

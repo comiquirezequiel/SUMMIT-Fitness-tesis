@@ -1,11 +1,12 @@
 // Funciones opcionales que decide el backend (GET /api/auth/funciones): la app del socio, suspendida hasta después
-// de la tesis (summit.app-socios.habilitada), y "¿Olvidaste tu contraseña?" por email. Se piden una vez por carga
-// de página y quedan guardadas en el navegador, así la pantalla arranca con lo último que se supo.
+// de la tesis (summit.app-socios.habilitada), "¿Olvidaste tu contraseña?" por email y la factura electrónica de ARCA
+// (summit.arca.habilitada). Se piden una vez por carga de página y quedan guardadas en el navegador, así la pantalla
+// arranca con lo último que se supo.
 import { useSyncExternalStore } from 'react';
 import { API_URL } from './config';
 
 const CLAVE = 'summit.funciones';
-const PREDETERMINADAS = { appSocios: false, recuperacionPorEmail: false };
+const PREDETERMINADAS = { appSocios: false, recuperacionPorEmail: false, facturacion: false };
 
 const leerGuardadas = () => {
   try {
@@ -45,5 +46,6 @@ const suscribir = (oyente) => {
   return () => oyentes.delete(oyente);
 };
 
-/** { appSocios, recuperacionPorEmail }: si están activas la app del socio y la recuperación por email. */
+/** { appSocios, recuperacionPorEmail, facturacion }: si están activas la app del socio, la recuperación por email y la
+ * factura electrónica. */
 export const useFunciones = () => useSyncExternalStore(suscribir, () => funciones);

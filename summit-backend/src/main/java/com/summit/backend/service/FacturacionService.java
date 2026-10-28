@@ -672,20 +672,20 @@ public class FacturacionService {
     public PruebaConexionDTO probarConexion() {
         exigirHabilitada();
         List<PruebaConexionDTO.Paso> pasos = new ArrayList<>();
-        String lugar = switch (config.ambiente()) {
-            case SIMULADOR -> "el simulador (no es ARCA de verdad)";
-            case HOMOLOGACION -> "ARCA, ambiente de pruebas (homologación)";
-            case PRODUCCION -> "ARCA (producción)";
+        String servidores = switch (config.ambiente()) {
+            case SIMULADOR -> "Servidores del simulador (no es ARCA de verdad)";
+            case HOMOLOGACION -> "Servidores de ARCA, ambiente de pruebas (homologación)";
+            case PRODUCCION -> "Servidores de ARCA (producción)";
         };
         try {
             ClienteWsfe.Servidores s = wsfe.estadoServidores();
-            pasos.add(new PruebaConexionDTO.Paso("Servidores de " + lugar, s.ok(), "Aplicación " + s.aplicacion()
+            pasos.add(new PruebaConexionDTO.Paso(servidores, s.ok(), "Aplicación " + s.aplicacion()
                     + ", base de datos " + s.baseDeDatos() + ", autenticación " + s.autenticacion()));
             if (!s.ok()) {
                 return new PruebaConexionDTO(false, pasos);
             }
         } catch (IOException | ArcaException e) {
-            pasos.add(new PruebaConexionDTO.Paso("Servidores de " + lugar, false, sinRespuesta(e)));
+            pasos.add(new PruebaConexionDTO.Paso(servidores, false, sinRespuesta(e)));
             return new PruebaConexionDTO(false, pasos);
         }
 

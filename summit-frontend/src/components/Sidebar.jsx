@@ -6,18 +6,21 @@ import {
   Dumbbell, CalendarCheck, History, ClipboardList, ListChecks,
   Calendar, CalendarDays, Settings,
   LogOut, LayoutDashboard, ChevronDown, ChevronUp, Clipboard,
-  MessageCircle, CheckSquare, UserX, Repeat, Building2, Megaphone, BadgePercent
+  MessageCircle, CheckSquare, UserX, Repeat, Building2, Megaphone, BadgePercent, FileText, Receipt
 } from 'lucide-react';
 import { usuarioActual } from '../utils/formato';
 import { cerrarSesion } from '../services/auth';
 import { useSinLeerChat } from '../services/chat';
 import { useTareasPendientes } from '../services/seguimiento';
+import { useAvisoFacturacion } from '../services/facturacion';
 import { useFunciones } from '../services/funciones';
 
 // Roles que ven cada opción (los mismos permisos que exige el backend).
 // demo: pantallas que todavía muestran datos de ejemplo (no están conectadas al backend).
-// contador: globito con un número (las conversaciones del chat con mensajes sin leer, las tareas de seguimiento pendientes).
+// contador: globito con un número (las conversaciones del chat con mensajes sin leer, las tareas de seguimiento
+// pendientes, las facturas rechazadas o sin confirmar).
 // soloConApp: existe solo para la app del socio; mientras está suspendida no aparece.
+// soloConFacturacion: existe solo con la factura electrónica prendida.
 const STAFF = ['ADMIN', 'RECEPCION'];
 const MENU_ITEMS = [
   {
@@ -36,6 +39,7 @@ const MENU_ITEMS = [
     icon: Wallet, text: "Caja & Pagos",
     subItems: [
       { icon: Wallet, text: "Caja", path: "/caja", roles: STAFF },
+      { icon: FileText, text: "Facturas", path: "/caja/facturas", roles: STAFF, contador: 'facturas', soloConFacturacion: true },
     ]
   },
   {
@@ -70,14 +74,19 @@ const MENU_ITEMS = [
       { icon: Users, text: "Equipo", path: "/ajustes/equipo", roles: ['ADMIN'] },
       { icon: Building2, text: "Datos del gimnasio", path: "/ajustes/gimnasio", roles: ['ADMIN'] },
       { icon: Clipboard, text: "Asistencia del personal", path: "/ajustes/asistencia", roles: ['ADMIN'] },
+      { icon: Receipt, text: "Facturación", path: "/ajustes/facturacion", roles: ['ADMIN'], soloConFacturacion: true },
     ]
   }
 ];
 
-// Menú filtrado por el rol del usuario (y sin lo de la app del socio si está suspendida): se ocultan los grupos que
-// quedan vacíos
-const menuParaRol = (rol, appSocios) => MENU_ITEMS
-  .map(item => ({ ...item, subItems: item.subItems.filter(sub => sub.roles.includes(rol) && (appSocios || !sub.soloConApp)) }))
+// Menú filtrado por el rol del usuario (sin lo de la app del socio si está suspendida, ni lo de la facturación si está
+// apagada): se ocultan los grupos que quedan vacíos
+const menuParaRol = (rol, { appSocios, facturacion }) => MENU_ITEMS
+  .map(item => ({
+    ...item,
+    subItems: item.subItems.filter(sub => sub.roles.includes(rol) && (appSocios || !sub.soloConApp)
+      && (facturacion || !sub.soloConFacturacion)),
+  }))
   .filter(item => item.subItems.length > 0);
 
 const Globito = ({ cantidad }) => (
@@ -158,10 +167,13 @@ const SidebarItem = ({ icon: Icon, text, path, subItems, activePath, onNavigate,
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const location = useLocation();
   const rol = usuarioActual()?.rol;
-  const { appSocios } = useFunciones();
+  const funciones = useFunciones();
+  const { appSocios, facturacion } = funciones;
+  const avisoFacturacion = useAvisoFacturacion(facturacion && STAFF.includes(rol));
   const contadores = {
     chat: useSinLeerChat(appSocios && STAFF.includes(rol)),
     tareas: useTareasPendientes(STAFF.includes(rol)).pendientes,
+    facturas: avisoFacturacion.rechazados + avisoFacturacion.inciertos,
   };
 
   return (
@@ -184,7 +196,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       )}
 
       <div className="flex-1 overflow-y-auto p-3 sidebar-scroll">
-        {menuParaRol(rol, appSocios).map((item, idx) => (
+        {menuParaRol(rol, funciones).map((item, idx) => (
           <SidebarItem 
             key={idx} 
             icon={item.icon} 

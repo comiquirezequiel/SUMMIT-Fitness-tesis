@@ -29,6 +29,8 @@ const Chat = lazy(() => import('./pages/Chat'));
 const TareasCRM = lazy(() => import('./pages/TareasCRM'));
 const Inactividad = lazy(() => import('./pages/Inactividad'));
 const Caja = lazy(() => import('./pages/Caja'));
+const Facturas = lazy(() => import('./pages/Facturas'));
+const AjustesFacturacion = lazy(() => import('./pages/AjustesFacturacion'));
 const Planes = lazy(() => import('./pages/Planes'));
 const EstadoMembresias = lazy(() => import('./pages/EstadoMembresias'));
 const DescuentosReglas = lazy(() => import('./pages/DescuentosReglas'));
@@ -85,6 +87,12 @@ const ProtectedRoute = ({ children }) => {
 // Pantallas que existen solo para la app del socio (chat, novedades): suspendida, vuelven al inicio
 const SoloConAppSocios = ({ children }) => (useFunciones().appSocios ? children : <Navigate to="/" replace />);
 
+// Pantallas de la factura electrónica: con la facturación apagada, vuelven al inicio
+const SoloConFacturacion = ({ children }) => (useFunciones().facturacion ? children : <Navigate to="/" replace />);
+
+// Pantallas solo del admin a las que no conviene entrar ni escribiendo la dirección (el backend igual las protege)
+const SoloAdmin = ({ children }) => (usuarioActual()?.rol === 'ADMIN' ? children : <Navigate to="/" replace />);
+
 // Inicio según el rol: el tablero de recepción no le sirve al profesor
 const Inicio = () => (usuarioActual()?.rol === 'PROFESOR'
   ? <Navigate to="/rutinas/constructor" replace />
@@ -121,6 +129,7 @@ function App() {
 
           {/* Caja */}
           <Route path="caja" element={<Diferida><Caja /></Diferida>} />
+          <Route path="caja/facturas" element={<SoloConFacturacion><Diferida><Facturas /></Diferida></SoloConFacturacion>} />
 
           {/* Membresías / Planes */}
           <Route path="planes" element={<Diferida><Planes /></Diferida>} />
@@ -143,6 +152,7 @@ function App() {
           <Route path="ajustes/acceso" element={<Diferida><ConfiguracionAcceso /></Diferida>} />
           <Route path="ajustes/equipo" element={<Diferida><AjustesEquipo /></Diferida>} />
           <Route path="ajustes/asistencia" element={<Diferida><AjustesAsistencia /></Diferida>} />
+          <Route path="ajustes/facturacion" element={<SoloConFacturacion><SoloAdmin><Diferida><AjustesFacturacion /></Diferida></SoloAdmin></SoloConFacturacion>} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

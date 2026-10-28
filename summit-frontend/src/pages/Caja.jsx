@@ -10,6 +10,8 @@ import TablaCierres from '../components/caja/TablaCierres';
 import Paginador from '../components/caja/Paginador';
 import { apiFetch } from '../services/api';
 import { obtenerTurno } from '../services/caja';
+import { facturarCobro, ESTADOS_COMPROBANTE } from '../services/facturacion';
+import { useFunciones } from '../services/funciones';
 import { formatFecha, formatHora, formatFechaHora, formatMoneda, descargarCsv, usuarioActual } from '../utils/formato';
 import { textoMetodoPago, ESTADOS_PAGO } from '../utils/constantes';
 
@@ -39,6 +41,15 @@ const detalleCobro = (p) => {
   return partes.join(' · ');
 };
 
+// La factura electrónica de un cobro, en pocas palabras: "Factura C 00002-00000154", "Factura pendiente"...
+const textoFactura = (f) => {
+  if (f.anulada) return `Factura ${f.letra} ${f.numero} anulada`;
+  if (f.estado === 'AUTORIZADO') return `Factura ${f.letra} ${f.numero}`;
+  return `Factura ${ESTADOS_COMPROBANTE[f.estado]?.texto.toLowerCase() || f.estado}`;
+};
+const claseFactura = (f) => (f.anulada ? 'text-slate-400 line-through'
+  : f.estado === 'AUTORIZADO' ? 'text-emerald-700' : f.estado === 'RECHAZADO' ? 'text-rose-600' : 'text-amber-700');
+
 const PESTANAS = [
   { id: 'cobros', texto: 'Cobros' },
   { id: 'gastos', texto: 'Gastos' },
@@ -52,6 +63,7 @@ const PESTANAS = [
  */
 const Caja = () => {
   const esAdmin = usuarioActual()?.rol === 'ADMIN';
+  const { facturacion } = useFunciones();
   const [pestana, setPestana] = useState('cobros');
   const [modal, setModal] = useState(null); // 'cobro' | 'gasto' | 'cierre'
   const [comprobante, setComprobante] = useState(null); // el cobro cuyo comprobante se está mirando
@@ -65,7 +77,7 @@ const Caja = () => {
   const [error, setError] = useState('');
   const [aviso, setAviso] = useState('');
   const [cargando, setCargando] = useState(false);
-  const [verificando, setVerificando] = useState(null); // id del pago que se está confirmando
+  const [verificando, setVerificando] = useState(null); // id del pago que se está confirmando o facturando
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -116,6 +128,21 @@ const Caja = () => {
     }
   };
 
+  // Un cobro sin factura (por ejemplo, de antes de prender la facturación): el admin la pide a mano
+  const facturar = async (pago) => {
+    setVerificando(pago.idPago);
+    try {
+      await facturarCobro(pago.idPago, false);
+      setAviso(`Se pidió la factura del cobro de ${pago.nombreSocio}: sale en unos segundos.`);
+      setError('');
+      setTimeout(cargar, 2000);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setVerificando(null);
+    }
+  };
+
   const pagos = pagina?.content || [];
   const filtro = busqueda.trim().toLowerCase();
   const pagosFiltrados = pagos.filter(p => !filtro ||
@@ -124,10 +151,11 @@ const Caja = () => {
 
   const exportar = () => descargarCsv(`caja-${new Date().toISOString().substring(0, 10)}.csv`,
     ['Fecha', 'Hora', 'Socio', 'DNI', 'Plan', 'Método', 'Comprobante', 'Estado', 'Cobró', 'Precio de lista', 'Descuento',
-      'Monto descontado', 'Matrícula', 'Monto'],
+      'Monto descontado', 'Matrícula', 'Monto', ...(facturacion ? ['Factura'] : [])],
     pagosFiltrados.map(p => [formatFecha(p.fechaPago), formatHora(p.fechaPago), p.nombreSocio, p.dniSocio, p.plan,
       textoMetodoPago(p.metodoPago), p.comprobante, ESTADOS_PAGO[p.estado]?.texto || p.estado, p.registradoPor || 'Sistema',
-      p.precioLista, p.descuentoNombre, p.descuentoMonto, p.matriculaMonto, p.monto]));
+      p.precioLista, p.descuentoNombre, p.descuentoMonto, p.matriculaMonto, p.monto,
+      ...(facturacion ? [p.factura ? textoFactura(p.factura) : ''] : [])]));
 
   const detalleMetodos = resumen && Object.keys(resumen.ingresosHoyPorMetodo).length > 0
     ? Object.entries(resumen.ingresosHoyPorMetodo).map(([m, total]) => `${textoMetodoPago(m)}: ${formatMoneda(total)}`).join(' · ')
@@ -282,7 +310,20 @@ const Caja = () => {
                         </span>
                         <div className="text-[11px] text-slate-400 mt-1 whitespace-nowrap">{p.registradoPor ? `Cobró: ${p.registradoPor}` : 'Automático'}</div>
                       </td>
-                      <td className="px-6 py-4 text-slate-500">{p.comprobante || '—'}</td>
+                      <td className="px-6 py-4 text-slate-500">
+                        {p.comprobante || (p.factura ? '' : '—')}
+                        {p.factura && (
+                          <div className={`text-[11px] font-semibold whitespace-nowrap ${p.comprobante ? 'mt-1' : ''} ${claseFactura(p.factura)}`}>
+                            {textoFactura(p.factura)}
+                          </div>
+                        )}
+                        {facturacion && esAdmin && !p.factura && p.estado === 'APROBADO' && Number(p.monto) > 0 && (
+                          <button onClick={() => facturar(p)} disabled={verificando === p.idPago}
+                            className="block mt-1 text-[11px] font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50">
+                            Facturar
+                          </button>
+                        )}
+                      </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border whitespace-nowrap ${estado.clase}`}>{estado.texto}</span>
                         {p.verificadoPor && (
@@ -308,7 +349,7 @@ const Caja = () => {
                         {p.estado !== 'RECHAZADO' && (
                           <button onClick={() => setComprobante(p)}
                             className="flex items-center gap-1 ml-auto mt-1 text-[11px] font-semibold text-slate-500 hover:text-blue-600">
-                            <FileText className="w-3 h-3" /> Comprobante
+                            <FileText className="w-3 h-3" /> {p.factura?.estado === 'AUTORIZADO' ? 'Factura' : 'Comprobante'}
                           </button>
                         )}
                       </td>
