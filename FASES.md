@@ -82,6 +82,11 @@ electrónica de ARCA (ex AFIP) va al final, después de explicar cómo hacerla.
 10. Factura electrónica de ARCA (hecha el 28/10/2026 contra el simulador, ver abajo y [FACTURACION.md](FACTURACION.md)).
     Falta probarla en homologación con un certificado de prueba y, para usarla de verdad, los trámites del dueño con su
     contador.
+11. Cobro más simple (hecho el 28/10/2026, pedido después de probar el panel): en la lista de socios el botón de cobro
+    aparece solo si el socio tiene algo para pagar (*Cobrar* sin membresía o vencida, *Renovar* si vence en 7 días o
+    menos; un cobro a verificar queda marcado y no se ofrece cobrarle de nuevo). El cobro propone el plan que ya tiene, y
+    el plan y el medio de pago se eligen con un toque. En el alta de socio el cobro es el último paso: un solo botón
+    registra y cobra, y al terminar queda el comprobante (o la factura) para imprimir o mandar por WhatsApp.
 
 #### Factura electrónica (hecha el 28/10/2026)
 

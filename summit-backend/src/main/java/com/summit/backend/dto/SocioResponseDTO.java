@@ -30,8 +30,12 @@ public class SocioResponseDTO {
 
     // --- Membresía ---
     private String planActual;
+    // Plan de la membresía actual (null = nunca tuvo): se propone al cobrarle
+    private Long idPlanActual;
     private boolean membresiaAlDia;
     private LocalDate vencimientoMembresia;
+    // Pagó por transferencia o QR y un admin todavía no lo confirmó: no hay que volver a cobrarle
+    private boolean cobroAVerificar;
     // Último día de un congelamiento que rige hoy (null si no está congelada)
     private LocalDate congeladaHasta;
     // Descuento que se le propone en cada cobro (null = sin descuento)

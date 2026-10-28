@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Users, CheckCircle, AlertTriangle, UserPlus, FileSpreadsheet,
   Search, Filter, ChevronDown, Download, RefreshCw, Layers,
-  Eye, Edit2, Activity, Wallet, Repeat
+  Eye, Edit2, Activity, Wallet, Repeat, Clock
 } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import CobroModal from '../components/socios/CobroModal';
@@ -11,7 +11,8 @@ import EditarSocioModal from '../components/socios/EditarSocioModal';
 import FichaSocioModal from '../components/socios/FichaSocioModal';
 import FotoSocio from '../components/socios/FotoSocio';
 import { apiFetch } from '../services/api';
-import { formatFecha, descargarCsv, usuarioActual } from '../utils/formato';
+import { cobroParaOfrecer } from '../services/membresias';
+import { formatFecha, descargarCsv, usuarioActual, diasHasta, textoVencimiento } from '../utils/formato';
 import { ESTADOS_USUARIO } from '../utils/constantes';
 
 const FILTROS_ESTADO = [
@@ -222,6 +223,8 @@ const Socios = () => {
               <tbody className="divide-y divide-slate-100">
                 {sociosFiltrados.map(socio => {
                   const estado = ESTADOS_USUARIO[socio.estado] || { texto: socio.estado, clase: 'bg-slate-100 text-slate-600 border-slate-200' };
+                  const cobro = cobroParaOfrecer(socio);
+                  const dias = diasHasta(socio.vencimientoMembresia);
                   return (
                     <tr key={socio.idSocio} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4">
@@ -253,6 +256,11 @@ const Socios = () => {
                             <span className="inline-flex w-max items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
                               No puede ingresar {socio.vencimientoMembresia && `(Vence ${formatFecha(socio.vencimientoMembresia)})`}
                             </span>
+                          ) : socio.membresiaAlDia && dias < 0 ? (
+                            <span title="Venció, pero todavía puede entrar por los días de gracia de las reglas de acceso"
+                              className="inline-flex w-max items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                              EN GRACIA (Venció {formatFecha(socio.vencimientoMembresia)})
+                            </span>
                           ) : socio.membresiaAlDia ? (
                             <span className="inline-flex w-max items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
                               AL DÍA {socio.vencimientoMembresia && `(Vence ${formatFecha(socio.vencimientoMembresia)})`}
@@ -260,6 +268,12 @@ const Socios = () => {
                           ) : (
                             <span className="inline-flex w-max items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
                               {socio.vencimientoMembresia ? `VENCIDA (${formatFecha(socio.vencimientoMembresia)})` : 'SIN MEMBRESÍA'}
+                            </span>
+                          )}
+                          {socio.cobroAVerificar && (
+                            <span title="Pagó por transferencia o QR y falta que un administrador lo confirme en Caja (A verificar). La membresía se extiende al confirmarlo."
+                              className="inline-flex w-max items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                              <Clock className="w-3 h-3" /> COBRO A VERIFICAR
                             </span>
                           )}
                         </div>
@@ -282,12 +296,14 @@ const Socios = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex justify-end gap-2">
-                          {puedeEditar && (
+                          {/* Solo si tiene algo para pagar: sin membresía, vencida o por vencer (Renovar) */}
+                          {puedeEditar && cobro && (
                             <button
                               onClick={() => setModal({ tipo: 'cobro', socio })}
-                              className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors border border-blue-200"
+                              title={cobro === 'RENOVAR' ? `La membresía ${textoVencimiento(dias)}: se puede cobrar el período siguiente` : undefined}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors border border-blue-200 ${cobro === 'RENOVAR' ? 'bg-white text-blue-600 hover:bg-blue-50' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
                             >
-                              <Wallet className="w-3 h-3" /> Cobrar
+                              <Wallet className="w-3 h-3" /> {cobro === 'RENOVAR' ? 'Renovar' : 'Cobrar'}
                             </button>
                           )}
                           <button onClick={() => setModal({ tipo: 'ficha', socio })} title="Ver ficha" className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors">

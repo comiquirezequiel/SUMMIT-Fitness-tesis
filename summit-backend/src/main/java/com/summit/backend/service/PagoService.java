@@ -48,9 +48,10 @@ public class PagoService {
 
     // Métodos en los que la plata puede no verse acreditada en el momento: pueden quedar "a verificar"
     private static final Set<MetodoPago> VERIFICABLES = EnumSet.of(MetodoPago.TRANSFERENCIA, MetodoPago.MERCADO_PAGO);
-    // Un cobro a verificar de estos últimos días que ya incluye la matrícula evita cobrarla dos veces. Uno más viejo
-    // sin resolver no cuenta (es un cobro que quedó olvidado en la caja)
-    private static final int DIAS_COBRO_A_VERIFICAR_CON_MATRICULA = 30;
+    // Un cobro a verificar de estos últimos días cuenta como cobro en curso: si ya incluye la matrícula no se la cobra
+    // dos veces, y la lista de socios no ofrece cobrarle de nuevo. Uno más viejo sin resolver no cuenta (es un cobro
+    // que quedó olvidado en la caja)
+    public static final int DIAS_COBRO_A_VERIFICAR = 30;
 
     /** El total que vio recepción ya no es el que corresponde (cambió un precio, la matrícula o un descuento). */
     public static class TotalCambiadoException extends RuntimeException {
@@ -344,7 +345,7 @@ public class PagoService {
         }
         // Ya la resolvió (cobrada o bonificada) un cobro reciente que quedó a verificar: no se cobra dos veces
         if (pagoHistorialRepository.existsByUsuarioIdUsuarioAndEstadoPagoAndMatriculaMontoIsNotNullAndFechaPagoAfter(
-                socio.getIdUsuario(), EstadoPago.PENDIENTE, LocalDateTime.now().minusDays(DIAS_COBRO_A_VERIFICAR_CON_MATRICULA))) {
+                socio.getIdUsuario(), EstadoPago.PENDIENTE, LocalDateTime.now().minusDays(DIAS_COBRO_A_VERIFICAR))) {
             return noCorresponde;
         }
         LocalDate ultimoVencimiento = suscripcionRepository.ultimoVencimiento(socio.getIdUsuario());

@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { Wallet } from 'lucide-react';
+import { Wallet, AlertTriangle } from 'lucide-react';
 import Modal from '../Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../Campo';
 import DetalleCobro from './DetalleCobro';
 import ComprobantePago from './ComprobantePago';
+import { SelectorPlan, SelectorMetodo, OpcionAVerificar } from './OpcionesCobro';
 import { formatMoneda } from '../../utils/formato';
-import { METODOS_PAGO, METODOS_VERIFICABLES } from '../../utils/constantes';
+import { METODOS_VERIFICABLES } from '../../utils/constantes';
 import { listarDescuentos, registrarCobro, textoValorDescuento, usePresupuesto } from '../../services/membresias';
 
 const ESPECIAL = 'ESPECIAL';
 
 /**
  * Cobro presencial en recepción: registra el pago y extiende la membresía del socio.
+ * Se propone el plan que ya tiene (o el único que hay): para renovar alcanza con elegir cómo paga y cobrar.
  * El total lo calcula el backend (precio del plan - descuento + matrícula si corresponde) y se muestra antes de
  * confirmar. El descuento puede ser uno del catálogo (se propone el habitual del socio) o uno especial con motivo.
  * Una transferencia o un QR que todavía no se ve acreditado puede quedar "a verificar": no extiende
@@ -30,6 +32,10 @@ const CobroModal = ({ socio, planes, onClose, onGuardado }) => {
   const [registrado, setRegistrado] = useState(null); // el cobro ya registrado: se muestra su comprobante
 
   const planesActivos = planes.filter(p => p.activo);
+  // Mientras recepción no elija otro: el plan que ya tiene, si sigue activo, o el único que hay
+  const propuesto = planesActivos.some(p => p.idPlan === socio.idPlanActual) ? String(socio.idPlanActual)
+    : planesActivos.length === 1 ? String(planesActivos[0].idPlan) : '';
+  const idPlan = datos.idPlan || propuesto;
   const cambiar = (campo, valor) => setDatos(prev => ({ ...prev, [campo]: valor }));
 
   // Catálogo de descuentos activos; si el socio tiene uno habitual (y sigue activo), se propone
@@ -47,9 +53,9 @@ const CobroModal = ({ socio, planes, onClose, onGuardado }) => {
   // El descuento especial entra al cálculo recién cuando tiene monto y motivo
   const especial = datos.descuento === ESPECIAL;
   const especialCompleto = especial && Number(datos.especialMonto) > 0 && datos.especialMotivo.trim().length >= 3;
-  const pedido = datos.idPlan ? {
+  const pedido = idPlan ? {
     idUsuario: socio.idSocio,
-    idPlan: Number(datos.idPlan),
+    idPlan: Number(idPlan),
     idDescuento: datos.descuento && !especial ? Number(datos.descuento) : null,
     descuentoEspecial: especialCompleto ? { monto: Number(datos.especialMonto), motivo: datos.especialMotivo.trim() } : null,
     bonificarMatricula: datos.bonificarMatricula,
@@ -108,25 +114,27 @@ const CobroModal = ({ socio, planes, onClose, onGuardado }) => {
           <p className="text-xs text-slate-500">DNI {socio.dni} · Plan actual: {socio.planActual}</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Campo label="Plan / Membresía" required>
-            <select required value={datos.idPlan} onChange={e => cambiar('idPlan', e.target.value)} className={inputClass}>
-              <option value="">Seleccioná un plan...</option>
-              {planesActivos.map(p => (
-                <option key={p.idPlan} value={p.idPlan}>{p.nombrePlan} ({formatMoneda(p.precioBase)})</option>
-              ))}
-            </select>
-          </Campo>
-          <Campo label="Descuento" ayuda={socio.descuentoHabitual ? `Habitual: ${socio.descuentoHabitual}` : null}>
-            <select value={datos.descuento} onChange={e => cambiar('descuento', e.target.value)} className={inputClass}>
-              <option value="">Sin descuento</option>
-              {descuentos.map(d => (
-                <option key={d.idDescuento} value={d.idDescuento}>{d.nombre} ({textoValorDescuento(d)})</option>
-              ))}
-              <option value={ESPECIAL}>Especial (monto y motivo)...</option>
-            </select>
-          </Campo>
-        </div>
+        {socio.cobroAVerificar && (
+          <p className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            Ya tiene un cobro a verificar (transferencia o QR). Antes de cobrarle otra vez, fijate en Caja si esa plata entró.
+          </p>
+        )}
+
+        <Campo label="Plan / Membresía" required>
+          {planesActivos.length > 0
+            ? <SelectorPlan planes={planesActivos} valor={idPlan} onCambiar={v => cambiar('idPlan', v)} />
+            : <p className="text-sm text-slate-500">No hay planes activos (se crean en Membresías &gt; Planes).</p>}
+        </Campo>
+        <Campo label="Descuento" ayuda={socio.descuentoHabitual ? `Habitual: ${socio.descuentoHabitual}` : null}>
+          <select value={datos.descuento} onChange={e => cambiar('descuento', e.target.value)} className={inputClass}>
+            <option value="">Sin descuento</option>
+            {descuentos.map(d => (
+              <option key={d.idDescuento} value={d.idDescuento}>{d.nombre} ({textoValorDescuento(d)})</option>
+            ))}
+            <option value={ESPECIAL}>Especial (monto y motivo)...</option>
+          </select>
+        </Campo>
 
         {especial && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-3 rounded-xl border border-emerald-100 bg-emerald-50/50">
@@ -143,35 +151,23 @@ const CobroModal = ({ socio, planes, onClose, onGuardado }) => {
 
         <DetalleCobro presupuesto={presupuesto} calculando={calculando} error={errorPresupuesto}
           bonificarMatricula={datos.bonificarMatricula} onBonificarMatricula={v => cambiar('bonificarMatricula', v)} />
-        {especial && !especialCompleto && datos.idPlan && (
+        {especial && !especialCompleto && idPlan && (
           <p className="text-xs text-slate-500">Completá el monto y el motivo para aplicar el descuento especial.</p>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Campo label="Método" required>
-            <select value={datos.metodoPago} className={inputClass}
-              onChange={e => setDatos(prev => ({ ...prev, metodoPago: e.target.value, aVerificar: false }))}>
-              {METODOS_PAGO.map(m => <option key={m.valor} value={m.valor}>{m.texto}</option>)}
-            </select>
-          </Campo>
+        <Campo label="¿Cómo paga?" required>
+          {/* En efectivo no hay comprobante que anotar */}
+          <SelectorMetodo valor={datos.metodoPago}
+            onCambiar={v => setDatos(prev => ({ ...prev, metodoPago: v, aVerificar: false, comprobante: v === 'EFECTIVO' ? '' : prev.comprobante }))} />
+        </Campo>
+        {datos.metodoPago !== 'EFECTIVO' && (
           <Campo label="Nro. de comprobante">
             <input type="text" maxLength={50} value={datos.comprobante} placeholder={datos.aVerificar ? 'Recomendado para verificarlo después' : 'Opcional'}
               onChange={e => cambiar('comprobante', e.target.value)} className={inputClass} />
           </Campo>
-        </div>
-
-        {verificable && (
-          <label className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${datos.aVerificar ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`}>
-            <input type="checkbox" checked={datos.aVerificar} className="mt-0.5 w-4 h-4 accent-amber-600"
-              onChange={e => cambiar('aVerificar', e.target.checked)} />
-            <span className="text-sm">
-              <span className="font-semibold text-slate-800">Todavía no se ve acreditado: dejar a verificar</span>
-              <span className="block text-xs text-slate-500 mt-0.5">
-                No extiende la membresía ni suma en la caja hasta que un administrador lo confirme.
-              </span>
-            </span>
-          </label>
         )}
+
+        {verificable && <OpcionAVerificar marcada={datos.aVerificar} onCambiar={v => cambiar('aVerificar', v)} />}
 
         {error && <p className="text-sm text-rose-600 font-medium">{error}</p>}
       </form>

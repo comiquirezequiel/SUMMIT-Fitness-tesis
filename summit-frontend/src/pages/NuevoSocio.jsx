@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  UserPlus, ChevronRight, ChevronLeft, User, Mail, Phone, CreditCard,
-  MapPin, FileText, Check, X, KeyRound, HeartPulse, Upload, CheckCircle2, XCircle, AlertTriangle, Camera, Trash2
+  UserPlus, ChevronRight, ChevronLeft, User, Mail, Phone, Wallet,
+  MapPin, Check, X, KeyRound, HeartPulse, Upload, CheckCircle2, XCircle, AlertTriangle, Camera, Trash2
 } from 'lucide-react';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../components/Campo';
 import CapturaFoto from '../components/socios/CapturaFoto';
 import DetalleCobro from '../components/socios/DetalleCobro';
+import CobroModal from '../components/socios/CobroModal';
+import ComprobantePago from '../components/socios/ComprobantePago';
+import { SelectorPlan, SelectorMetodo, OpcionAVerificar } from '../components/socios/OpcionesCobro';
 import { listarDescuentos, registrarCobro, textoValorDescuento, usePresupuesto } from '../services/membresias';
 import { subirFotoSocio } from '../services/fotos';
 import { useEstadoIa, BotonIa, ResultadoAnalisis, AvisoIaNoDisponible } from '../components/ia/AsistenteIa';
@@ -15,14 +18,16 @@ import { useFunciones } from '../services/funciones';
 import { subirCertificado, validarArchivoApto } from '../services/certificados';
 import { analizarArchivo } from '../services/ia';
 import { formatFecha, formatMoneda, hoyIso, diasHasta } from '../utils/formato';
-import { GENEROS, OBJETIVOS, METODOS_PAGO, textoMetodoPago } from '../utils/constantes';
+import { GENEROS, OBJETIVOS, METODOS_VERIFICABLES } from '../utils/constantes';
 
-const STEPS = ['Datos Personales', 'Contacto y Acceso', 'Membresía y Apto', 'Confirmación'];
+// El cobro va último: su botón registra al socio y le cobra de una vez
+const STEPS = ['Datos Personales', 'Contacto y Acceso', 'Apto Médico', 'Cobro'];
 
 const FORM_INICIAL = {
   nombre: '', apellido: '', dni: '', fechaNacimiento: '', genero: '', objetivo: '',
   email: '', telefono: '', domicilio: '', ciudad: '', password: '',
-  idPlan: '', idDescuento: '', bonificarMatricula: false, metodoPago: 'EFECTIVO', comprobante: '',
+  // sinCobro: "todavía no paga" (se registra sin plan); si no, hay que elegir uno
+  idPlan: '', sinCobro: false, idDescuento: '', bonificarMatricula: false, metodoPago: 'EFECTIVO', comprobante: '', aVerificar: false,
   archivoApto: null, fechaEmisionApto: '', patologias: '', resumenIa: '', observaciones: '',
   foto: null, // JPG cuadrado de CapturaFoto: se sube después de crear al socio
 };
@@ -57,15 +62,11 @@ const validarPaso = (paso, form, conApp) => {
       else if (diasHasta(form.fechaEmisionApto) < -365) e.fechaEmisionApto = 'El certificado tiene más de 365 días: está vencido';
     }
   }
+  if (paso === 3) {
+    if (!form.idPlan && !form.sinCobro) e.idPlan = 'Elegí el plan que paga, o marcá que todavía no paga';
+  }
   return e;
 };
-
-const FilaResumen = ({ label, valor }) => (
-  <div className="flex justify-between gap-4">
-    <span className="text-slate-500">{label}</span>
-    <span className="font-medium text-slate-800 text-right">{valor || '—'}</span>
-  </div>
-);
 
 const NuevoSocio = () => {
   const navigate = useNavigate();
@@ -77,7 +78,8 @@ const NuevoSocio = () => {
   const [descuentos, setDescuentos] = useState([]);
   const [enviando, setEnviando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState('');
-  const [resultado, setResultado] = useState(null); // { socio, cobro, apto }
+  const [resultado, setResultado] = useState(null); // { socio, cobro, apto, foto }
+  const [cobrando, setCobrando] = useState(false); // "Cobrar ahora" en la pantalla final (si no se cobró en el alta)
   // Asistente de IA: lee el certificado elegido y propone fecha, patologías y un resumen
   // estadoIa: si Ollama está disponible (habilita el botón); analisisIa: la lectura recibida (null = sin lectura);
   // analizandoIa: consulta en curso (cronómetro); errorIa: mensaje si falló (ej. "Ollama no está corriendo").
@@ -150,18 +152,26 @@ const NuevoSocio = () => {
 
   const siguiente = () => {
     const e = validarPaso(step, form, appSocios);
-    // Con plan, se sigue cuando el total del cobro ya está calculado (y sin errores)
-    if (step === 2 && form.idPlan && (errorPresupuesto || !presupuesto || calculando)) {
-      e.idPlan = errorPresupuesto || 'Esperá a que se calcule el total';
-    }
     setErrores(e);
     if (Object.keys(e).length === 0) setStep(s => Math.min(s + 1, STEPS.length - 1));
   };
   const anterior = () => setStep(s => Math.max(s - 1, 0));
 
-  const planElegido = planes.find(p => p.idPlan.toString() === form.idPlan);
+  // Un plan o "todavía no paga": una cosa o la otra
+  const elegirPlan = (idPlan) => { update('idPlan', idPlan); update('sinCobro', false); };
+  const elegirSinCobro = (sinCobro) => { update('sinCobro', sinCobro); if (sinCobro) update('idPlan', ''); };
+  // En efectivo no hay comprobante que anotar, y solo una transferencia o un QR pueden quedar a verificar
+  const elegirMetodo = (metodoPago) => setForm(prev => ({
+    ...prev, metodoPago, aVerificar: false, comprobante: metodoPago === 'EFECTIVO' ? '' : prev.comprobante,
+  }));
+  const cobroListo = Boolean(form.idPlan && presupuesto && !calculando && !errorPresupuesto);
 
   const registrar = async () => {
+    const e = validarPaso(3, form, appSocios);
+    // Con plan, se registra cuando el total del cobro ya está calculado (y sin errores)
+    if (form.idPlan && !cobroListo) e.idPlan = errorPresupuesto || 'Esperá a que se calcule el total';
+    setErrores(e);
+    if (Object.keys(e).length > 0) return;
     setEnviando(true);
     setErrorEnvio('');
     try {
@@ -201,6 +211,7 @@ const NuevoSocio = () => {
             bonificarMatricula: form.bonificarMatricula,
             metodoPago: form.metodoPago,
             comprobante: form.comprobante,
+            aVerificar: form.aVerificar,
             totalMostrado: presupuesto?.total,
           });
           cobro = { ok: true, pago };
@@ -255,15 +266,18 @@ const NuevoSocio = () => {
 
   // --- Pantalla final: qué se registró y qué falta ---
   if (resultado) {
-    const Item = ({ ok, texto, detalle }) => (
+    const Item = ({ ok, texto, detalle, accion }) => (
       <li className={`flex items-start gap-3 p-3 rounded-lg ${ok ? 'bg-emerald-50' : 'bg-amber-50'}`}>
         {ok ? <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" /> : <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />}
         <div>
           <p className={`font-semibold ${ok ? 'text-emerald-800' : 'text-amber-800'}`}>{texto}</p>
           {detalle && <p className={`text-sm ${ok ? 'text-emerald-700' : 'text-amber-700'}`}>{detalle}</p>}
+          {accion && <div className="mt-2">{accion}</div>}
         </div>
       </li>
     );
+    const { cobro } = resultado;
+    const aVerificar = cobro?.ok && cobro.pago.estado === 'PENDIENTE';
     return (
       <div className="max-w-2xl mx-auto bg-white border border-slate-200 rounded-xl shadow-sm p-8 space-y-6">
         <div className="text-center">
@@ -275,11 +289,17 @@ const NuevoSocio = () => {
         </div>
         <ul className="space-y-2">
           <Item ok texto="Datos del socio guardados" detalle={appSocios ? `Usuario para la app: ${resultado.socio.email}` : resultado.socio.email} />
-          {resultado.cobro
-            ? <Item ok={resultado.cobro.ok}
-                    texto={resultado.cobro.ok ? `Cobro registrado: ${planElegido?.nombrePlan}` : 'El cobro no se registró'}
-                    detalle={resultado.cobro.ok ? `${formatMoneda(resultado.cobro.pago.monto)} · membresía activa por ${planElegido?.duracionDias} días` : `${resultado.cobro.error}. Podés cobrarlo desde la lista de socios.`} />
-            : <Item ok={false} texto="Sin membresía" detalle="No se registró un cobro: el socio no podrá ingresar hasta pagar un plan." />}
+          {cobro?.ok
+            ? <Item ok={!aVerificar}
+                    texto={`${aVerificar ? 'Cobro a verificar' : 'Cobro registrado'}: ${cobro.pago.plan}`}
+                    detalle={aVerificar
+                      ? `${formatMoneda(cobro.pago.monto)} · la membresía empieza cuando un administrador confirme el pago en Caja.`
+                      : `${formatMoneda(cobro.pago.monto)} · membresía paga hasta el ${formatFecha(cobro.pago.venceMembresia)}`} />
+            : <Item ok={false} texto={cobro ? 'El cobro no se registró' : 'Sin cobrar'}
+                    detalle={cobro ? cobro.error : 'Sin un plan pago no puede ingresar.'}
+                    accion={<button type="button" onClick={() => setCobrando(true)} className={`${botonPrimario} inline-flex`}>
+                      <Wallet className="w-4 h-4" /> Cobrar ahora
+                    </button>} />}
           {resultado.apto
             ? <Item ok={resultado.apto.ok}
                     texto={resultado.apto.ok ? 'Certificado médico cargado' : 'El certificado no se cargó'}
@@ -291,17 +311,29 @@ const NuevoSocio = () => {
                     detalle={resultado.foto.ok ? 'Recepción la va a ver en cada ingreso.' : `${resultado.foto.error}. Podés sacarla desde la ficha del socio.`} />
             : <Item ok={false} texto="Sin foto" detalle="Sacala desde la ficha del socio: recepción la ve en cada ingreso." />}
         </ul>
+        {cobro?.ok && (
+          <div className="space-y-2">
+            <h2 className="text-sm font-bold text-slate-700">Comprobante para el socio</h2>
+            <ComprobantePago pago={cobro.pago} />
+          </div>
+        )}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button onClick={() => navigate('/socios')} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold">
             Ver lista de socios
           </button>
           <button
-            onClick={() => { setForm(FORM_INICIAL); setResultado(null); setStep(0); }}
+            onClick={() => { setForm(FORM_INICIAL); setErrores({}); setResultado(null); setStep(0); }}
             className="px-5 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-50"
           >
             Registrar otro socio
           </button>
         </div>
+        {cobrando && (
+          // Se propone el plan que se había elegido en el alta
+          <CobroModal socio={{ ...resultado.socio, idPlanActual: form.idPlan ? Number(form.idPlan) : null }} planes={planes}
+            onClose={() => setCobrando(false)}
+            onGuardado={(pago) => { setCobrando(false); setResultado(r => ({ ...r, cobro: { ok: true, pago } })); }} />
+        )}
       </div>
     );
   }
@@ -446,56 +478,18 @@ const NuevoSocio = () => {
                 </div>
               </Campo>
               )}
+              <Campo label="Observaciones" className="md:col-span-2">
+                <textarea rows={3} placeholder="Notas para recepción (horarios, preferencias...)"
+                  value={form.observaciones} onChange={e => update('observaciones', e.target.value)}
+                  className={`${inputClass} resize-none`} />
+              </Campo>
             </div>
           </div>
         )}
 
-        {/* PASO 3: Membresía y apto médico */}
+        {/* PASO 3: Apto médico */}
         {step === 2 && (
           <div className="space-y-6">
-            <div className="space-y-5">
-              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <CreditCard className="w-5 h-5 text-blue-500" /> Membresía y Pago
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <Campo label="Plan" error={errores.idPlan} ayuda="Podés dejarlo sin plan y cobrarlo después desde la lista de socios.">
-                  <select value={form.idPlan} onChange={e => update('idPlan', e.target.value)} className={inputClass}>
-                    <option value="">Sin plan por ahora</option>
-                    {planes.map(p => (
-                      <option key={p.idPlan} value={p.idPlan}>
-                        {p.nombrePlan} — {formatMoneda(p.precioBase)}{p.vecesPorSemana ? ` (${p.vecesPorSemana}x semana)` : ' (libre)'}
-                      </option>
-                    ))}
-                  </select>
-                </Campo>
-                <Campo label="Descuento habitual" ayuda="Se le propone en cada cobro. Los descuentos los arma el dueño en Membresías > Descuentos y reglas.">
-                  <select value={form.idDescuento} onChange={e => update('idDescuento', e.target.value)} className={inputClass}>
-                    <option value="">Sin descuento</option>
-                    {descuentos.map(d => (
-                      <option key={d.idDescuento} value={d.idDescuento}>{d.nombre} ({textoValorDescuento(d)})</option>
-                    ))}
-                  </select>
-                </Campo>
-                {form.idPlan && (
-                  <>
-                    <div className="md:col-span-2">
-                      <DetalleCobro presupuesto={presupuesto} calculando={calculando} error={errorPresupuesto}
-                        bonificarMatricula={form.bonificarMatricula} onBonificarMatricula={v => update('bonificarMatricula', v)} />
-                    </div>
-                    <Campo label="Método de Pago" required>
-                      <select value={form.metodoPago} onChange={e => update('metodoPago', e.target.value)} className={inputClass}>
-                        {METODOS_PAGO.map(m => <option key={m.valor} value={m.valor}>{m.texto}</option>)}
-                      </select>
-                    </Campo>
-                    <Campo label="Nro. de comprobante">
-                      <input type="text" value={form.comprobante} placeholder="Opcional"
-                        onChange={e => update('comprobante', e.target.value)} className={inputClass} />
-                    </Campo>
-                  </>
-                )}
-              </div>
-            </div>
-
             <div className="space-y-5">
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
                 <HeartPulse className="w-5 h-5 text-blue-500" /> Certificado Médico (Apto Físico)
@@ -546,48 +540,67 @@ const NuevoSocio = () => {
                   </>
                 )}
               </div>
-              <Campo label="Observaciones">
-                <textarea rows={3} placeholder="Notas para recepción (horarios, preferencias...)"
-                  value={form.observaciones} onChange={e => update('observaciones', e.target.value)}
-                  className={`${inputClass} resize-none`} />
-              </Campo>
             </div>
           </div>
         )}
 
-        {/* PASO 4: Confirmación */}
+        {/* PASO 4: Cobro. Su botón (abajo) registra al socio y le cobra de una vez */}
         {step === 3 && (
-          <div className="space-y-6">
-            <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
-              <FileText className="w-5 h-5 text-blue-500" /> Resumen del Registro
+          <div className="space-y-5">
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+              <Wallet className="w-5 h-5 text-blue-500" /> Cobro de la membresía
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
-                <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide mb-2">Datos Personales</h3>
-                <FilaResumen label="Nombre completo" valor={`${form.nombre} ${form.apellido}`} />
-                <FilaResumen label="DNI" valor={form.dni} />
-                <FilaResumen label="Fecha de nac." valor={form.fechaNacimiento && formatFecha(form.fechaNacimiento)} />
-                <FilaResumen label="Género" valor={form.genero} />
-                <FilaResumen label="Objetivo" valor={form.objetivo} />
-                <FilaResumen label="Foto" valor={form.foto ? 'Sacada' : 'Sin foto (se puede sacar después)'} />
+            {/* Quién es, para revisarlo antes de registrar */}
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
+              <div className="w-11 h-11 rounded-xl overflow-hidden bg-blue-100 flex items-center justify-center shrink-0">
+                {urlFoto ? <img src={urlFoto} alt="" className="w-full h-full object-cover" /> : <User className="w-5 h-5 text-blue-400" />}
               </div>
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
-                <h3 className="font-semibold text-slate-700 text-sm uppercase tracking-wide mb-2">Contacto</h3>
-                <FilaResumen label="Email" valor={form.email} />
-                <FilaResumen label="Teléfono" valor={form.telefono} />
-                <FilaResumen label="Domicilio" valor={[form.domicilio, form.ciudad].filter(Boolean).join(', ')} />
-              </div>
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2 md:col-span-2">
-                <h3 className="font-semibold text-blue-700 text-sm uppercase tracking-wide mb-2">Membresía y Apto</h3>
-                <FilaResumen label="Plan" valor={planElegido ? planElegido.nombrePlan : 'Sin plan por ahora'} />
-                {planElegido && presupuesto && <FilaResumen label="Cobro" valor={`${formatMoneda(presupuesto.total)} · ${textoMetodoPago(form.metodoPago)}`} />}
-                {form.idDescuento && <FilaResumen label="Descuento habitual" valor={descuentos.find(d => String(d.idDescuento) === form.idDescuento)?.nombre} />}
-                <FilaResumen label="Certificado médico" valor={form.archivoApto ? `${form.archivoApto.name} (emitido ${formatFecha(form.fechaEmisionApto)})` : 'Pendiente'} />
-                {form.patologias && <FilaResumen label="Patologías" valor={form.patologias} />}
-                {form.resumenIa && <FilaResumen label="Resumen (IA)" valor={form.resumenIa} />}
+              <div className="min-w-0 text-sm">
+                <p className="font-semibold text-slate-800 truncate">{form.nombre} {form.apellido}</p>
+                <p className="text-xs text-slate-500">DNI {form.dni} · {form.archivoApto ? 'con apto médico' : 'apto médico pendiente'}</p>
+                <p className="text-xs text-slate-500 truncate">{form.email}</p>
               </div>
             </div>
+
+            <Campo label="¿Qué plan paga?" required error={errores.idPlan}>
+              <SelectorPlan planes={planes} valor={form.idPlan} onCambiar={elegirPlan} />
+              <label className={`mt-2 flex items-start gap-3 p-3 rounded-xl border border-dashed cursor-pointer transition-colors ${form.sinCobro ? 'border-amber-300 bg-amber-50' : 'border-slate-300 hover:bg-slate-50'}`}>
+                <input type="checkbox" checked={form.sinCobro} onChange={e => elegirSinCobro(e.target.checked)} className="mt-0.5 w-4 h-4 accent-amber-600" />
+                <span className="text-sm">
+                  <span className="font-semibold text-slate-800">Todavía no paga: registrarlo sin cobrar</span>
+                  <span className="block text-xs text-slate-500 mt-0.5">No va a poder ingresar hasta pagar un plan. Se le cobra después desde la lista de socios.</span>
+                </span>
+              </label>
+            </Campo>
+
+            <Campo label="Descuento habitual" ayuda="Se le propone en cada cobro. Los descuentos los arma el dueño en Membresías > Descuentos y reglas.">
+              <select value={form.idDescuento} onChange={e => update('idDescuento', e.target.value)} className={inputClass}>
+                <option value="">Sin descuento</option>
+                {descuentos.map(d => (
+                  <option key={d.idDescuento} value={d.idDescuento}>{d.nombre} ({textoValorDescuento(d)})</option>
+                ))}
+              </select>
+            </Campo>
+
+            {form.idPlan && (
+              <>
+                <DetalleCobro presupuesto={presupuesto} calculando={calculando} error={errorPresupuesto}
+                  bonificarMatricula={form.bonificarMatricula} onBonificarMatricula={v => update('bonificarMatricula', v)} />
+                <Campo label="¿Cómo paga?" required>
+                  <SelectorMetodo valor={form.metodoPago} onCambiar={elegirMetodo} />
+                </Campo>
+                {form.metodoPago !== 'EFECTIVO' && (
+                  <Campo label="Nro. de comprobante">
+                    <input type="text" maxLength={50} value={form.comprobante} placeholder={form.aVerificar ? 'Recomendado para verificarlo después' : 'Opcional'}
+                      onChange={e => update('comprobante', e.target.value)} className={inputClass} />
+                  </Campo>
+                )}
+                {METODOS_VERIFICABLES.includes(form.metodoPago) && (
+                  <OpcionAVerificar marcada={form.aVerificar} onCambiar={v => update('aVerificar', v)} />
+                )}
+              </>
+            )}
 
             {errorEnvio && (
               <div className="flex items-start gap-2 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">
@@ -617,10 +630,13 @@ const NuevoSocio = () => {
           ) : (
             <button
               onClick={registrar}
-              disabled={enviando}
+              disabled={enviando || (Boolean(form.idPlan) && !cobroListo)}
               className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm"
             >
-              <Check className="w-4 h-4" /> {enviando ? 'Registrando...' : 'Registrar Socio'}
+              <Check className="w-4 h-4" />
+              {enviando ? 'Registrando...'
+                : form.sinCobro ? 'Registrar sin cobrar'
+                  : cobroListo ? `Registrar y cobrar ${formatMoneda(presupuesto.total)}` : 'Registrar y cobrar'}
             </button>
           )}
         </div>

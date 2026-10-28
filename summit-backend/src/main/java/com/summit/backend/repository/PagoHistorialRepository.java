@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface PagoHistorialRepository extends JpaRepository<PagoHistorial, Long> {
 
@@ -47,6 +48,13 @@ public interface PagoHistorialRepository extends JpaRepository<PagoHistorial, Lo
     boolean existsByUsuarioIdUsuarioAndEstadoPagoAndMatriculaMontoIsNotNullAndFechaPagoAfter(Long idUsuario,
                                                                                             EstadoPago estadoPago,
                                                                                             LocalDateTime desde);
+
+    // ¿Tiene un cobro reciente en ese estado? (ficha de un socio: un cobro a verificar no se vuelve a cobrar)
+    boolean existsByUsuarioIdUsuarioAndEstadoPagoAndFechaPagoAfter(Long idUsuario, EstadoPago estadoPago, LocalDateTime desde);
+
+    // Socios con algún cobro reciente en ese estado (lista de socios: los que tienen un cobro a verificar)
+    @Query("SELECT DISTINCT p.usuario.idUsuario FROM PagoHistorial p WHERE p.estadoPago = :estado AND p.fechaPago > :desde")
+    Set<Long> sociosConPagosDesde(@Param("estado") EstadoPago estado, @Param("desde") LocalDateTime desde);
 
     // Métricas: cobros aprobados de un rango, como filas [fechaPago, monto, metodoPago, nombrePlan]
     @Query("SELECT p.fechaPago, p.montoAbonado, p.metodoPago, p.plan.nombrePlan FROM PagoHistorial p "

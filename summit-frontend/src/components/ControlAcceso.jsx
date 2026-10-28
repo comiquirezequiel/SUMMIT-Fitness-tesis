@@ -8,10 +8,7 @@ import { FaltasIngreso, AvisosIngreso, DatosFicha } from './FichaIngreso';
 import FichaPersonal from './asistencia/FichaPersonal';
 import { apiFetch } from '../services/api';
 import { subirFotoSocio } from '../services/fotos';
-import { terminarCongelamiento } from '../services/membresias';
-
-// Días antes del vencimiento en que la ficha ya ofrece cobrar la cuota
-const DIAS_PARA_OFRECER_COBRO = 7;
+import { terminarCongelamiento, DIAS_PARA_OFRECER_COBRO } from '../services/membresias';
 
 // Socio sin membresía, con la cuota vencida (aunque esté en los días de gracia) o por vencer: se le puede cobrar ahí
 const cuotaParaCobrar = (r) => r.rol === 'SOCIO' && !r.idCongelamiento

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { pedirJson as pedir, conJson as json } from './api';
-import { formatMoneda } from '../utils/formato';
+import { diasHasta, formatMoneda } from '../utils/formato';
 
 // Membresías flexibles: catálogo de descuentos, reglas (matrícula y congelamientos), detalle de un cobro antes de
 // confirmarlo y congelamientos de la membresía de un socio.
@@ -28,6 +28,21 @@ export const terminarCongelamiento = (idSocio, idCongelamiento) =>
 
 // "10 %" o "$ 2.500"
 export const textoValorDescuento = (d) => (d.tipo === 'PORCENTAJE' ? `${Number(d.valor).toLocaleString('es-AR')} %` : formatMoneda(d.valor));
+
+// Días antes del vencimiento en que ya se ofrece cobrar la cuota siguiente (lista de socios y control de acceso)
+export const DIAS_PARA_OFRECER_COBRO = 7;
+
+/**
+ * Qué cobro se le ofrece a un socio de la lista: 'COBRAR' (sin membresía o vencida, aunque esté en los días de gracia),
+ * 'RENOVAR' (vence dentro de DIAS_PARA_OFRECER_COBRO días) o null: ya está paga, tiene un cobro a verificar (pagó por
+ * transferencia o QR y falta que un admin lo confirme), está congelada o el socio está de baja.
+ */
+export const cobroParaOfrecer = (socio) => {
+  if (socio.estado === 'CANCELADO' || socio.cobroAVerificar || socio.congeladaHasta) return null;
+  const dias = diasHasta(socio.vencimientoMembresia);
+  if (dias === null || dias < 0) return 'COBRAR';
+  return dias <= DIAS_PARA_OFRECER_COBRO ? 'RENOVAR' : null;
+};
 
 export const MOTIVOS_CONGELAMIENTO = [
   { valor: 'VACACIONES', texto: 'Vacaciones' },

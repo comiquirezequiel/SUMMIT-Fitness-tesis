@@ -6,6 +6,10 @@ import com.summit.backend.dto.DescuentoDTO;
 import com.summit.backend.dto.DescuentoRequestDTO;
 import com.summit.backend.dto.PagoListadoDTO;
 import com.summit.backend.dto.PresupuestoDTO;
+import com.summit.backend.dto.SocioResponseDTO;
+import com.summit.backend.model.EstadoPago;
+import com.summit.backend.model.MetodoPago;
+import com.summit.backend.model.PagoHistorial;
 import com.summit.backend.model.Plan;
 import com.summit.backend.model.ReglasMembresia;
 import com.summit.backend.model.TipoDescuento;
@@ -16,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -30,9 +35,17 @@ class CobrosTest extends PruebaIntegracion {
     @Autowired DescuentoService descuentos;
     @Autowired ReglasMembresiaService reglas;
     @Autowired PagoHistorialRepository pagoHistorialRepository;
+    @Autowired SocioService socios;
 
     private LocalDate vencimiento(Usuario socio) {
         return suscripcionRepository.ultimoVencimiento(socio.getIdUsuario());
+    }
+
+    private SocioResponseDTO enLaLista(Usuario socio) {
+        return socios.listarTodos().stream()
+                .filter(s -> s.getIdSocio().equals(socio.getIdUsuario()))
+                .findFirst()
+                .orElseThrow();
     }
 
     private void matricula(int monto, int diasReinscripcion) {
@@ -153,6 +166,39 @@ class CobrosTest extends PruebaIntegracion {
         Usuario reciente = socio();
         membresia(reciente, plan, hoy().minusDays(20));
         assertThat(pagos.presupuesto(cobro(reciente, plan, 10000)).isMatriculaCorresponde()).isFalse();
+    }
+
+    @Test
+    void laListaDeSociosMarcaElCobroAVerificarHastaQueSeConfirma() {
+        Usuario socio = socio();
+        Plan plan = plan(10000, null);
+        CobroRequestDTO pedido = cobro(socio, plan, 10000);
+        pedido.setMetodoPago("TRANSFERENCIA");
+        pedido.setAVerificar(true);
+        PagoListadoDTO pago = pagos.registrarPago(pedido, null);
+        assertThat(enLaLista(socio).isCobroAVerificar()).isTrue();
+        assertThat(socios.buscarPorId(socio.getIdUsuario()).isCobroAVerificar()).isTrue();
+
+        pagos.verificarPago(pago.getIdPago(), true, null);
+        SocioResponseDTO alDia = enLaLista(socio);
+        assertThat(alDia.isCobroAVerificar()).isFalse();
+        assertThat(alDia.getIdPlanActual()).isEqualTo(plan.getIdPlan());
+        assertThat(socios.buscarPorId(socio.getIdUsuario()).isCobroAVerificar()).isFalse();
+    }
+
+    @Test
+    void unCobroAVerificarOlvidadoNoFrenaElCobro() {
+        Usuario socio = socio();
+        pagoHistorialRepository.save(PagoHistorial.builder()
+                .usuario(socio)
+                .plan(plan(10000, null))
+                .montoAbonado(BigDecimal.valueOf(10000))
+                .metodoPago(MetodoPago.TRANSFERENCIA)
+                .estadoPago(EstadoPago.PENDIENTE)
+                .fechaPago(LocalDateTime.now().minusDays(PagoService.DIAS_COBRO_A_VERIFICAR + 1))
+                .build());
+        assertThat(enLaLista(socio).isCobroAVerificar()).isFalse();
+        assertThat(socios.buscarPorId(socio.getIdUsuario()).isCobroAVerificar()).isFalse();
     }
 
     @Test

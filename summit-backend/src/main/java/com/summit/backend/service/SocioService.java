@@ -7,11 +7,13 @@ import com.summit.backend.model.CertificadoMedico;
 import com.summit.backend.model.ConfiguracionAcceso;
 import com.summit.backend.model.Congelamiento;
 import com.summit.backend.model.Descuento;
+import com.summit.backend.model.EstadoPago;
 import com.summit.backend.model.EstadoUsuario;
 import com.summit.backend.model.PerfilSocio;
 import com.summit.backend.model.Rol;
 import com.summit.backend.model.Suscripcion;
 import com.summit.backend.model.Usuario;
+import com.summit.backend.repository.PagoHistorialRepository;
 import com.summit.backend.repository.PerfilSocioRepository;
 import com.summit.backend.repository.SuscripcionRepository;
 import com.summit.backend.repository.UsuarioRepository;
@@ -21,9 +23,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -44,12 +48,15 @@ public class SocioService {
     private final PasswordService passwordService;
     private final DescuentoService descuentoService;
     private final CongelamientoService congelamientoService;
+    private final PagoHistorialRepository pagoHistorialRepository;
 
     public List<SocioResponseDTO> listarTodos() {
         ConfiguracionAcceso config = configService.obtenerConfiguracionGlobal();
         Map<Long, LocalDate> congelados = congelamientoService.congeladosHoy();
+        Set<Long> conCobroAVerificar = pagoHistorialRepository.sociosConPagosDesde(EstadoPago.PENDIENTE, desdeCobrosAVerificar());
         return usuarioRepository.findByRol(Rol.SOCIO).stream()
-                .map(usuario -> mapToDTO(usuario, config, congelados.get(usuario.getIdUsuario())))
+                .map(usuario -> mapToDTO(usuario, config, congelados.get(usuario.getIdUsuario()),
+                        conCobroAVerificar.contains(usuario.getIdUsuario())))
                 .collect(Collectors.toList());
     }
 
@@ -178,14 +185,22 @@ public class SocioService {
         return valor == null || valor.isBlank() ? null : valor.trim();
     }
 
+    // Desde cuándo un cobro a verificar sigue en curso (ver PagoService.DIAS_COBRO_A_VERIFICAR)
+    private static LocalDateTime desdeCobrosAVerificar() {
+        return LocalDateTime.now().minusDays(PagoService.DIAS_COBRO_A_VERIFICAR);
+    }
+
     private SocioResponseDTO mapToDTO(Usuario usuario, ConfiguracionAcceso config) {
         LocalDate congeladaHasta = congelamientoService.vigente(usuario.getIdUsuario(), LocalDate.now())
                 .map(Congelamiento::getHasta)
                 .orElse(null);
-        return mapToDTO(usuario, config, congeladaHasta);
+        boolean cobroAVerificar = pagoHistorialRepository.existsByUsuarioIdUsuarioAndEstadoPagoAndFechaPagoAfter(
+                usuario.getIdUsuario(), EstadoPago.PENDIENTE, desdeCobrosAVerificar());
+        return mapToDTO(usuario, config, congeladaHasta, cobroAVerificar);
     }
 
-    private SocioResponseDTO mapToDTO(Usuario usuario, ConfiguracionAcceso config, LocalDate congeladaHasta) {
+    private SocioResponseDTO mapToDTO(Usuario usuario, ConfiguracionAcceso config, LocalDate congeladaHasta,
+                                      boolean cobroAVerificar) {
         Optional<CertificadoMedico> certificado = certificadoMedicoService.obtenerCertificadoActual(usuario.getIdUsuario());
         PerfilSocio perfil = perfilSocioRepository.findByUsuarioIdUsuario(usuario.getIdUsuario()).orElse(null);
         Suscripcion sub = suscripcionRepository
@@ -212,8 +227,10 @@ public class SocioService {
                 .aptoMedicoVigente(certificadoMedicoService.esVigente(certificado, config))
                 .vencimientoApto(certificado.map(CertificadoMedico::getFechaVencimiento).orElse(null))
                 .planActual(sub != null ? sub.getPlan().getNombrePlan() : "Sin Plan")
+                .idPlanActual(sub != null ? sub.getPlan().getIdPlan() : null)
                 .vencimientoMembresia(sub != null ? sub.getFechaVencimiento() : null)
                 .membresiaAlDia(membresiaAlDia)
+                .cobroAVerificar(cobroAVerificar)
                 .congeladaHasta(congeladaHasta)
                 .idDescuentoHabitual(perfil != null && perfil.getDescuento() != null ? perfil.getDescuento().getIdDescuento() : null)
                 .descuentoHabitual(perfil != null && perfil.getDescuento() != null ? perfil.getDescuento().getNombre() : null)
