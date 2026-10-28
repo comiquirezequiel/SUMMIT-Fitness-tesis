@@ -40,6 +40,9 @@ import static com.summit.backend.service.TextoMontos.pesos;
  * recepción cuenta el efectivo de la caja y se compara con el esperado: el fondo que dejó el cierre anterior, más los
  * cobros aprobados en efectivo, menos los gastos pagados en efectivo. Lo que no se retira queda de fondo para el turno
  * siguiente. Los demás medios de pago se informan para conciliarlos con el banco o Mercado Pago.</p>
+ *
+ * <p>Un gasto en efectivo no puede superar el efectivo que hay en la caja: el esperado nunca queda negativo (ningún
+ * conteo podría coincidir). Si lo pagó el dueño con su plata, se marca "fuera de caja" y no entra en el arqueo.</p>
  */
 @Service
 @RequiredArgsConstructor
@@ -205,13 +208,25 @@ public class CajaService {
         if (pedido.getMetodoPago() == MetodoPago.DEBITO_AUTOMATICO) {
             throw new IllegalArgumentException("Elegí cómo se pagó el gasto: efectivo, transferencia, tarjeta o Mercado Pago");
         }
+        BigDecimal monto = montoValido(pedido.getMonto(), "El monto", false);
+        // Los demás medios nunca tocan la caja: "fuera de caja" solo tiene sentido en efectivo
+        boolean efectivo = pedido.getMetodoPago() == MetodoPago.EFECTIVO;
+        boolean fueraDeCaja = efectivo && pedido.isFueraDeCaja();
+        if (efectivo && !fueraDeCaja) {
+            BigDecimal enCaja = calcularTurno(ahora()).efectivoEsperado().max(BigDecimal.ZERO);
+            if (monto.compareTo(enCaja) > 0) {
+                throw new IllegalArgumentException("En la caja hay " + pesos(enCaja) + " en efectivo: no alcanza para pagar "
+                        + pesos(monto) + ". Si lo pagó el dueño con su plata, marcá que no salió de la caja; si se pagó de otra forma, elegí cómo");
+            }
+        }
         String comprobante = pedido.getComprobante() == null || pedido.getComprobante().isBlank()
                 ? null : pedido.getComprobante().trim();
         Gasto gasto = gastoRepository.save(Gasto.builder()
-                .monto(montoValido(pedido.getMonto(), "El monto", false))
+                .monto(monto)
                 .categoria(pedido.getCategoria())
                 .descripcion(pedido.getDescripcion().trim())
                 .metodoPago(pedido.getMetodoPago())
+                .fueraDeCaja(fueraDeCaja)
                 .comprobanteNro(comprobante)
                 .registradoPor(usuarioPorEmail(emailCajero))
                 .build());
@@ -282,6 +297,7 @@ public class CajaService {
                 .categoria(g.getCategoria().name())
                 .descripcion(g.getDescripcion())
                 .metodoPago(g.getMetodoPago().name())
+                .fueraDeCaja(g.isFueraDeCaja())
                 .comprobante(g.getComprobanteNro())
                 .registradoPor(g.getRegistradoPor() != null ? g.getRegistradoPor().getNombreCompleto() : null)
                 .anulado(g.isAnulado())

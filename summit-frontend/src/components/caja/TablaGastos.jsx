@@ -72,6 +72,7 @@ const TablaGastos = ({ version, onCambio }) => {
                     <span className="inline-flex items-center px-2 py-1 rounded bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200 whitespace-nowrap">
                       {textoMetodoPago(g.metodoPago)}
                     </span>
+                    {g.fueraDeCaja && <div className="text-[11px] text-slate-400 mt-1 whitespace-nowrap">No salió de la caja</div>}
                   </td>
                   <td className="px-6 py-4 text-slate-500">{g.comprobante || '—'}</td>
                   <td className="px-6 py-4 text-right whitespace-nowrap">

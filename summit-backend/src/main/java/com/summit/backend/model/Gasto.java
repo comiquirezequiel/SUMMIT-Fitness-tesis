@@ -11,8 +11,8 @@ import java.time.temporal.ChronoUnit;
 
 /**
  * Gasto (egreso) de la caja: un pago del gimnasio. Uno pagado en efectivo sale de la caja de recepción, así que se
- * descuenta del efectivo esperado al cerrarla. No se borra: si se cargó mal, se anula con motivo (solo mientras el
- * turno sigue abierto).
+ * descuenta del efectivo esperado al cerrarla (salvo que lo haya pagado el dueño con su plata: "fuera de caja"). No se
+ * borra: si se cargó mal, se anula con motivo (solo mientras el turno sigue abierto).
  */
 @Entity
 @Table(name = "gastos")
@@ -46,6 +46,12 @@ public class Gasto {
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "metodo_pago", nullable = false, length = 30)
     private MetodoPago metodoPago;
+
+    // En efectivo, pero no salió de la caja (lo pagó el dueño con su plata): cuenta como gasto, no en el arqueo.
+    // columnDefinition con default: al agregar la columna a una base que ya tiene gastos, MySQL los completa con 0
+    // (salieron de la caja)
+    @Column(name = "fuera_de_caja", nullable = false, columnDefinition = "bit not null default 0")
+    private boolean fueraDeCaja;
 
     @Column(name = "comprobante_nro", length = 50)
     private String comprobanteNro;

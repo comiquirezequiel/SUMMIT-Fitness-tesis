@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Lock, CheckCircle2 } from 'lucide-react';
+import { Lock, CheckCircle2, AlertTriangle } from 'lucide-react';
 import Modal from '../Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../Campo';
 import { cerrarCaja, obtenerTurno } from '../../services/caja';
@@ -60,7 +60,11 @@ const CierreCajaModal = ({ onClose, onCerrado }) => {
 
   const contado = datos.efectivoContado === '' ? null : Number(datos.efectivoContado);
   const retiro = Number(datos.retiro) || 0;
-  const diferencia = turno && contado !== null ? Math.round((contado - Number(turno.efectivoEsperado)) * 100) / 100 : null;
+  // Lo contado es plata de verdad: nunca es negativo, y no se puede retirar más de lo que hay
+  const contadoNegativo = contado !== null && contado < 0;
+  const errorRetiro = retiro < 0 ? 'No puede ser negativo'
+    : contado !== null && !contadoNegativo && retiro > contado ? `No se puede retirar más de lo que contaste (${formatMoneda(contado)})` : '';
+  const diferencia = turno && contado !== null && !contadoNegativo ? Math.round((contado - Number(turno.efectivoEsperado)) * 100) / 100 : null;
   const hayDiferencia = diferencia !== null && diferencia !== 0;
 
   const cerrar = async (e) => {
@@ -98,14 +102,15 @@ const CierreCajaModal = ({ onClose, onCerrado }) => {
     );
   }
 
-  const dif = diferencia !== null ? textoDiferencia(diferencia) : null;
+  const dif = contadoNegativo ? { texto: 'No puede ser negativo: escribí la plata que contaste', clase: 'text-rose-700' }
+    : diferencia !== null ? textoDiferencia(diferencia) : null;
   return (
     <Modal titulo="Cerrar caja" ancho="max-w-xl"
       subtitulo={turno ? `Turno abierto desde el ${formatFechaHora(turno.desde)}` : 'Cargando el turno...'}
       onClose={onClose}
       pie={<>
         <button type="button" onClick={onClose} className={botonSecundario}>Cancelar</button>
-        <button type="submit" form="form-cierre" disabled={procesando || !turno || contado === null} className={botonPrimario}>
+        <button type="submit" form="form-cierre" disabled={procesando || !turno || contado === null || contadoNegativo || Boolean(errorRetiro)} className={botonPrimario}>
           <Lock className="w-4 h-4" /> {procesando ? 'Cerrando...' : 'Cerrar caja'}
         </button>
       </>}>
@@ -126,6 +131,13 @@ const CierreCajaModal = ({ onClose, onCerrado }) => {
             <Fila texto="− Gastos en efectivo">{formatMoneda(turno.egresosEfectivo)}</Fila>
             <Fila texto="Efectivo que tendría que haber" fuerte>{formatMoneda(turno.efectivoEsperado)}</Fila>
           </div>
+          {Number(turno.efectivoEsperado) < 0 && (
+            <p className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              Da negativo porque se cargaron gastos en efectivo por más de lo que había en la caja. Si alguno lo pagó el dueño
+              con su plata, anulalo en la pestaña Gastos y cargalo de nuevo marcando “No salió de la caja”.
+            </p>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Campo label="Efectivo contado ($)" required ayuda={dif ? undefined : 'Contá los billetes y monedas de la caja'}>
@@ -133,7 +145,8 @@ const CierreCajaModal = ({ onClose, onCerrado }) => {
                 onChange={e => cambiar('efectivoContado', e.target.value)} className={inputClass} />
               {dif && <p className={`text-sm font-bold mt-1 ${dif.clase}`}>{dif.texto}</p>}
             </Campo>
-            <Campo label="Retiro ($)" ayuda={contado !== null ? `Queda de fondo para el próximo turno: ${formatMoneda(Math.max(0, contado - retiro))}` : 'Lo que se lleva el dueño'}>
+            <Campo label="Retiro ($)" error={errorRetiro}
+              ayuda={contado !== null && !contadoNegativo ? `Queda de fondo para el próximo turno: ${formatMoneda(contado - retiro)}` : 'Lo que se lleva el dueño'}>
               <input type="number" min="0" step="0.01" inputMode="decimal" value={datos.retiro} placeholder="0"
                 onChange={e => cambiar('retiro', e.target.value)} className={inputClass} />
             </Campo>

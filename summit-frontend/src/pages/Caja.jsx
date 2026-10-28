@@ -193,6 +193,12 @@ const Caja = () => {
                 Fondo {formatMoneda(turno.fondoInicial)} + cobros en efectivo {formatMoneda(turno.ingresosEfectivo)} − gastos en efectivo {formatMoneda(turno.egresosEfectivo)}
                 {turno.ultimoCierre ? ` · último cierre: ${formatFechaHora(turno.ultimoCierre)}${turno.ultimoCierrePor ? ` (${turno.ultimoCierrePor})` : ''}` : ' · todavía no se cerró la caja'}
               </p>
+              {Number(turno.efectivoEsperado) < 0 && (
+                <p className="text-xs text-rose-600 font-medium mt-1">
+                  Hay más gastos en efectivo que plata en la caja:{' '}
+                  <button onClick={() => setPestana('gastos')} className="underline hover:text-rose-700">revisá los gastos</button>
+                </p>
+              )}
             </div>
           </div>
           <button onClick={() => setModal('cierre')}

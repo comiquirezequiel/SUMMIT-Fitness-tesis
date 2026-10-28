@@ -87,6 +87,10 @@ electrónica de ARCA (ex AFIP) va al final, después de explicar cómo hacerla.
     menos; un cobro a verificar queda marcado y no se ofrece cobrarle de nuevo). El cobro propone el plan que ya tiene, y
     el plan y el medio de pago se eligen con un toque. En el alta de socio el cobro es el último paso: un solo botón
     registra y cobra, y al terminar queda el comprobante (o la factura) para imprimir o mandar por WhatsApp.
+12. Caja sin efectivo negativo (hecho el 28/10/2026, pedido después de probar el cierre): un gasto en efectivo no puede
+    superar lo que hay en la caja (el formulario muestra cuánto hay); si lo pagó el dueño con su plata se marca "No salió
+    de la caja" y cuenta como gasto del mes pero no en el arqueo. En el cierre, un contado negativo o un retiro mayor a lo
+    contado se avisan en el momento, y una caja que ya venía en negativo explica por qué y lleva a revisar los gastos.
 
 #### Factura electrónica (hecha el 28/10/2026)
 

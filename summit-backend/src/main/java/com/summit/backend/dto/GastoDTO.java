@@ -22,6 +22,7 @@ public class GastoDTO {
     private String categoria;
     private String descripcion;
     private String metodoPago;
+    private boolean fueraDeCaja; // en efectivo, pero no salió de la caja: no cuenta en el arqueo
     private String comprobante;
     private String registradoPor;
     private boolean anulado;

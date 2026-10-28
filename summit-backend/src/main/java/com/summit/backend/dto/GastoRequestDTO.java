@@ -32,6 +32,9 @@ public class GastoRequestDTO {
     @NotNull(message = "Elegí cómo se pagó")
     private MetodoPago metodoPago;
 
+    // Solo en efectivo: lo pagó el dueño con su plata, no salió de la caja (no se descuenta en el arqueo)
+    private boolean fueraDeCaja;
+
     @Size(max = 50, message = "El número de comprobante no puede superar los 50 caracteres")
     private String comprobante;
 }

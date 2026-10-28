@@ -19,9 +19,10 @@ public interface GastoRepository extends JpaRepository<Gasto, Long> {
     @EntityGraph(attributePaths = {"registradoPor", "anuladoPor"})
     Page<Gasto> findAll(Pageable pageable);
 
-    // Gastos no anulados de un turno, como filas [metodoPago, total, cantidad]
+    // Gastos no anulados de un turno, como filas [metodoPago, total, cantidad]. Sin los que no salieron de la caja (los
+    // pagó el dueño con su plata): no son movimientos de la caja
     @Query("SELECT g.metodoPago, COALESCE(SUM(g.monto), 0), COUNT(g) FROM Gasto g "
-            + "WHERE g.anulado = false AND g.fecha >= :desde AND g.fecha < :hasta GROUP BY g.metodoPago")
+            + "WHERE g.anulado = false AND g.fueraDeCaja = false AND g.fecha >= :desde AND g.fecha < :hasta GROUP BY g.metodoPago")
     List<Object[]> sumarPorMetodoEntre(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
 
     @Query("SELECT COALESCE(SUM(g.monto), 0) FROM Gasto g WHERE g.anulado = false AND g.fecha >= :desde")

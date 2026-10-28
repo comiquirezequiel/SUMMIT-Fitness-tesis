@@ -21,14 +21,19 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Caja (CajaService): el efectivo esperado del turno es el fondo + los cobros en efectivo - los gastos en efectivo, el
  * cierre registra la diferencia (explicada) y lo que queda de fondo, y un gasto de un turno cerrado ya no se anula.
+ * Un gasto en efectivo no puede superar lo que hay en la caja, salvo que lo haya pagado el dueño (fuera de caja).
  */
 class CajaTest extends PruebaIntegracion {
 
     @Autowired CajaService caja;
     @Autowired PagoService pagos;
 
+    private GastoDTO gasto(BigDecimal monto, MetodoPago metodo, boolean fueraDeCaja) {
+        return caja.registrarGasto(new GastoRequestDTO(monto, CategoriaGasto.LIMPIEZA, "Artículos de limpieza", metodo, fueraDeCaja, null), null);
+    }
+
     private GastoDTO gasto(int monto, MetodoPago metodo) {
-        return caja.registrarGasto(new GastoRequestDTO(BigDecimal.valueOf(monto), CategoriaGasto.LIMPIEZA, "Artículos de limpieza", metodo, null), null);
+        return gasto(BigDecimal.valueOf(monto), metodo, false);
     }
 
     private static BigDecimal pesos(int monto) {
@@ -51,7 +56,39 @@ class CajaTest extends PruebaIntegracion {
     }
 
     @Test
+    void unGastoEnEfectivoNoPuedeSuperarLoQueHayEnLaCaja() {
+        pagos.registrarPago(cobro(socio(), plan(10000, null), 10000), null);
+        BigDecimal enCaja = caja.turnoActual().getEfectivoEsperado();
+        assertThatThrownBy(() -> gasto(enCaja.add(BigDecimal.ONE), MetodoPago.EFECTIVO, false))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("no alcanza")
+                .hasMessageContaining("no salió de la caja");
+
+        gasto(enCaja, MetodoPago.EFECTIVO, false);
+        assertThat(caja.turnoActual().getEfectivoEsperado()).isEqualByComparingTo(BigDecimal.ZERO);
+        // Por transferencia la caja no se toca: no importa cuánto efectivo haya
+        gasto(enCaja.add(pesos(50000)), MetodoPago.TRANSFERENCIA, false);
+    }
+
+    @Test
+    void unGastoQuePagoElDuenoNoSaleDeLaCaja() {
+        TurnoCajaDTO antes = caja.turnoActual();
+        BigDecimal egresosHoy = pagos.resumen().getEgresosHoy();
+        GastoDTO g = gasto(pesos(1000000), MetodoPago.EFECTIVO, true);
+        assertThat(g.isFueraDeCaja()).isTrue();
+
+        TurnoCajaDTO despues = caja.turnoActual();
+        assertThat(despues.getEfectivoEsperado()).isEqualByComparingTo(antes.getEfectivoEsperado());
+        assertThat(despues.getCantidadGastos()).isEqualTo(antes.getCantidadGastos());
+        // Pero es un gasto del gimnasio: suma en los gastos de hoy
+        assertThat(pagos.resumen().getEgresosHoy()).isEqualByComparingTo(egresosHoy.add(pesos(1000000)));
+        // Con otro medio no tiene sentido: se ignora
+        assertThat(gasto(pesos(500), MetodoPago.TRANSFERENCIA, true).isFueraDeCaja()).isFalse();
+    }
+
+    @Test
     void unGastoAnuladoNoCuenta() {
+        pagos.registrarPago(cobro(socio(), plan(10000, null), 10000), null);
         TurnoCajaDTO antes = caja.turnoActual();
         GastoDTO g = gasto(2000, MetodoPago.EFECTIVO);
         assertThatThrownBy(() -> caja.anularGasto(g.getIdGasto(), "no", null)).isInstanceOf(IllegalArgumentException.class);
