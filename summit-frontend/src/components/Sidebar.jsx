@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { 
   Users, User, BarChart2,
   Wallet, Tag, TrendingUp, AlertTriangle,
-  Dumbbell, CalendarCheck, History, ClipboardList, ListChecks,
+  Dumbbell, ClipboardList, ListChecks,
   Calendar, CalendarDays, Settings,
   LogOut, LayoutDashboard, ChevronDown, ChevronUp, Clipboard,
   MessageCircle, CheckSquare, UserX, Repeat, Building2, Megaphone, BadgePercent, FileText, Receipt
@@ -56,8 +56,6 @@ const MENU_ITEMS = [
     icon: Dumbbell, text: "Entrenamiento",
     subItems: [
       { icon: ListChecks, text: "Ejercicios", path: "/entrenamiento/ejercicios", roles: ['ADMIN', 'RECEPCION', 'PROFESOR'] },
-      { icon: CalendarCheck, text: "Rutina de Hoy", path: "/entrenamiento/hoy", roles: ['ADMIN', 'PROFESOR'] },
-      { icon: History, text: "Historial", path: "/entrenamiento/historial", roles: ['ADMIN', 'PROFESOR'] },
       { icon: ClipboardList, text: "Rutinas", path: "/entrenamiento/rutinas", roles: ['ADMIN', 'PROFESOR'] },
     ]
   },

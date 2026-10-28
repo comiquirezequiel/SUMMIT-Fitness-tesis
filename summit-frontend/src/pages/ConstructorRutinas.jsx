@@ -272,7 +272,7 @@ const Constructor = () => {
 
   const quitar = async (item) => {
     if (!modoEdicion) { setBorrador((b) => b.filter((i) => i.clave !== item.clave)); return; }
-    if (!window.confirm(`¿Quitar "${item.nombreEjercicio}" de la rutina?\n\nLo que el socio ya registró de este ejercicio queda en su historial.`)) return;
+    if (!window.confirm(`¿Quitar "${item.nombreEjercicio}" de la rutina?`)) return;
     await ejecutar(async () => errorDe(
       await enviarJson(`/rutinas/${idRutina}/ejercicios/${item.idRutinaEjercicio}`, 'DELETE'),
       'No se pudo quitar el ejercicio.',
@@ -367,7 +367,7 @@ const Constructor = () => {
     if (!nombre.trim()) { setAviso({ tipo: 'error', texto: 'Indicá el nombre de la rutina.' }); return; }
     if (borrador.length === 0) { setAviso({ tipo: 'error', texto: 'Agregá al menos un ejercicio.' }); return; }
     if (rutinaVigente && !window.confirm(`${socio.nombreCompleto} ya tiene la rutina activa "${rutinaVigente.nombre}".\n\n`
-      + 'Al crear esta, aquella pasa a inactiva y queda en el historial con sus entrenamientos. ¿Crear la nueva rutina?')) return;
+      + 'Al crear esta, aquella pasa a inactiva (queda guardada). ¿Crear la nueva rutina?')) return;
 
     setCreando(true);
     const r = await enviarJson('/rutinas', 'POST', { idSocio: socio.idSocio, nombre: nombre.trim(), objetivo: objetivo.trim() || null });
@@ -561,7 +561,7 @@ const Constructor = () => {
             {!modoEdicion && socio && rutinaVigente && (
               <Aviso tipo="alerta">
                 <p><b>{socio.nombreCompleto}</b> ya tiene la rutina activa <b>“{rutinaVigente.nombre}”</b> ({rutinaVigente.totalDias} {rutinaVigente.totalDias === 1 ? 'día' : 'días'} · {rutinaVigente.ejercicios.length} ejercicios, desde el {formatFecha(rutinaVigente.fechaCreacion)}).</p>
-                <p className="mt-1">Si creás una nueva, esa pasa a <b>inactiva</b> y queda en el historial.</p>
+                <p className="mt-1">Si creás una nueva, esa pasa a <b>inactiva</b> y queda guardada.</p>
                 <button onClick={() => navigate(`/rutinas/constructor?rutina=${rutinaVigente.idRutina}`)}
                   className={`mt-2 inline-flex items-center gap-1.5 ${botonChico} bg-white border border-amber-300 rounded-lg hover:bg-amber-100`}>
                   <Pencil className="w-3.5 h-3.5" /> Editar la rutina actual

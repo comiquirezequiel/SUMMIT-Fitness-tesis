@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ClipboardList, Search, Plus, Eye, Pencil, Ban, RefreshCw, UserX, Activity, AlarmClock, History, Download,
+  ClipboardList, Search, Plus, Eye, Pencil, Ban, RefreshCw, UserX, Download,
 } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import Modal from '../components/Modal';
@@ -11,17 +11,13 @@ import { Cargando, ErrorCaja, Vacio, Aviso } from '../components/entrenamiento/E
 import BotonesPdf from '../components/pdf/BotonesPdf';
 import { documentoRutina } from '../components/pdf/rutina';
 import {
-  obtenerJson, enviarJson, puedeEditarEntrenamiento, haceCuanto, coincide,
+  obtenerJson, enviarJson, puedeEditarEntrenamiento, coincide,
 } from '../components/entrenamiento/comun';
-import { formatFecha, usuarioActual, diasHasta, descargarCsv, hoyIso } from '../utils/formato';
-
-const DIAS_ALERTA = 14; // sin entrenar hace más de 2 semanas
-
-const sinEntrenarHaceMucho = (rutina) =>
-  !rutina.ultimoEntrenamiento || diasHasta(rutina.ultimoEntrenamiento) < -DIAS_ALERTA;
+import { formatFecha, usuarioActual, descargarCsv, hoyIso } from '../utils/formato';
 
 /**
- * Rutinas: socios con su rutina activa (y los activos que no tienen) para el profesor y el admin.
+ * Rutinas: socios con su rutina activa (y los activos que no tienen) para el profesor y el admin. No sigue lo que
+ * entrena cada socio: la rutina le llega impresa o digital.
  * Datos: GET /rutinas (resumen de las rutinas activas en una consulta) + GET /socios.
  */
 const EntrenamientoPlanes = () => {
@@ -79,23 +75,19 @@ const EntrenamientoPlanes = () => {
     TODOS: filas.length,
     CON: filas.filter((f) => f.rutina).length,
     SIN: filas.filter((f) => !f.rutina).length,
-    ALERTA: filas.filter((f) => f.rutina && sinEntrenarHaceMucho(f.rutina)).length,
     MIAS: filas.filter((f) => f.rutina?.idProfesor === usuario?.idUsuario).length,
-    SEMANA: filas.filter((f) => f.rutina?.ultimoEntrenamiento && diasHasta(f.rutina.ultimoEntrenamiento) >= -6).length,
   }), [filas, usuario?.idUsuario]);
 
   const filtros = [
     { valor: 'TODOS', texto: 'Todos' },
     { valor: 'CON', texto: 'Con rutina' },
     { valor: 'SIN', texto: 'Sin rutina' },
-    { valor: 'ALERTA', texto: `Sin entrenar +${DIAS_ALERTA} días` },
     ...(usuario?.rol === 'PROFESOR' ? [{ valor: 'MIAS', texto: 'Armadas por mí' }] : []),
   ];
 
   const visibles = filas.filter((f) => {
     if (filtro === 'CON' && !f.rutina) return false;
     if (filtro === 'SIN' && f.rutina) return false;
-    if (filtro === 'ALERTA' && !(f.rutina && sinEntrenarHaceMucho(f.rutina))) return false;
     if (filtro === 'MIAS' && f.rutina?.idProfesor !== usuario?.idUsuario) return false;
     return coincide(busqueda, f.socio.nombreCompleto, f.socio.dni, f.socio.email, f.rutina?.nombre,
       f.rutina?.objetivo, f.rutina?.nombreProfesor);
@@ -120,12 +112,12 @@ const EntrenamientoPlanes = () => {
   const desactivar = async (fila) => {
     const { rutina, socio } = fila;
     if (!window.confirm(`¿Desactivar la rutina "${rutina.nombre}" de ${socio.nombreCompleto}?\n\n`
-      + 'Deja de verla en su portal. Sus entrenamientos quedan en el historial.')) return;
+      + 'No se borra: queda guardada como inactiva.')) return;
     setDesactivando(rutina.idRutina);
     const r = await enviarJson(`/rutinas/${rutina.idRutina}`, 'DELETE');
     setDesactivando(null);
     if (r.ok) {
-      setAviso({ tipo: 'exito', texto: `Rutina "${rutina.nombre}" de ${socio.nombreCompleto} desactivada. Sus entrenamientos quedan en el historial.` });
+      setAviso({ tipo: 'exito', texto: `Rutina "${rutina.nombre}" de ${socio.nombreCompleto} desactivada.` });
       setDetalle(null);
       cargar();
     } else {
@@ -135,11 +127,10 @@ const EntrenamientoPlanes = () => {
 
   const exportar = () => {
     descargarCsv(`rutinas-${hoyIso()}.csv`,
-      ['Socio', 'DNI', 'Rutina', 'Objetivo', 'Días', 'Ejercicios', 'Profesor', 'Creada', 'Último entrenamiento'],
+      ['Socio', 'DNI', 'Rutina', 'Objetivo', 'Días', 'Ejercicios', 'Profesor', 'Creada'],
       visibles.map(({ socio, rutina }) => [
         socio.nombreCompleto, socio.dni, rutina?.nombre || 'Sin rutina', rutina?.objetivo, rutina?.totalDias,
         rutina?.cantidadEjercicios, rutina?.nombreProfesor, rutina ? formatFecha(rutina.fechaCreacion) : '',
-        rutina?.ultimoEntrenamiento ? formatFecha(rutina.ultimoEntrenamiento) : '',
       ]));
   };
 
@@ -167,10 +158,6 @@ const EntrenamientoPlanes = () => {
             <Pencil className="w-3.5 h-3.5" /> Editar
           </button>
         )}
-        <button onClick={() => navigate(`/entrenamiento/historial?socio=${socio.idSocio}`)}
-          className={`${boton} border-slate-200 text-slate-600 hover:bg-slate-50`} title="Historial y progreso">
-          <History className="w-3.5 h-3.5" /> Historial
-        </button>
         {puedeEditar && (
           <button onClick={() => desactivar(fila)} disabled={desactivando === rutina.idRutina}
             className={`${boton} border-rose-200 text-rose-600 hover:bg-rose-50`}>
@@ -181,25 +168,12 @@ const EntrenamientoPlanes = () => {
     );
   };
 
-  const ultimoEntrenamiento = (rutina) => {
-    if (!rutina) return <span className="text-slate-400">—</span>;
-    const alerta = sinEntrenarHaceMucho(rutina);
-    return (
-      <div>
-        <span className={`font-medium ${alerta ? 'text-amber-700' : 'text-slate-700'}`}>
-          {rutina.ultimoEntrenamiento ? haceCuanto(rutina.ultimoEntrenamiento) : 'Todavía no entrenó'}
-        </span>
-        {rutina.ultimoEntrenamiento && <div className="text-xs text-slate-400">{formatFecha(rutina.ultimoEntrenamiento)}</div>}
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 mb-1">Rutinas</h1>
-          <p className="text-sm text-slate-500">Rutina activa de cada socio, quién no tiene y cuándo entrenó por última vez</p>
+          <p className="text-sm text-slate-500">Rutina activa de cada socio y quién todavía no tiene</p>
         </div>
         {puedeEditar && (
           <button onClick={() => navigate('/rutinas/constructor')} className={`${botonPrimario} whitespace-nowrap shadow-sm`}>
@@ -213,15 +187,11 @@ const EntrenamientoPlanes = () => {
       )}
       {aviso && <Aviso tipo={aviso.tipo} onCerrar={() => setAviso(null)}>{aviso.texto}</Aviso>}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <StatCard title="Rutinas activas" value={cargando ? '…' : String(conteo.CON)} icon={ClipboardList}
           iconColor="text-blue-500" iconBg="bg-blue-50" subtitle="Una por socio" />
         <StatCard title="Socios sin rutina" value={cargando ? '…' : String(conteo.SIN)} icon={UserX}
           iconColor="text-slate-500" iconBg="bg-slate-100" subtitle="Socios activos" />
-        <StatCard title="Entrenaron esta semana" value={cargando ? '…' : String(conteo.SEMANA)} icon={Activity}
-          iconColor="text-emerald-500" iconBg="bg-emerald-50" subtitle="Últimos 7 días" />
-        <StatCard title={`Sin entrenar +${DIAS_ALERTA} días`} value={cargando ? '…' : String(conteo.ALERTA)} icon={AlarmClock}
-          iconColor="text-amber-500" iconBg="bg-amber-50" subtitle="Con rutina, para contactar" />
       </div>
 
       <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] space-y-3">
@@ -281,7 +251,6 @@ const EntrenamientoPlanes = () => {
                     <div className="text-sm text-slate-600 space-y-1 flex-1">
                       <p><span className="font-semibold text-slate-800">{fila.rutina.nombre}</span>{fila.rutina.objetivo ? ` · ${fila.rutina.objetivo}` : ''}</p>
                       <p className="text-xs">{fila.rutina.totalDias} {fila.rutina.totalDias === 1 ? 'día' : 'días'} · {fila.rutina.cantidadEjercicios} ejercicios · {fila.rutina.nombreProfesor || 'Sin profesor'} · desde {formatFecha(fila.rutina.fechaCreacion)}</p>
-                      <div className="text-xs flex flex-wrap gap-x-1">Último entrenamiento: {ultimoEntrenamiento(fila.rutina)}</div>
                     </div>
                   )}
                   {acciones(fila, true)}
@@ -298,7 +267,6 @@ const EntrenamientoPlanes = () => {
                     <th className="px-5 py-3.5 font-medium">Rutina activa</th>
                     <th className="px-5 py-3.5 font-medium whitespace-nowrap">Días · Ejercicios</th>
                     <th className="px-5 py-3.5 font-medium">Profesor</th>
-                    <th className="px-5 py-3.5 font-medium">Último entrenamiento</th>
                     <th className="px-5 py-3.5 font-medium text-right">Acciones</th>
                   </tr>
                 </thead>
@@ -323,7 +291,6 @@ const EntrenamientoPlanes = () => {
                         {fila.rutina ? `${fila.rutina.totalDias} ${fila.rutina.totalDias === 1 ? 'día' : 'días'} · ${fila.rutina.cantidadEjercicios}` : '—'}
                       </td>
                       <td className="px-5 py-3.5 text-slate-600">{fila.rutina ? (fila.rutina.nombreProfesor || 'Sin profesor') : '—'}</td>
-                      <td className="px-5 py-3.5 whitespace-nowrap">{ultimoEntrenamiento(fila.rutina)}</td>
                       <td className="px-5 py-3.5">{acciones(fila)}</td>
                     </tr>
                   ))}

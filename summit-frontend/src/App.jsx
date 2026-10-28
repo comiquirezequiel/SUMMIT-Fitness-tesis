@@ -37,8 +37,6 @@ const DescuentosReglas = lazy(() => import('./pages/DescuentosReglas'));
 const MetricasPlanes = lazy(() => import('./pages/MetricasPlanes'));
 const DebitosAutomaticos = lazy(() => import('./pages/DebitosAutomaticos'));
 const ConstructorRutinas = lazy(() => import('./pages/ConstructorRutinas'));
-const EntrenamientoHoy = lazy(() => import('./pages/EntrenamientoHoy'));
-const EntrenamientoHistorial = lazy(() => import('./pages/EntrenamientoHistorial'));
 const EntrenamientoPlanes = lazy(() => import('./pages/EntrenamientoPlanes'));
 const Entrenamiento = lazy(() => import('./pages/Entrenamiento'));
 const Clases = lazy(() => import('./pages/Clases'));
@@ -139,8 +137,6 @@ function App() {
           <Route path="membresias/reglas" element={<Diferida><DescuentosReglas /></Diferida>} />
 
           {/* Entrenamiento */}
-          <Route path="entrenamiento/hoy" element={<Diferida><EntrenamientoHoy /></Diferida>} />
-          <Route path="entrenamiento/historial" element={<Diferida><EntrenamientoHistorial /></Diferida>} />
           <Route path="entrenamiento/rutinas" element={<Diferida><EntrenamientoPlanes /></Diferida>} />
           <Route path="entrenamiento/ejercicios" element={<Diferida><Entrenamiento /></Diferida>} />
 

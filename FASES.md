@@ -91,6 +91,10 @@ electrónica de ARCA (ex AFIP) va al final, después de explicar cómo hacerla.
     superar lo que hay en la caja (el formulario muestra cuánto hay); si lo pagó el dueño con su plata se marca "No salió
     de la caja" y cuenta como gasto del mes pero no en el arqueo. En el cierre, un contado negativo o un retiro mayor a lo
     contado se avisan en el momento, y una caja que ya venía en negativo explica por qué y lleva a revisar los gastos.
+13. Entrenamiento sin seguimiento (hecho el 28/10/2026, decisión del dueño): el gimnasio no sigue lo que entrena cada
+    socio, la rutina le llega impresa o digital. Se sacaron del panel *Rutina de hoy*, *Historial* y, en *Rutinas*, lo
+    que dependía de los entrenamientos anotados (último entrenamiento, entrenaron esta semana, sin entrenar). El backend
+    de los registros queda para la app del socio, que está suspendida.
 
 #### Factura electrónica (hecha el 28/10/2026)
 

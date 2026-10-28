@@ -1,12 +1,11 @@
 // Utilidades compartidas por las pantallas de entrenamiento del personal
-// (Rutinas, Constructor, Rutina de hoy e Historial).
+// (Ejercicios, Rutinas y Constructor).
 import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '../../services/api';
-import { diasHasta } from '../../utils/formato';
 
 export const DIAS_MAXIMOS = 7;
 
-// Arman y modifican rutinas, y cargan entrenamientos por el socio (RECEPCION solo consulta)
+// Arman y modifican rutinas (RECEPCION solo consulta)
 export const puedeEditarEntrenamiento = (usuario) => ['ADMIN', 'PROFESOR'].includes(usuario?.rol);
 
 const GRUPOS = {
@@ -112,8 +111,6 @@ export const formatNumero = (n, decimales = 1) =>
 
 export const formatKg = (kg) => (kg === null || kg === undefined ? 'Peso corporal' : `${formatNumero(kg)} kg`);
 
-export const formatTonelaje = (kg) => (kg >= 1000 ? `${formatNumero(kg / 1000, 1)} t` : `${formatNumero(kg, 0)} kg`);
-
 export const formatDescanso = (segundos) => {
   if (segundos === null || segundos === undefined) return null;
   if (segundos < 60) return `${segundos} s`;
@@ -126,32 +123,12 @@ export const formatDescanso = (segundos) => {
 export const seriesPorReps = (series, repeticiones) =>
   `${series ?? '—'} × ${repeticiones ?? '—'}`;
 
-// 'YYYY-MM-DD' -> "Hoy", "Ayer", "Hace 5 días"
-export const haceCuanto = (fechaIso) => {
-  if (!fechaIso) return 'Nunca';
-  const dias = -diasHasta(fechaIso);
-  if (dias <= 0) return 'Hoy';
-  if (dias === 1) return 'Ayer';
-  return `Hace ${dias} días`;
-};
-
 // 'YYYY-MM-DD' -> "lun 29/09"
 export const fechaCorta = (fechaIso) => {
   if (!fechaIso) return '—';
   const [anio, mes, dia] = fechaIso.substring(0, 10).split('-').map(Number);
   const semana = new Date(anio, mes - 1, dia).toLocaleDateString('es-AR', { weekday: 'short' }).replace('.', '');
   return `${semana} ${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}`;
-};
-
-// LocalDateTime -> "20:27"
-export const horaCorta = (fechaHoraIso) => (fechaHoraIso ? fechaHoraIso.substring(11, 16) : '');
-
-// Esfuerzo percibido: el color acompaña al número (nunca va solo)
-export const claseRpe = (rpe) => {
-  if (rpe === null || rpe === undefined) return 'bg-slate-100 text-slate-500 border-slate-200';
-  if (rpe >= 9) return 'bg-rose-50 text-rose-700 border-rose-200';
-  if (rpe >= 7) return 'bg-amber-50 text-amber-700 border-amber-200';
-  return 'bg-emerald-50 text-emerald-700 border-emerald-200';
 };
 
 // Ejercicios de una rutina agrupados por día: [[1, [...]], [2, [...]]]
