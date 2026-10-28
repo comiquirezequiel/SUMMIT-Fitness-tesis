@@ -20,3 +20,11 @@ application-local.properties
 .idea/
 .DS_Store
 Thumbs.db
+
+# Certificado de ARCA y su clave privada (factura electrónica): nunca al repositorio
+*.p12
+*.pfx
+*.key
+*.csr
+*.crt
+*.pem

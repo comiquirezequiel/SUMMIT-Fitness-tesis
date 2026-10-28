@@ -26,26 +26,40 @@ public class ConfiguracionArca {
     private final String wsaaUrl;
     private final String wsfeUrl;
 
-    public ConfiguracionArca(@Value("${summit.arca.habilitada:false}") boolean habilitada,
-                             @Value("${summit.arca.ambiente:SIMULADOR}") AmbienteArca ambiente,
+    // Se leen como texto: en application-local.properties pueden quedar vacíos (ARCA_HABILITADA=, ARCA_AMBIENTE=)
+    public ConfiguracionArca(@Value("${summit.arca.habilitada:false}") String habilitada,
+                             @Value("${summit.arca.ambiente:SIMULADOR}") String ambiente,
                              @Value("${summit.arca.certificado:}") String certificado,
                              @Value("${summit.arca.certificado-password:}") String certificadoPassword,
                              @Value("${summit.arca.wsaa-url:}") String wsaaUrl,
                              @Value("${summit.arca.wsfe-url:}") String wsfeUrl) {
-        this.habilitada = habilitada;
-        this.ambiente = ambiente;
+        this.habilitada = "true".equalsIgnoreCase(habilitada.trim());
+        this.ambiente = ambiente(ambiente);
         this.certificado = certificado.trim();
         this.certificadoPassword = certificadoPassword;
-        this.wsaaUrl = wsaaUrl.isBlank() ? switch (ambiente) {
+        this.wsaaUrl = wsaaUrl.isBlank() ? switch (this.ambiente) {
             case SIMULADOR -> WSAA_SIMULADOR;
             case HOMOLOGACION -> WSAA_HOMOLOGACION;
             case PRODUCCION -> WSAA_PRODUCCION;
         } : wsaaUrl.trim();
-        this.wsfeUrl = wsfeUrl.isBlank() ? switch (ambiente) {
+        this.wsfeUrl = wsfeUrl.isBlank() ? switch (this.ambiente) {
             case SIMULADOR -> WSFE_SIMULADOR;
             case HOMOLOGACION -> WSFE_HOMOLOGACION;
             case PRODUCCION -> WSFE_PRODUCCION;
         } : wsfeUrl.trim();
+    }
+
+    // Vacío = simulador. Uno mal escrito frena el arranque: no se puede adivinar si se quería facturar de verdad
+    private static AmbienteArca ambiente(String texto) {
+        if (texto.isBlank()) {
+            return AmbienteArca.SIMULADOR;
+        }
+        try {
+            return AmbienteArca.valueOf(texto.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("summit.arca.ambiente (ARCA_AMBIENTE) tiene que ser SIMULADOR, HOMOLOGACION "
+                    + "o PRODUCCION, y dice \"" + texto + "\"");
+        }
     }
 
     public boolean habilitada() {

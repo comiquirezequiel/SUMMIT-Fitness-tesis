@@ -39,3 +39,14 @@ APP_URL=
 # Débito automático con Mercado Pago (opcional): credencial privada de la cuenta del gimnasio.
 # Vacía = débito automático apagado; el resto del sistema funciona igual.
 MP_ACCESS_TOKEN=
+
+# Factura electrónica de ARCA (opcional, ver FACTURACION.md). ARCA_HABILITADA=true la prende.
+# ARCA_AMBIENTE: SIMULADOR (para probar y mostrar sin certificado: las facturas no valen nada), HOMOLOGACION (el
+# ambiente de pruebas de ARCA) o PRODUCCION (facturas reales).
+ARCA_HABILITADA=false
+ARCA_AMBIENTE=SIMULADOR
+# El archivo .p12 con el certificado de ARCA y su clave privada (guardalo fuera de esta carpeta) y su contraseña.
+# Escribí la ruta con barras /, por ejemplo C:/ProgramData/Summit/arca/summit-arca.p12 (en este archivo la barra
+# invertida no se puede usar sola). En el simulador no hacen falta.
+ARCA_CERTIFICADO=
+ARCA_CERTIFICADO_PASSWORD=

@@ -22,11 +22,9 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,11 +43,18 @@ import java.util.TreeMap;
 @Component
 public class SimuladorArca {
 
-    /** Fallas para los tests: la próxima llamada no llega, llega pero se pierde la respuesta, o ARCA da error interno. */
+    /**
+     * Fallas para los tests: el pedido no llega, llega pero se pierde la respuesta, ARCA da error interno, o rechaza el
+     * comprobante (solo en FECAESolicitar).
+     */
     public enum Falla {
         SIN_CONEXION,
         CORTE_DESPUES_DE_PROCESAR,
-        ERROR_INTERNO
+        ERROR_INTERNO,
+        RECHAZO
+    }
+
+    private record FallaProgramada(String metodo, Falla falla) {
     }
 
     private record Emitido(long numero, LocalDate fecha, BigDecimal total, int docTipo, long docNro, String cae,
@@ -71,7 +76,7 @@ public class SimuladorArca {
     private final ComprobanteFiscalRepository comprobantes;
     private final Map<String, NavigableMap<Long, Emitido>> emitidos = new HashMap<>();
     private final Map<String, String> permisos = new HashMap<>();
-    private final Deque<Falla> fallas = new ArrayDeque<>();
+    private final List<FallaProgramada> fallas = new ArrayList<>();
     private final SecureRandom azar = new SecureRandom();
 
     public SimuladorArca(ComprobanteFiscalRepository comprobantes) {
@@ -79,19 +84,19 @@ public class SimuladorArca {
     }
 
     public synchronized String atender(String url, String soapAction, String xml) throws IOException {
-        Falla falla = fallas.poll();
+        boolean acceso = url.endsWith("wsaa");
+        String metodo = acceso ? "loginCms" : soapAction.substring(soapAction.lastIndexOf('/') + 1);
+        Falla falla = tomarFalla(metodo);
         if (falla == Falla.SIN_CONEXION) {
             throw new IOException("Simulador de ARCA: sin conexión");
         }
-        boolean acceso = url.endsWith("wsaa");
-        String metodo = acceso ? "loginCms" : soapAction.substring(soapAction.lastIndexOf('/') + 1);
         String respuesta;
         if (falla == Falla.ERROR_INTERNO) {
             respuesta = acceso ? falla("wsn.unavailable", "Servicio no disponible")
                     : respuesta(metodo, errores(new Mensaje(501, "Error interno de base de datos")));
         } else {
             Document pedido = Xml.leer(xml);
-            respuesta = acceso ? acceso(pedido) : facturacion(metodo, pedido);
+            respuesta = acceso ? acceso(pedido) : facturacion(metodo, pedido, falla == Falla.RECHAZO);
         }
         if (falla == Falla.CORTE_DESPUES_DE_PROCESAR) {
             throw new IOException("Simulador de ARCA: se cortó la conexión antes de que llegara la respuesta");
@@ -99,12 +104,21 @@ public class SimuladorArca {
         return respuesta;
     }
 
-    /** Para los tests: las próximas llamadas fallan así, en orden. */
-    public synchronized void fallar(Falla... proximas) {
-        fallas.addAll(List.of(proximas));
+    /** Para los tests: la próxima llamada a ese método (loginCms, FECAESolicitar, ...) falla así. */
+    public synchronized void fallar(String metodo, Falla falla) {
+        fallas.add(new FallaProgramada(metodo, falla));
     }
 
-    /** Para los tests: olvida todo (permisos, numeración y fallas pendientes). */
+    private Falla tomarFalla(String metodo) {
+        for (int i = 0; i < fallas.size(); i++) {
+            if (fallas.get(i).metodo().equals(metodo)) {
+                return fallas.remove(i).falla();
+            }
+        }
+        return null;
+    }
+
+    /** Para los tests: olvida todo (permisos, numeración y fallas programadas). */
     public synchronized void reiniciar() {
         emitidos.clear();
         permisos.clear();
@@ -177,7 +191,7 @@ public class SimuladorArca {
 
     // ===== WSFEv1 =====
 
-    private String facturacion(String metodo, Document pedido) {
+    private String facturacion(String metodo, Document pedido, boolean rechazar) {
         if (metodo.equals("FEDummy")) {
             return respuesta(metodo, "<AppServer>OK</AppServer><DbServer>OK</DbServer><AuthServer>OK</AuthServer>");
         }
@@ -197,7 +211,7 @@ public class SimuladorArca {
             case "FECompConsultar" -> consultar(pedido, cuit);
             case "FEParamGetPtosVenta" ->
                     respuesta(metodo, errores(new Mensaje(602, "Sin Resultados: - en el metodo consultar puntos de venta")));
-            case "FECAESolicitar" -> solicitar(pedido, cuit);
+            case "FECAESolicitar" -> solicitar(pedido, cuit, rechazar);
             default -> respuesta(metodo, errores(new Mensaje(500, "El simulador no conoce el método " + metodo)));
         };
     }
@@ -218,7 +232,7 @@ public class SimuladorArca {
                 + "<PtoVta>" + puntoVenta + "</PtoVta><CbteTipo>" + tipo + "</CbteTipo></ResultGet>");
     }
 
-    private String solicitar(Document pedido, String cuit) {
+    private String solicitar(Document pedido, String cuit, boolean rechazar) {
         Element cabecera = Xml.primero(pedido, "FeCabReq");
         Element detalle = Xml.primero(pedido, "FECAEDetRequest");
         if (cabecera == null || detalle == null || entero(cabecera, "CantReg") != 1) {
@@ -228,6 +242,9 @@ public class SimuladorArca {
         int tipo = entero(cabecera, "CbteTipo");
         List<Mensaje> rechazos = new ArrayList<>();
         List<Mensaje> avisos = new ArrayList<>();
+        if (rechazar) {
+            rechazos.add(new Mensaje(10000, "Rechazo de prueba del simulador"));
+        }
 
         NavigableMap<Long, Emitido> serie = numeracion(cuit, puntoVenta, tipo);
         long numero = largo(detalle, "CbteDesde");

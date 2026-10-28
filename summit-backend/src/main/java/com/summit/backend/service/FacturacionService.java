@@ -52,7 +52,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -102,7 +101,6 @@ public class FacturacionService {
     private final TransactionTemplate tx;
 
     private final ReentrantLock emitiendo = new ReentrantLock();
-    private final AtomicBoolean otraPasada = new AtomicBoolean();
     private final ExecutorService segundoPlano = Executors.newSingleThreadExecutor(tarea -> {
         Thread hilo = new Thread(tarea, "facturacion-arca");
         hilo.setDaemon(true);
@@ -296,20 +294,17 @@ public class FacturacionService {
         procesarPendientes();
     }
 
-    /** Procesa la cola hasta vaciarla o hasta que ARCA no responda. Si ya se está procesando, avisa que hay más. */
+    /**
+     * Procesa la cola hasta vaciarla o hasta que ARCA no responda. Si otro hilo la está procesando, espera a que
+     * termine y hace otra pasada (así no queda afuera lo que llegó mientras tanto).
+     */
     public void procesarPendientes() {
         if (!config.habilitada()) {
             return;
         }
-        if (!emitiendo.tryLock()) {
-            otraPasada.set(true);
-            return;
-        }
+        emitiendo.lock();
         try {
-            do {
-                otraPasada.set(false);
-                procesarCola();
-            } while (otraPasada.get());
+            procesarCola();
         } finally {
             emitiendo.unlock();
         }
