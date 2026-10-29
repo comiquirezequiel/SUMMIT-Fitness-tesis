@@ -4,15 +4,16 @@ import { ArrowUpRight, ArrowDownRight, Minus, Table2, BarChart3 } from 'lucide-r
 // ---------- Tokens de los gráficos ----------
 // Paleta categórica validada para daltonismo (orden fijo: el color sigue a la categoría, nunca a su posición).
 // El texto nunca usa el color de una serie: valores y etiquetas van en tinta primaria/secundaria/tenue.
+// Los grises son variables de index.css: cambian con el modo oscuro.
 export const SERIES = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948'];
-export const TINTA = { primaria: '#0b0b0b', secundaria: '#52514e', tenue: '#898781' };
-export const GRILLA = '#ebeae5';
-export const BASE = '#c3c2b7';
-export const GRIS_ENFASIS = '#cdd5df'; // el resto de las barras cuando una sola es la protagonista
-export const SIN_DATO = '#b9b7ae';
+export const TINTA = { primaria: 'var(--grafico-tinta)', secundaria: 'var(--grafico-tinta-2)', tenue: 'var(--grafico-tinta-3)' };
+export const GRILLA = 'var(--grafico-grilla)';
+export const BASE = 'var(--grafico-base)';
+export const GRIS_ENFASIS = 'var(--grafico-enfasis)'; // el resto de las barras cuando una sola es la protagonista
+export const SIN_DATO = 'var(--grafico-sin-dato)';
 // Rampa secuencial de un solo tono (más oscuro = más): mapa de calor
 export const RAMPA = ['#cde2fb', '#9ec5f4', '#6da7ec', '#3987e5', '#256abf', '#184f95', '#0d366b'];
-export const CERO = '#f3f2ee';
+export const CERO = 'var(--grafico-cero)';
 
 // ---------- Formatos ----------
 const coma = (n, decimales = 1) => n.toLocaleString('es-AR', { maximumFractionDigits: decimales });

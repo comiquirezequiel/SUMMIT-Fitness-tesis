@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { Bell, LogOut, Menu, KeyRound, CheckCircle2 } from 'lucide-react';
+import { Bell, LogOut, Menu, KeyRound, CheckCircle2, Moon, Sun } from 'lucide-react';
 import Modal from './Modal';
 import { useTareasPendientes } from '../services/seguimiento';
 import FormCambiarPassword from '../cuenta/FormCambiarPassword';
 import { cambiarPassword } from '../services/cuenta';
 import { cerrarSesion } from '../services/auth';
+import { useModoOscuro } from '../services/tema';
 import { usuarioActual } from '../utils/formato';
 
 // Cambiar la propia contraseña desde el panel
@@ -34,6 +35,7 @@ const Navbar = ({ onMenuClick }) => {
   const usuario = usuarioActual();
   // La campanita avisa las tareas de seguimiento pendientes
   const avisaTareas = ['ADMIN', 'RECEPCION'].includes(usuario?.rol);
+  const [oscuro, alternarTema] = useModoOscuro();
   const tareas = useTareasPendientes(avisaTareas);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [cambiandoPassword, setCambiandoPassword] = useState(false);
@@ -82,6 +84,11 @@ const Navbar = ({ onMenuClick }) => {
             )}
           </Link>
         )}
+
+        <button onClick={alternarTema} title={oscuro ? 'Pasar a modo claro' : 'Pasar a modo oscuro'} aria-pressed={oscuro}
+          className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors">
+          {oscuro ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </button>
 
         <button
           onClick={() => cerrarSesion()}
