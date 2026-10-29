@@ -9,7 +9,8 @@ import CapturaFoto from '../components/socios/CapturaFoto';
 import DetalleCobro from '../components/socios/DetalleCobro';
 import CobroModal from '../components/socios/CobroModal';
 import ComprobantePago from '../components/socios/ComprobantePago';
-import { SelectorPlan, SelectorMetodo, OpcionAVerificar } from '../components/socios/OpcionesCobro';
+import { SelectorPlan, SelectorMetodo, OpcionAVerificar, TARJETA_MP } from '../components/socios/OpcionesCobro';
+import { useFunciones } from '../services/funciones';
 import { listarDescuentos, registrarCobro, textoValorDescuento, usePresupuesto } from '../services/membresias';
 import { subirFotoSocio } from '../services/fotos';
 import { useEstadoIa, BotonIa, ResultadoAnalisis, AvisoIaNoDisponible } from '../components/ia/AsistenteIa';
@@ -60,6 +61,7 @@ const validarPaso = (paso, form) => {
 
 const NuevoSocio = () => {
   const navigate = useNavigate();
+  const { cobroConTarjeta } = useFunciones();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState(FORM_INICIAL);
   const [errores, setErrores] = useState({});
@@ -187,9 +189,11 @@ const NuevoSocio = () => {
         throw new Error(detalle || datosSocio.error || 'No se pudo registrar el socio');
       }
 
-      // 2. Cobro de la membresía (opcional), con el total que se mostró
+      // 2. Cobro de la membresía (opcional), con el total que se mostró. Con tarjeta se cobra después de guardar el
+      // socio, en la ventana de cobro (ahí se carga la tarjeta)
       let cobro = null;
-      if (form.idPlan) {
+      const conTarjeta = form.idPlan && form.metodoPago === TARJETA_MP;
+      if (form.idPlan && !conTarjeta) {
         try {
           const pago = await registrarCobro({
             idUsuario: datosSocio.idSocio,
@@ -220,6 +224,7 @@ const NuevoSocio = () => {
       }
 
       setResultado({ socio: datosSocio, cobro, apto, foto });
+      if (conTarjeta) setCobrando(true);
     } catch (err) {
       setErrorEnvio(err.message);
     } finally {
@@ -318,6 +323,7 @@ const NuevoSocio = () => {
         {cobrando && (
           // Se propone el plan que se había elegido en el alta
           <CobroModal socio={{ ...resultado.socio, idPlanActual: form.idPlan ? Number(form.idPlan) : null }} planes={planes}
+            metodoInicial={form.metodoPago === TARJETA_MP ? TARJETA_MP : undefined}
             onClose={() => setCobrando(false)}
             onGuardado={(pago) => { setCobrando(false); setResultado(r => ({ ...r, cobro: { ok: true, pago } })); }} />
         )}
@@ -558,9 +564,9 @@ const NuevoSocio = () => {
                 <DetalleCobro presupuesto={presupuesto} calculando={calculando} error={errorPresupuesto}
                   bonificarMatricula={form.bonificarMatricula} onBonificarMatricula={v => update('bonificarMatricula', v)} />
                 <Campo label="¿Cómo paga?" required>
-                  <SelectorMetodo valor={form.metodoPago} onCambiar={elegirMetodo} />
+                  <SelectorMetodo valor={form.metodoPago} onCambiar={elegirMetodo} conTarjeta={cobroConTarjeta} />
                 </Campo>
-                {form.metodoPago !== 'EFECTIVO' && (
+                {form.metodoPago !== 'EFECTIVO' && form.metodoPago !== TARJETA_MP && (
                   <Campo label="Nro. de comprobante">
                     <input type="text" maxLength={50} value={form.comprobante} placeholder={form.aVerificar ? 'Recomendado para verificarlo después' : 'Opcional'}
                       onChange={e => update('comprobante', e.target.value)} className={inputClass} />

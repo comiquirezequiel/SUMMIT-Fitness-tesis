@@ -1,9 +1,13 @@
 package com.summit.backend.controller;
 
 import com.summit.backend.dto.CajaResumenDTO;
+import com.summit.backend.dto.CobroConTarjetaDTO;
 import com.summit.backend.dto.CobroRequestDTO;
 import com.summit.backend.dto.PagoListadoDTO;
+import com.summit.backend.mercadopago.PasarelaTarjeta;
 import com.summit.backend.model.EstadoPago;
+import com.summit.backend.service.CobroConTarjetaService;
+import com.summit.backend.service.MercadoPagoClient.MercadoPagoNoDisponibleException;
 import com.summit.backend.service.PagoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,7 +23,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 /**
- * Controller de pagos y caja (cobros presenciales en recepción).
+ * Controller de pagos y caja (cobros de recepción: en persona y con tarjeta por Mercado Pago).
  */
 @RestController
 @RequestMapping("/api/pagos")
@@ -27,6 +31,8 @@ import java.util.NoSuchElementException;
 public class PagoController {
 
     private final PagoService pagoService;
+    private final CobroConTarjetaService cobroConTarjetaService;
+    private final PasarelaTarjeta pasarelaTarjeta;
 
     /**
      * Registra un cobro (ver CobroRequestDTO). El total lo calcula el backend; si no coincide con el que vio
@@ -43,6 +49,33 @@ public class PagoController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", String.valueOf(e.getMessage())));
         }
+    }
+
+    /**
+     * Cobro con tarjeta (ver CobroConTarjetaDTO): 201 con el pago (aprobado, o a verificar si Mercado Pago lo dejó en
+     * proceso), 409 si cambió el total (no se llega a cobrar), 402 si Mercado Pago rechazó la tarjeta (no se registra
+     * nada) y 503 si no se pudo hablar con Mercado Pago.
+     */
+    @PostMapping("/tarjeta")
+    public ResponseEntity<?> cobrarConTarjeta(@RequestBody CobroConTarjetaDTO pedido, Authentication auth) {
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(cobroConTarjetaService.cobrar(pedido, auth.getName()));
+        } catch (PagoService.TotalCambiadoException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", String.valueOf(e.getMessage())));
+        } catch (CobroConTarjetaService.TarjetaRechazadaException e) {
+            return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+                    .body(Map.of("error", String.valueOf(e.getMessage()), "codigo", "TARJETA_RECHAZADA"));
+        } catch (MercadoPagoNoDisponibleException e) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of("error", String.valueOf(e.getMessage())));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", String.valueOf(e.getMessage())));
+        }
+    }
+
+    /** Para el formulario de tarjeta: el modo (SIMULADOR o MERCADO_PAGO) y la clave pública de Mercado Pago. */
+    @GetMapping("/tarjeta/config")
+    public Map<String, String> configTarjeta() {
+        return Map.of("modo", pasarelaTarjeta.modo().name(), "publicKey", pasarelaTarjeta.publicKey());
     }
 
     /**

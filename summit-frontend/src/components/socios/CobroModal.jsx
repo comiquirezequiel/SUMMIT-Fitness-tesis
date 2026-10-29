@@ -4,10 +4,12 @@ import Modal from '../Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../Campo';
 import DetalleCobro from './DetalleCobro';
 import ComprobantePago from './ComprobantePago';
-import { SelectorPlan, SelectorMetodo, OpcionAVerificar } from './OpcionesCobro';
+import PagoConTarjeta from './PagoConTarjeta';
+import { SelectorPlan, SelectorMetodo, OpcionAVerificar, TARJETA_MP } from './OpcionesCobro';
 import { formatMoneda } from '../../utils/formato';
 import { METODOS_VERIFICABLES } from '../../utils/constantes';
 import { listarDescuentos, registrarCobro, textoValorDescuento, usePresupuesto } from '../../services/membresias';
+import { useFunciones } from '../../services/funciones';
 
 const ESPECIAL = 'ESPECIAL';
 
@@ -17,14 +19,18 @@ const ESPECIAL = 'ESPECIAL';
  * El total lo calcula el backend (precio del plan - descuento + matrícula si corresponde) y se muestra antes de
  * confirmar. El descuento puede ser uno del catálogo (se propone el habitual del socio) o uno especial con motivo.
  * Una transferencia o un QR que todavía no se ve acreditado puede quedar "a verificar": no extiende
- * la membresía hasta que el admin lo confirme.
+ * la membresía hasta que el admin lo confirme. Con tarjeta por Mercado Pago (si está activo), después de confirmar se
+ * carga la tarjeta (PagoConTarjeta). metodoInicial: cómo paga, para empezar (por ejemplo, la tarjeta elegida en el alta).
  * Después de cobrar muestra el comprobante (PDF y WhatsApp); onGuardado(pago) se llama al cerrarlo.
  */
-const CobroModal = ({ socio, planes, onClose, onGuardado }) => {
+const CobroModal = ({ socio, planes, onClose, onGuardado, metodoInicial = 'EFECTIVO' }) => {
+  const { cobroConTarjeta } = useFunciones();
   const [datos, setDatos] = useState({
     idPlan: '', descuento: '', especialMonto: '', especialMotivo: '', bonificarMatricula: false,
-    metodoPago: 'EFECTIVO', comprobante: '', aVerificar: false,
+    metodoPago: metodoInicial, comprobante: '', aVerificar: false,
   });
+  const conTarjeta = datos.metodoPago === TARJETA_MP;
+  const [cargandoTarjeta, setCargandoTarjeta] = useState(false); // el paso de la tarjeta, después de confirmar el cobro
   const [descuentos, setDescuentos] = useState([]);
   const verificable = METODOS_VERIFICABLES.includes(datos.metodoPago);
   const [procesando, setProcesando] = useState(false);
@@ -66,6 +72,10 @@ const CobroModal = ({ socio, planes, onClose, onGuardado }) => {
   const registrar = async (e) => {
     e.preventDefault();
     if (!listo) return;
+    if (conTarjeta) {
+      setCargandoTarjeta(true);
+      return;
+    }
     setProcesando(true);
     setError('');
     try {
@@ -86,10 +96,23 @@ const CobroModal = ({ socio, planes, onClose, onGuardado }) => {
   };
 
   if (registrado) {
+    const enProceso = registrado.estado === 'PENDIENTE' && registrado.comprobante?.startsWith('MP ');
     return (
-      <Modal titulo="Cobro registrado" subtitulo="Imprimí el comprobante o mandáselo al socio" onClose={() => onGuardado(registrado)}
+      <Modal titulo="Cobro registrado"
+        subtitulo={enProceso ? 'Mercado Pago lo está procesando: se confirma solo y recién ahí extiende la membresía' : 'Imprimí el comprobante o mandáselo al socio'}
+        onClose={() => onGuardado(registrado)}
         pie={<button type="button" onClick={() => onGuardado(registrado)} className={botonPrimario}>Listo</button>}>
         <ComprobantePago pago={registrado} />
+      </Modal>
+    );
+  }
+
+  if (cargandoTarjeta) {
+    return (
+      <Modal titulo="Cobrar con tarjeta" subtitulo={`${socio.nombreCompleto} · ${presupuesto.plan}`} onClose={onClose}>
+        <PagoConTarjeta pedido={{ ...pedido, metodoPago: 'TARJETA_CREDITO', totalMostrado: presupuesto.total }} total={presupuesto.total}
+          onListo={setRegistrado} onVolver={() => setCargandoTarjeta(false)}
+          onTotalCambiado={() => { setCargandoTarjeta(false); recalcular(); }} />
       </Modal>
     );
   }
@@ -103,7 +126,7 @@ const CobroModal = ({ socio, planes, onClose, onGuardado }) => {
         <button type="button" onClick={onClose} className={botonSecundario}>Cancelar</button>
         <button type="submit" form="form-cobro" disabled={procesando || !listo} className={botonPrimario}>
           <Wallet className="w-4 h-4" />
-          {procesando ? 'Procesando...' : listo ? `Cobrar ${formatMoneda(presupuesto.total)}` : 'Confirmar cobro'}
+          {procesando ? 'Procesando...' : listo ? `${conTarjeta ? 'Pagar con tarjeta' : 'Cobrar'} ${formatMoneda(presupuesto.total)}` : 'Confirmar cobro'}
         </button>
       </>}
     >
@@ -157,10 +180,10 @@ const CobroModal = ({ socio, planes, onClose, onGuardado }) => {
 
         <Campo label="¿Cómo paga?" required>
           {/* En efectivo no hay comprobante que anotar */}
-          <SelectorMetodo valor={datos.metodoPago}
+          <SelectorMetodo valor={datos.metodoPago} conTarjeta={cobroConTarjeta}
             onCambiar={v => setDatos(prev => ({ ...prev, metodoPago: v, aVerificar: false, comprobante: v === 'EFECTIVO' ? '' : prev.comprobante }))} />
         </Campo>
-        {datos.metodoPago !== 'EFECTIVO' && (
+        {datos.metodoPago !== 'EFECTIVO' && !conTarjeta && (
           <Campo label="Nro. de comprobante">
             <input type="text" maxLength={50} value={datos.comprobante} placeholder={datos.aVerificar ? 'Recomendado para verificarlo después' : 'Opcional'}
               onChange={e => cambiar('comprobante', e.target.value)} className={inputClass} />

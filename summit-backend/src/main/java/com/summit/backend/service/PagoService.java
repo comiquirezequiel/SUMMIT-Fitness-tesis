@@ -39,7 +39,8 @@ import static com.summit.backend.service.TextoMontos.pesos;
 
 /**
  * Servicio de pagos.
- * Registra los cobros presenciales (recepción), los confirma si quedaron "a verificar" y arma la caja.
+ * Registra los cobros de recepción (en persona y con tarjeta por Mercado Pago, ver CobroConTarjetaService), los
+ * confirma si quedaron "a verificar" y arma la caja.
  * Regla central: solo un pago APROBADO extiende la membresía y suma como ingreso.
  */
 @Service
@@ -91,9 +92,6 @@ public class PagoService {
      */
     @Transactional
     public PagoListadoDTO registrarPago(CobroRequestDTO pedido, String emailRegistrador) {
-        if (pedido.getIdUsuario() == null) {
-            throw new IllegalArgumentException("Falta el socio");
-        }
         MetodoPago metodoPago = metodoPago(pedido.getMetodoPago());
         if (metodoPago == MetodoPago.DEBITO_AUTOMATICO) {
             throw new IllegalArgumentException("Los débitos automáticos se registran solos cuando Mercado Pago confirma el cobro");
@@ -106,10 +104,27 @@ public class PagoService {
         if (comprobante.length() > 50) {
             throw new IllegalArgumentException("El número de comprobante no puede superar los 50 caracteres");
         }
-        Usuario usuario = buscarUsuario(pedido.getIdUsuario());
-        Plan plan = buscarPlan(pedido.getIdPlan());
+        PresupuestoDTO detalle = prepararCobro(pedido);
+        if (aVerificar && detalle.getTotal().signum() == 0) {
+            throw new IllegalArgumentException("Un cobro sin monto no puede quedar a verificar");
+        }
+        return guardar(pedido, detalle, metodoPago, comprobante, aVerificar ? EstadoPago.PENDIENTE : EstadoPago.APROBADO,
+                null, emailRegistrador);
+    }
 
-        PresupuestoDTO detalle = calcular(usuario, plan, pedido);
+    /**
+     * Calcula el cobro y lo controla contra el total que vio recepción, sin guardar nada (el cobro con tarjeta lo hace
+     * antes de mandar el pago a Mercado Pago).
+     *
+     * @throws TotalCambiadoException si el total que vio recepción (totalMostrado, obligatorio) ya no es el que
+     *                                corresponde
+     */
+    @Transactional(readOnly = true)
+    public PresupuestoDTO prepararCobro(CobroRequestDTO pedido) {
+        if (pedido.getIdUsuario() == null) {
+            throw new IllegalArgumentException("Falta el socio");
+        }
+        PresupuestoDTO detalle = calcular(buscarUsuario(pedido.getIdUsuario()), buscarPlan(pedido.getIdPlan()), pedido);
         if (pedido.getTotalMostrado() == null) {
             throw new IllegalArgumentException("Falta el total que se le mostró a recepción: volvé a calcular el cobro");
         }
@@ -117,17 +132,36 @@ public class PagoService {
             throw new TotalCambiadoException("El total cambió: ahora es " + pesos(detalle.getTotal())
                     + ". Revisá el detalle y confirmá de nuevo");
         }
-        if (aVerificar && detalle.getTotal().signum() == 0) {
-            throw new IllegalArgumentException("Un cobro sin monto no puede quedar a verificar");
-        }
+        return detalle;
+    }
 
+    /**
+     * Registra un cobro con tarjeta que Mercado Pago ya respondió: aprobado, entra como cualquier cobro; en proceso,
+     * queda a verificar hasta que Mercado Pago lo acredite (CobroConTarjetaService). El monto es el del detalle con el
+     * que se cobró. Si ese pago de Mercado Pago ya estaba registrado (el mismo pedido repetido), devuelve ese.
+     */
+    @Transactional
+    public PagoListadoDTO registrarCobroConTarjeta(CobroRequestDTO pedido, PresupuestoDTO detalle, MetodoPago metodo,
+                                                  String idMercadoPago, boolean aprobado, String emailRegistrador) {
+        return pagoHistorialRepository.findByMpPaymentId(idMercadoPago)
+                .map(this::aDtoConFactura)
+                .orElseGet(() -> guardar(pedido, detalle, metodo, "MP " + idMercadoPago,
+                        aprobado ? EstadoPago.APROBADO : EstadoPago.PENDIENTE, idMercadoPago, emailRegistrador));
+    }
+
+    // Guarda el cobro con su detalle; si entró aprobado, extiende la membresía. Siempre deja su factura en la cola
+    private PagoListadoDTO guardar(CobroRequestDTO pedido, PresupuestoDTO detalle, MetodoPago metodoPago, String comprobante,
+                                   EstadoPago estado, String mpPaymentId, String emailRegistrador) {
+        Usuario usuario = buscarUsuario(pedido.getIdUsuario());
+        Plan plan = buscarPlan(pedido.getIdPlan());
         PagoHistorial pago = PagoHistorial.builder()
                 .usuario(usuario)
                 .plan(plan)
                 .montoAbonado(detalle.getTotal())
                 .metodoPago(metodoPago)
                 .comprobanteNro(comprobante)
-                .estadoPago(aVerificar ? EstadoPago.PENDIENTE : EstadoPago.APROBADO)
+                .estadoPago(estado)
+                .mpPaymentId(mpPaymentId)
                 .registradoPor(usuarioPorEmail(emailRegistrador))
                 .precioLista(detalle.getPrecioLista())
                 .descuentoNombre(detalle.getDescuentoNombre())

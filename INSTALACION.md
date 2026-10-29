@@ -504,7 +504,7 @@ respuestas de `/api` conservan el `Cache-Control: no-store` de Spring Security.
 ### H. https en la red local
 
 Hace falta para usar la cámara desde las PC de recepción (los navegadores solo la permiten en `localhost` o con
-https). En `C:\SUMMIT\caddy\Caddyfile`, al final, cambiá `192.168.1.50` por la IP fija de la PC, sacá los `#` de esas
+https) y para cobrar con tarjeta por Mercado Pago de verdad (su formulario solo funciona con https). En `C:\SUMMIT\caddy\Caddyfile`, al final, cambiá `192.168.1.50` por la IP fija de la PC, sacá los `#` de esas
 cuatro líneas y reiniciá SUMMIT-Web. Caddy crea su propia autoridad de certificados; su certificado raíz queda en
 `C:\SUMMIT\caddy\datos\pki\authorities\local\root.crt`. Copialo a cada PC de recepción y, en PowerShell como
 administrador de esa PC:

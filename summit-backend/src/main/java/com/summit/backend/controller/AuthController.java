@@ -3,6 +3,7 @@ package com.summit.backend.controller;
 import com.summit.backend.arca.ConfiguracionArca;
 import com.summit.backend.dto.AuthResponse;
 import com.summit.backend.dto.LoginRequest;
+import com.summit.backend.mercadopago.PasarelaTarjeta;
 import com.summit.backend.service.AuthService;
 import com.summit.backend.service.PasswordService;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class AuthController {
     private final AuthService authService;
     private final PasswordService passwordService;
     private final ConfiguracionArca configuracionArca;
+    private final PasarelaTarjeta pasarelaTarjeta;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
@@ -54,12 +56,13 @@ public class AuthController {
 
     /**
      * Qué funciones opcionales están activas, para que el frontend muestre solo esas: "¿Olvidaste tu contraseña?"
-     * por email (hace falta un correo saliente configurado) y la factura electrónica de ARCA (summit.arca.habilitada).
+     * por email (hace falta un correo saliente configurado), la factura electrónica de ARCA (summit.arca.habilitada)
+     * y el cobro con tarjeta por Mercado Pago (summit.pagos.tarjeta.modo).
      */
     @GetMapping("/funciones")
     public Map<String, Boolean> funciones() {
         return Map.of("recuperacionPorEmail", passwordService.recuperacionDisponible(),
-                "facturacion", configuracionArca.habilitada());
+                "facturacion", configuracionArca.habilitada(), "cobroConTarjeta", pasarelaTarjeta.habilitada());
     }
 
     /**

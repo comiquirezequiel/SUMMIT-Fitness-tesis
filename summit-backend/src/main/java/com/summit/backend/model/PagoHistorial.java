@@ -55,7 +55,7 @@ public class PagoHistorial {
     @Builder.Default
     private EstadoPago estadoPago = EstadoPago.APROBADO;
 
-    // Id del cobro en Mercado Pago (débito automático). Único: un mismo cobro nunca se registra dos veces.
+    // Id del cobro en Mercado Pago (débito automático o tarjeta). Único: un mismo cobro nunca se registra dos veces.
     @Column(name = "mp_payment_id", length = 40, unique = true)
     private String mpPaymentId;
 

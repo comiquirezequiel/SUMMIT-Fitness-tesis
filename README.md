@@ -122,8 +122,8 @@ Para revisar si todo el backend compila sin arrancarlo: `.\mvnw.cmd compile` den
 - **Backend:** `.\mvnw.cmd test` dentro de `summit-backend`. Necesita MySQL corriendo y el
   `application-local.properties` (usa el mismo usuario). Los tests trabajan en una base aparte, `summit_test`, que se
   crea y se vacía sola: nunca tocan la de desarrollo. Revisan el control de acceso, los cobros, el congelamiento, la
-  caja, el seguimiento, los certificados, la importación, la factura electrónica (contra el simulador de ARCA), los
-  permisos por rol y las reglas del asistente de IA.
+  caja, el seguimiento, los certificados, la importación, la factura electrónica (contra el simulador de ARCA), el
+  cobro con tarjeta (contra el simulador de Mercado Pago), los permisos por rol y las reglas del asistente de IA.
   Termina con `BUILD SUCCESS` si todo anda.
 - **Frontend:** `npm.cmd run lint` dentro de `summit-frontend` revisa el código (sin errores = no muestra nada).
 
@@ -140,6 +140,12 @@ Para revisar si todo el backend compila sin arrancarlo: `.\mvnw.cmd compile` den
   [FACTURACION.md](FACTURACION.md).
 - Débito automático con Mercado Pago (opcional): se activa con `MP_ACCESS_TOKEN` en
   `application-local.properties`.
+- Cobro con tarjeta en recepción por Mercado Pago (opcional): `MP_TARJETA=SIMULADOR` para probarlo sin cuenta (el
+  titular de la tarjeta de prueba decide el resultado: `APRO` aprueba, `CONT` queda en proceso, `FUND` rechaza), o
+  `MP_TARJETA=MERCADO_PAGO` con `MP_PUBLIC_KEY` y `MP_ACCESS_TOKEN` de la cuenta del gimnasio. Aparece como
+  *Tarjeta MP* al cobrar. Con Mercado Pago de verdad, el panel tiene que abrirse con https (INSTALACION.md, apéndice H).
+- Modo oscuro: botón sol/luna arriba a la derecha. Cada uno lo elige en su navegador; mientras nadie elija, sigue al
+  sistema.
 - Ninguna contraseña va en `application.properties`, porque ese archivo se sube al repositorio. Los valores
   privados van en `application-local.properties`. En un servidor también se pueden dar como variables de
   entorno con el mismo nombre (`DB_PASSWORD`, `JWT_SECRET`, etc.), que tienen prioridad sobre el archivo.

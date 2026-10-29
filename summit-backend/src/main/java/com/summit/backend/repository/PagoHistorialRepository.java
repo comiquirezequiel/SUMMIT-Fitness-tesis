@@ -1,6 +1,7 @@
 package com.summit.backend.repository;
 
 import com.summit.backend.model.EstadoPago;
+import com.summit.backend.model.MetodoPago;
 import com.summit.backend.model.PagoHistorial;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
@@ -13,6 +14,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -39,6 +41,11 @@ public interface PagoHistorialRepository extends JpaRepository<PagoHistorial, Lo
     Optional<PagoHistorial> findParaActualizar(@Param("idPago") Long idPago);
 
     boolean existsByMpPaymentId(String mpPaymentId);
+
+    Optional<PagoHistorial> findByMpPaymentId(String mpPaymentId);
+
+    // Cobros con tarjeta que Mercado Pago dejó en proceso (se revisan solos, ver CobroConTarjetaService)
+    List<PagoHistorial> findByEstadoPagoAndMpPaymentIdNotNullAndMetodoPagoIn(EstadoPago estadoPago, Collection<MetodoPago> metodos);
 
     // ¿Tiene un cobro reciente a verificar que ya resolvió la matrícula (cobrada o bonificada)? No se le vuelve a cobrar
     boolean existsByUsuarioIdUsuarioAndEstadoPagoAndMatriculaMontoIsNotNullAndFechaPagoAfter(Long idUsuario,

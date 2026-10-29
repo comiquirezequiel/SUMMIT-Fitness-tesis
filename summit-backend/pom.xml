@@ -65,6 +65,12 @@
 			<version>0.13.0</version>
 			<scope>runtime</scope>
 		</dependency>
+		<!-- Cobro con tarjeta en recepción: SDK oficial de Mercado Pago (Checkout API) -->
+		<dependency>
+			<groupId>com.mercadopago</groupId>
+			<artifactId>sdk-java</artifactId>
+			<version>3.7.0</version>
+		</dependency>
 		<!-- Lectura de certificados en PDF para el asistente de IA: texto y páginas escaneadas como imagen.
 		     PDFBox (Apache, código abierto) es la librería estándar de Java para PDF: PDFTextStripper extrae el
 		     texto y PDFRenderer dibuja una página escaneada como imagen para enviársela al modelo. -->

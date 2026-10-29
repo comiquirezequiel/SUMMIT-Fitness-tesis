@@ -79,6 +79,27 @@ electrónica de ARCA (ex AFIP) va al final, después de explicar cómo hacerla.
 12. Entrenamiento sin seguimiento (hecho el 28/10/2026, decisión del dueño): el gimnasio no sigue lo que entrena cada
     socio, la rutina le llega impresa o digital. Se sacaron del panel *Rutina de hoy*, *Historial* y, en *Rutinas*, lo
     que dependía de los entrenamientos anotados (último entrenamiento, entrenaron esta semana, sin entrenar).
+13. Versiones al día (hecho el 28/10/2026): backend en Spring Boot 4.1 (Spring Framework 7, Spring Security 7,
+    Hibernate 7, Jackson 3) y frontend en React 19, Vite 8, Tailwind CSS 4, React Router 8 y ESLint 10. El panel se ve
+    igual que antes (comparado pantalla por pantalla).
+14. Modo oscuro (hecho el 28/10/2026): botón sol/luna en la barra de arriba; la primera vez sigue al sistema.
+15. Cobro con tarjeta por Mercado Pago (hecho el 29/10/2026, ver abajo).
+16. Menos código (hecho el 28/10/2026): fuera el código que ya no se usaba (consultas de los repositorios, pantallas y
+    archivos sueltos) y 8 DTOs que pasan a record, sin perder funciones.
+
+#### Cobro con tarjeta por Mercado Pago (hecho el 29/10/2026)
+
+- Medio *Tarjeta MP* al cobrar (cobro, cobro rápido y alta de socio). La tarjeta se carga en el formulario de Mercado
+  Pago (Card Payment Brick, con su SDK oficial para React), que la devuelve como un token: los datos de la tarjeta nunca
+  pasan por SUMMIT. El backend cobra con el SDK oficial de Java, siempre el total que calculó él.
+- Primero se controla el total contra el que vio recepción (si cambió un precio, no se llega a cobrar); después se cobra
+  y recién ahí se registra, con el número de Mercado Pago (no se repite). Una clave por intento evita cobrar dos veces si
+  el pedido se repite por un corte de conexión.
+- Aprobado: entra como cualquier cobro (débito o crédito según la tarjeta), con comprobante y factura. Rechazado: se
+  avisa el motivo (sin fondos, código incorrecto...) y no se registra nada. En proceso: queda a verificar y una tarea se
+  lo pregunta a Mercado Pago cada 5 minutos hasta que se acredita (no hace falta publicar el sistema en internet).
+- Simulador adentro del backend (`MP_TARJETA=SIMULADOR`) para probar y mostrar sin cuenta, con los mismos titulares que
+  las tarjetas de prueba de Mercado Pago. 5 tests del backend y una prueba en el navegador de punta a punta.
 
 #### Factura electrónica (hecha el 28/10/2026)
 

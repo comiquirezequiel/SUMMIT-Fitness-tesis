@@ -18,6 +18,9 @@ export const eliminarDescuento = (id) => pedir(`/configuracion/descuentos/${id}`
 // Mismo pedido que el cobro, sin medio de pago (sin idUsuario: socio nuevo)
 export const pedirPresupuesto = (pedido) => pedir('/pagos/presupuesto', json('POST', pedido), 'No se pudo calcular el total');
 export const registrarCobro = (pedido) => pedir('/pagos', json('POST', pedido), 'No se pudo registrar el cobro');
+// Cobro con tarjeta por Mercado Pago: { cobro (el mismo pedido), tarjeta (lo que devolvió el formulario), idempotencia }
+export const cobrarConTarjeta = (pedido) => pedir('/pagos/tarjeta', json('POST', pedido), 'No se pudo cobrar con la tarjeta');
+export const configTarjeta = () => pedir('/pagos/tarjeta/config', {}, 'No se pudo preparar el cobro con tarjeta');
 
 export const listarCongelamientos = (idSocio) =>
   pedir(`/socios/${idSocio}/congelamientos`, {}, 'No se pudieron leer los congelamientos');

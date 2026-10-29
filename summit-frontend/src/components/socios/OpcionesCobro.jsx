@@ -4,11 +4,16 @@ import { METODOS_PAGO } from '../../utils/constantes';
 
 // Elecciones del cobro con un toque (alta de socio y cobro en recepción): el plan y cómo paga
 
+// Cobro con tarjeta por Mercado Pago (no es un medio del backend: se cobra con PagoConTarjeta y queda como débito o
+// crédito, según la tarjeta)
+export const TARJETA_MP = 'TARJETA_MP';
+
 const ICONOS_METODO = {
   EFECTIVO: Banknote, TRANSFERENCIA: ArrowLeftRight, MERCADO_PAGO: QrCode, TARJETA_DEBITO: CreditCard, TARJETA_CREDITO: CreditCard,
+  [TARJETA_MP]: CreditCard,
 };
 // Con el ícono de la tarjeta alcanza, y así el botón no se parte en dos renglones
-const TEXTO_CORTO = { TARJETA_DEBITO: 'Débito', TARJETA_CREDITO: 'Crédito' };
+const TEXTO_CORTO = { TARJETA_DEBITO: 'Débito', TARJETA_CREDITO: 'Crédito', [TARJETA_MP]: 'Tarjeta MP' };
 
 // "3 veces por semana · 30 días" o "Libre · 30 días"
 const detallePlan = (p) => {
@@ -41,11 +46,11 @@ export const SelectorPlan = ({ planes, valor, onCambiar }) => (
 );
 
 /**
- * Medios de pago que puede elegir recepción, como botones.
+ * Medios de pago que puede elegir recepción, como botones. conTarjeta: suma el cobro con tarjeta por Mercado Pago.
  */
-export const SelectorMetodo = ({ valor, onCambiar }) => (
+export const SelectorMetodo = ({ valor, onCambiar, conTarjeta = false }) => (
   <div role="radiogroup" aria-label="Cómo paga" className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-    {METODOS_PAGO.map(m => {
+    {(conTarjeta ? [...METODOS_PAGO, { valor: TARJETA_MP, texto: 'Tarjeta con Mercado Pago' }] : METODOS_PAGO).map(m => {
       const Icono = ICONOS_METODO[m.valor] || Banknote;
       const elegido = m.valor === valor;
       return (

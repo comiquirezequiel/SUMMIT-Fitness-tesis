@@ -40,6 +40,12 @@ APP_URL=
 # Vacía = débito automático apagado; el resto del sistema funciona igual.
 MP_ACCESS_TOKEN=
 
+# Cobro con tarjeta en recepción (opcional): MP_TARJETA=SIMULADOR para probarlo sin cuenta, o MERCADO_PAGO con la
+# clave pública de la misma cuenta (Mercado Pago Developers > Tus integraciones > Credenciales). Con credenciales de
+# prueba (TEST-...) se cobra con las tarjetas de prueba de Mercado Pago.
+MP_TARJETA=APAGADO
+MP_PUBLIC_KEY=
+
 # Factura electrónica de ARCA (opcional, ver FACTURACION.md). ARCA_HABILITADA=true la prende.
 # ARCA_AMBIENTE: SIMULADOR (para probar y mostrar sin certificado: las facturas no valen nada), HOMOLOGACION (el
 # ambiente de pruebas de ARCA) o PRODUCCION (facturas reales).
