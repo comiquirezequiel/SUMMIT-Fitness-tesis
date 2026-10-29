@@ -165,7 +165,7 @@ const Caja = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-2">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Caja y Pagos</h1>
           <p className="text-sm text-slate-500">Cobros, gastos y cierres de caja. Solo suman los pagos aprobados.</p>

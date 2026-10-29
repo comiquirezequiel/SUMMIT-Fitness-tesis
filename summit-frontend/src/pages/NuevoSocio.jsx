@@ -328,7 +328,7 @@ const NuevoSocio = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-start mb-2 gap-3">
+      <div className="flex justify-between items-start gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
             <UserPlus className="w-6 h-6 text-blue-600" /> Nuevo Socio
@@ -349,7 +349,7 @@ const NuevoSocio = () => {
         {/* PASO 1: Datos Personales */}
         {step === 0 && (
           <div className="space-y-5">
-            <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
               <User className="w-5 h-5 text-blue-500" /> Datos Personales
             </h2>
             {/* Foto (opcional): recepción la ve en cada ingreso */}
@@ -419,7 +419,7 @@ const NuevoSocio = () => {
         {/* PASO 2: Contacto y acceso */}
         {step === 1 && (
           <div className="space-y-5">
-            <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
               <Mail className="w-5 h-5 text-blue-500" /> Contacto y Acceso
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

@@ -79,7 +79,7 @@ const ConfiguracionAcceso = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex justify-between items-start mb-6">
+      <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 mb-1">Configuración de Acceso</h1>
           <p className="text-sm text-slate-500">Administra las reglas de negocio, validaciones y tolerancias para el ingreso de socios al gimnasio.</p>

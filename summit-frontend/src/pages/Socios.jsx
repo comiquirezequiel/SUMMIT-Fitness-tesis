@@ -116,7 +116,7 @@ const Socios = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start mb-2 gap-3">
+      <div className="flex justify-between items-start gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 mb-1">Socios</h1>
           <p className="text-sm text-slate-500">Gestiona los socios de tu gimnasio</p>

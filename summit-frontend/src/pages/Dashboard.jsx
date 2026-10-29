@@ -93,7 +93,7 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-3 mb-2">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 mb-1">Dashboard</h1>
           <p className="text-sm text-slate-500">Bienvenido, {usuario?.nombreCompleto || 'equipo'}</p>
