@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Repeat, RefreshCw, AlertTriangle, XCircle, Plus } from 'lucide-react';
 import { apiFetch } from '../../services/api';
 import { formatFecha, formatMoneda } from '../../utils/formato';

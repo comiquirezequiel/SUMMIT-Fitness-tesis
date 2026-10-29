@@ -1,4 +1,3 @@
-import React from 'react';
 import { Minus, Plus } from 'lucide-react';
 
 const boton = 'w-10 tactil:w-11 shrink-0 flex items-center justify-center text-slate-600 hover:bg-slate-100 active:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent';
@@ -33,7 +32,7 @@ const Contador = ({ valor, onChange, etiqueta, paso = 1, min = 0, max, vacioPerm
       </button>
       <input type="number" inputMode={decimales ? 'decimal' : 'numeric'} value={valor} min={min} max={max} step={decimales ? 0.5 : 1}
         onChange={(e) => onChange(e.target.value)} placeholder={placeholder} disabled={deshabilitado} aria-label={etiqueta}
-        className="flex-1 min-w-0 w-full text-center text-sm tactil:text-base font-semibold text-slate-800 bg-transparent focus:outline-none placeholder:text-slate-400 placeholder:font-normal placeholder:text-[13px] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+        className="flex-1 min-w-0 w-full text-center text-sm tactil:text-base font-semibold text-slate-800 bg-transparent focus:outline-hidden placeholder:text-slate-400 placeholder:font-normal placeholder:text-[13px] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
       <button type="button" onClick={() => sumar(paso)} disabled={deshabilitado || !puedeSumar} className={`${boton} border-l border-slate-200`}
         aria-label={`Sumar ${etiqueta}`}>
         <Plus className="w-4 h-4" />

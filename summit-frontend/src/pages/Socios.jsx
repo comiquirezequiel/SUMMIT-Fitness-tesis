@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
 import {
   Users, CheckCircle, AlertTriangle, UserPlus, FileSpreadsheet,
   Search, Filter, ChevronDown, Download, RefreshCw, Layers,
@@ -125,11 +125,11 @@ const Socios = () => {
           <div className="flex flex-wrap justify-end gap-2">
             {esAdmin && (
               <button onClick={() => navigate('/socios/importar')} title="Importar socios desde una planilla de Excel o CSV"
-                className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm whitespace-nowrap">
+                className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-xs whitespace-nowrap">
                 <FileSpreadsheet className="w-4 h-4 text-emerald-600" /> Importar
               </button>
             )}
-            <button onClick={() => navigate('/socios/nuevo')} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm whitespace-nowrap">
+            <button onClick={() => navigate('/socios/nuevo')} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-xs whitespace-nowrap">
               <UserPlus className="w-4 h-4" /> Nuevo Socio
             </button>
           </div>
@@ -152,7 +152,7 @@ const Socios = () => {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar por nombre, DNI, email o teléfono..."
-              className="w-full pl-9 pr-4 py-2 border-0 bg-slate-50 hover:bg-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all"
+              className="w-full pl-9 pr-4 py-2 border-0 bg-slate-50 hover:bg-slate-100 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all"
             />
           </div>
 
@@ -196,7 +196,7 @@ const Socios = () => {
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
         {error ? (
           <div className="p-8 text-center text-red-500 bg-red-50 font-medium">
             <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-50" />
@@ -246,33 +246,33 @@ const Socios = () => {
                             {socio.planActual}
                             {conDebito.has(socio.idSocio) && (
                               <span title="Paga con débito automático (Mercado Pago)"
-                                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
+                                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
                                 <Repeat className="w-3 h-3" /> DÉBITO
                               </span>
                             )}
                           </span>
                           {socio.membresiaAlDia && socio.estado !== 'ACTIVO' ? (
                             // Cuota paga pero cuenta de baja, suspendida o inactiva: el control de acceso no lo deja pasar
-                            <span className="inline-flex w-max items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                            <span className="inline-flex w-max items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
                               No puede ingresar {socio.vencimientoMembresia && `(Vence ${formatFecha(socio.vencimientoMembresia)})`}
                             </span>
                           ) : socio.membresiaAlDia && dias < 0 ? (
                             <span title="Venció, pero todavía puede entrar por los días de gracia de las reglas de acceso"
-                              className="inline-flex w-max items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                              className="inline-flex w-max items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                               EN GRACIA (Venció {formatFecha(socio.vencimientoMembresia)})
                             </span>
                           ) : socio.membresiaAlDia ? (
-                            <span className="inline-flex w-max items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                            <span className="inline-flex w-max items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
                               AL DÍA {socio.vencimientoMembresia && `(Vence ${formatFecha(socio.vencimientoMembresia)})`}
                             </span>
                           ) : (
-                            <span className="inline-flex w-max items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
+                            <span className="inline-flex w-max items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
                               {socio.vencimientoMembresia ? `VENCIDA (${formatFecha(socio.vencimientoMembresia)})` : 'SIN MEMBRESÍA'}
                             </span>
                           )}
                           {socio.cobroAVerificar && (
                             <span title="Pagó por transferencia o QR y falta que un administrador lo confirme en Caja (A verificar). La membresía se extiende al confirmarlo."
-                              className="inline-flex w-max items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                              className="inline-flex w-max items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                               <Clock className="w-3 h-3" /> COBRO A VERIFICAR
                             </span>
                           )}

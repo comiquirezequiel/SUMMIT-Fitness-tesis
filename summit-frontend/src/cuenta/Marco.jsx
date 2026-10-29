@@ -1,4 +1,3 @@
-import React from 'react';
 
 /**
  * Pantallas de la cuenta (login, contraseñas): fondo bordó de punta a punta, la marca y una tarjeta blanca.

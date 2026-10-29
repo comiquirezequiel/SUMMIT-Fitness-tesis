@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Users, UserPlus, Save, Power, KeyRound } from 'lucide-react';
 import Modal from '../components/Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../components/Campo';
@@ -133,7 +133,7 @@ const AjustesEquipo = () => {
 
       {error && <div className="p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>}
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="p-6 border-b border-slate-200">
           <h2 className="font-semibold text-slate-800 text-lg">Miembros del equipo ({miembros.length})</h2>
         </div>

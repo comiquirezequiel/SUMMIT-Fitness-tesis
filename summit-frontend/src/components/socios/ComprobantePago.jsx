@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MessageCircle, Loader2, AlertTriangle, FileCheck2 } from 'lucide-react';
 import BotonesPdf from '../pdf/BotonesPdf';
 import { botonSecundario } from '../Campo';

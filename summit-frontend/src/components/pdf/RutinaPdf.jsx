@@ -1,7 +1,6 @@
 // Rutina del socio en PDF (A4 vertical), para imprimirla o mandarla por WhatsApp. Pensada para seguirla en el
 // gimnasio: cada día en su bloque, los ejercicios numerados en el orden en que se hacen y los números grandes.
 // Se genera desde rutina.js (documentoRutina): no importarlo directo desde una pantalla.
-import React from 'react';
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
 import { COLORES, FUENTES, MARGENES, estilosBase, textoPdf } from './marca';
 import { Encabezado, EncabezadoContinuacion, Pie, contactoDe } from './Membrete';

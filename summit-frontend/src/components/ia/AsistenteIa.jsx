@@ -1,6 +1,6 @@
 // React: useState guarda datos que, al cambiar, vuelven a dibujar el componente; useEffect ejecuta código
 // después de dibujar (consultas, temporizadores) y permite limpiarlo al salir de la pantalla.
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 // Íconos de la librería lucide-react (Sparkles = el ícono "✦" que identifica todo lo que hace la IA).
 import { Sparkles, Loader2, CheckCircle2, XCircle, HelpCircle, Info, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { estadoIa } from '../../services/ia';

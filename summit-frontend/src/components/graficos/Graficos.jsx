@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   SERIES, TINTA, GRILLA, BASE, GRIS_ENFASIS, RAMPA, CERO,
   numero, compacto, etiquetaFecha, fechaLarga, escala, useAncho, Tooltip,
@@ -60,7 +60,7 @@ export const GraficoLinea = ({ datos, alto = 260, color = SERIES[0], formatoValo
     <div ref={ref} className="relative" style={{ height: alto }}>
       {ancho > 0 && datos.length > 0 && (
         <svg width={ancho} height={alto} role="img" aria-label={descripcion} tabIndex={0}
-          className="outline-none focus-visible:ring-2 focus-visible:ring-blue-200 rounded"
+          className="outline-hidden focus-visible:ring-2 focus-visible:ring-blue-200 rounded-sm"
           onPointerMove={mover} onPointerLeave={() => setActivo(null)}
           onFocus={() => setActivo(ultimo)} onBlur={() => setActivo(null)} onKeyDown={teclado}>
           {ticks.map(t => (
@@ -122,7 +122,7 @@ export const GraficoBarras = ({ datos, color = SERIES[0], colores, formatoValor 
             const y0 = i * fila + (fila - grosor) / 2;
             const l = largo(d.valor);
             return (
-              <g key={d.clave} tabIndex={0} className="outline-none cursor-default"
+              <g key={d.clave} tabIndex={0} className="outline-hidden cursor-default"
                 onPointerEnter={() => setActivo(i)} onPointerLeave={() => setActivo(null)}
                 onFocus={() => setActivo(i)} onBlur={() => setActivo(null)}>
                 <rect x={0} y={i * fila} width={ancho} height={fila} fill="transparent" />
@@ -185,7 +185,7 @@ export const GraficoColumnas = ({ datos, alto = 220, color = SERIES[0], formatoV
             const a = altoDe(d.valor);
             const protagonista = i === indiceMayor;
             return (
-              <g key={d.clave} tabIndex={0} className="outline-none"
+              <g key={d.clave} tabIndex={0} className="outline-hidden"
                 onPointerEnter={() => setActivo(i)} onPointerLeave={() => setActivo(null)}
                 onFocus={() => setActivo(i)} onBlur={() => setActivo(null)}>
                 <rect x={cx - banda / 2} y={m.arriba} width={banda} height={h} fill="transparent" />
@@ -259,7 +259,7 @@ export const MapaCalor = ({ celdas, descripcion }) => {
                   return (
                     <rect key={fila} x={izquierda + col * anchoCelda + gap / 2} y={fila * altoCelda + gap / 2}
                       width={anchoCelda - gap} height={altoCelda - gap} rx="3" fill={colorDe(v)}
-                      stroke={esActiva ? TINTA.primaria : 'none'} strokeWidth="1.5" tabIndex={0} className="outline-none"
+                      stroke={esActiva ? TINTA.primaria : 'none'} strokeWidth="1.5" tabIndex={0} className="outline-hidden"
                       onPointerEnter={() => setActivo({ fila, hora, v, col })} onPointerLeave={() => setActivo(null)}
                       onFocus={() => setActivo({ fila, hora, v, col })} onBlur={() => setActivo(null)} />
                   );
@@ -276,8 +276,8 @@ export const MapaCalor = ({ celdas, descripcion }) => {
       </div>
       <div className="flex items-center justify-end gap-2 mt-3 text-[11px] text-slate-500">
         <span>Menos</span>
-        <span className="w-4 h-3 rounded-sm" style={{ background: CERO }} />
-        {RAMPA.map(c => <span key={c} className="w-4 h-3 rounded-sm" style={{ background: c }} />)}
+        <span className="w-4 h-3 rounded-xs" style={{ background: CERO }} />
+        {RAMPA.map(c => <span key={c} className="w-4 h-3 rounded-xs" style={{ background: c }} />)}
         <span>Más{max > 0 ? ` (hasta ${numero(max)})` : ''}</span>
       </div>
     </div>
@@ -308,7 +308,7 @@ export const BarraApilada = ({ datos, colores, formatoValor = numero, descripcio
             const p = pct(d.valor);
             const entra = (p / 100) * ancho > 46;
             return (
-              <div key={d.clave} tabIndex={0} className="h-full flex items-center justify-center outline-none transition-opacity"
+              <div key={d.clave} tabIndex={0} className="h-full flex items-center justify-center outline-hidden transition-opacity"
                 style={{ width: `${p}%`, background: colores[d.clave], opacity: activo === null || activo === i ? 1 : 0.5 }}
                 onPointerEnter={() => setActivo(i)} onPointerLeave={() => setActivo(null)}
                 onFocus={() => setActivo(i)} onBlur={() => setActivo(null)}>
@@ -333,7 +333,7 @@ export const BarraApilada = ({ datos, colores, formatoValor = numero, descripcio
         {datos.map(d => (
           <li key={d.clave} className="flex items-center justify-between gap-3 text-sm">
             <span className="flex items-center gap-2 text-slate-600 min-w-0">
-              <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: colores[d.clave] }} />
+              <span className="w-2.5 h-2.5 rounded-xs shrink-0" style={{ background: colores[d.clave] }} />
               <span className="truncate">{d.clave}</span>
             </span>
             <span className="text-slate-900 font-medium tabular-nums whitespace-nowrap">

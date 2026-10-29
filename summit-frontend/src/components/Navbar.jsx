@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router';
 import { Bell, LogOut, Menu, KeyRound, CheckCircle2 } from 'lucide-react';
 import Modal from './Modal';
 import { useTareasPendientes } from '../services/seguimiento';

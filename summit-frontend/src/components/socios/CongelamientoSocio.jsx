@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Snowflake } from 'lucide-react';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../Campo';
 import {

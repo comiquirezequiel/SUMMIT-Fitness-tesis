@@ -1,6 +1,5 @@
 // Membrete de los PDF del gimnasio: encabezado de la primera página, encabezado chico de las siguientes y pie con
 // los números de página. Lo comparten todos los documentos (rutinas; después, comprobantes y facturas).
-import React from 'react';
 import { View, Text, Image, StyleSheet } from '@react-pdf/renderer';
 import { COLORES, FUENTES, MARGENES, textoPdf } from './marca';
 

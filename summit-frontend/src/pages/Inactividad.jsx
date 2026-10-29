@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, RefreshCw, Download, Search, MessageCircle, Clock, Users, CheckCircle2, Phone } from 'lucide-react';
 import { CANALES, mensajeInactivo, obtenerInactividad, registrarContacto, textoCanal } from '../services/seguimiento';
 import { datosDelGimnasio } from '../components/pdf';
@@ -13,7 +13,7 @@ const NIVELES = {
 
 const Tarjeta = ({ titulo, valor, detalle, icono: Icono, color, onClick, activa }) => (
   <button type="button" onClick={onClick} disabled={!onClick}
-    className={`text-left bg-white p-5 rounded-xl border shadow-sm flex items-center justify-between transition-all ${onClick ? 'hover:shadow-md' : 'cursor-default'} ${activa ? 'border-blue-300 ring-2 ring-blue-100' : 'border-slate-200'}`}>
+    className={`text-left bg-white p-5 rounded-xl border shadow-xs flex items-center justify-between transition-all ${onClick ? 'hover:shadow-md' : 'cursor-default'} ${activa ? 'border-blue-300 ring-2 ring-blue-100' : 'border-slate-200'}`}>
     <div>
       <p className="text-sm font-medium text-slate-500">{titulo}</p>
       <p className="text-3xl font-bold text-slate-800 mt-1">{valor}</p>
@@ -112,7 +112,7 @@ const Inactividad = () => {
       {error && <div className="p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>}
       {aviso && <div className="p-3 rounded-lg bg-emerald-50 text-emerald-700 text-sm font-medium flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> {aviso}</div>}
 
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row gap-3 md:items-center justify-between">
           <div className="flex flex-wrap gap-2">
             <button onClick={() => setNivel(null)}
@@ -128,7 +128,7 @@ const Inactividad = () => {
             <div className="relative flex-1 md:w-64">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <input value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar por nombre o DNI..."
-                className="pl-9 pr-4 py-2 w-full border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                className="pl-9 pr-4 py-2 w-full border border-slate-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-100" />
             </div>
             <select value={minDias} onChange={e => setMinDias(Number(e.target.value))} aria-label="Días sin venir"
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white">
@@ -158,7 +158,7 @@ const Inactividad = () => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {socios.map(s => (
-                  <React.Fragment key={s.idSocio}>
+                  <Fragment key={s.idSocio}>
                     <tr className="hover:bg-slate-50/60">
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2">
@@ -207,7 +207,7 @@ const Inactividad = () => {
                             </select>
                             <input value={contacto.nota} maxLength={300} placeholder="¿Qué te dijo? (opcional)"
                               onChange={e => setContacto(c => ({ ...c, nota: e.target.value }))}
-                              className="flex-1 min-w-[12rem] px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
+                              className="flex-1 min-w-48 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
                             <button onClick={guardarContacto} disabled={contacto.enviando}
                               className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold disabled:opacity-50">
                               {contacto.enviando ? 'Guardando...' : `Registrar (${textoCanal(contacto.canal)})`}
@@ -220,7 +220,7 @@ const Inactividad = () => {
                         </td>
                       </tr>
                     )}
-                  </React.Fragment>
+                  </Fragment>
                 ))}
               </tbody>
             </table>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Dumbbell, AlertTriangle } from 'lucide-react';
 import ModeloHumano from '../components/ModeloHumano';
 import { cargarCatalogo, nombreGrupo } from '../components/entrenamiento/comun';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ArrowUpRight, ArrowDownRight, Minus, Table2, BarChart3 } from 'lucide-react';
 
 // ---------- Tokens de los gráficos ----------
@@ -76,7 +76,7 @@ export const Tooltip = ({ x, y, ancho, valor, etiqueta, clave }) => (
   <div className="pointer-events-none absolute z-20 rounded-lg bg-white px-3 py-2 shadow-lg ring-1 ring-black/10 whitespace-nowrap"
     style={{ left: x, top: y, transform: `translate(${x > ancho - 180 ? 'calc(-100% - 12px)' : '12px'}, -50%)` }}>
     <div className="flex items-center gap-2">
-      {clave && <span className="inline-block w-3 h-0.5 rounded" style={{ background: clave }} />}
+      {clave && <span className="inline-block w-3 h-0.5 rounded-sm" style={{ background: clave }} />}
       <span className="text-sm font-semibold text-slate-900">{valor}</span>
     </div>
     <div className="text-xs text-slate-500 mt-0.5">{etiqueta}</div>
@@ -104,7 +104,7 @@ export const TarjetaKpi = ({ titulo, valor, anterior, formato = numero, subirEsB
     }
   }
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-4">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-slate-500">{titulo}</p>
         {Icon && <Icon className="w-4 h-4 text-slate-300" />}
@@ -141,7 +141,7 @@ const TablaDatos = ({ columnas, filas }) => (
 export const TarjetaGrafico = ({ titulo, subtitulo, tabla, children, className = '', destacado }) => {
   const [verTabla, setVerTabla] = useState(false);
   return (
-    <section className={`bg-white rounded-xl border border-slate-200 shadow-sm p-5 ${className}`}>
+    <section className={`bg-white rounded-xl border border-slate-200 shadow-xs p-5 ${className}`}>
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
           <h2 className="font-semibold text-slate-800">{titulo}</h2>
@@ -190,7 +190,7 @@ export const FiltroPeriodo = ({ valor, onChange }) => {
   const personalizado = valor.clave === 'personalizado';
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div className="flex flex-wrap bg-white border border-slate-200 rounded-lg p-0.5 shadow-sm">
+      <div className="flex flex-wrap bg-white border border-slate-200 rounded-lg p-0.5 shadow-xs">
         {PERIODOS.map(p => (
           <button key={p.clave} onClick={() => onChange({ clave: p.clave, ...p.rango() })}
             className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${valor.clave === p.clave ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>

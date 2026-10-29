@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Wallet, TrendingUp, TrendingDown, CalendarDays, Calendar, Search, Plus, Download, RefreshCw, Hourglass, Check, X, Lock, Receipt, FileText } from 'lucide-react';
 import Modal from '../components/Modal';
 import CobroRapido from '../components/socios/CobroRapido';
@@ -17,7 +17,7 @@ import { textoMetodoPago, ESTADOS_PAGO } from '../utils/constantes';
 
 const TarjetaMonto = ({ title, amount, detalle, icon: Icon, color, onClick, activa }) => (
   <div onClick={onClick}
-    className={`bg-white p-5 rounded-xl border shadow-sm flex items-center justify-between transition-all ${onClick ? 'cursor-pointer hover:shadow-md' : ''} ${activa ? 'border-amber-300 ring-2 ring-amber-100' : 'border-slate-200'}`}>
+    className={`bg-white p-5 rounded-xl border shadow-xs flex items-center justify-between transition-all ${onClick ? 'cursor-pointer hover:shadow-md' : ''} ${activa ? 'border-amber-300 ring-2 ring-amber-100' : 'border-slate-200'}`}>
     <div>
       <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
       <h3 className="text-2xl font-bold text-slate-800">{amount}</h3>
@@ -172,18 +172,18 @@ const Caja = () => {
         </div>
         <div className="flex flex-wrap gap-3">
           <button onClick={() => setModal('gasto')}
-            className="bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm">
+            className="bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-xs">
             <TrendingDown className="w-4 h-4 text-rose-500" /> Registrar gasto
           </button>
           <button onClick={() => setModal('cobro')}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm">
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-xs">
             <Plus className="w-4 h-4" /> Registrar cobro
           </button>
         </div>
       </div>
 
       {turno && (
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-white border border-slate-200 rounded-xl shadow-xs p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0"><Wallet className="w-6 h-6" /></div>
             <div>
@@ -202,7 +202,7 @@ const Caja = () => {
             </div>
           </div>
           <button onClick={() => setModal('cierre')}
-            className="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm shrink-0">
+            className="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-xs shrink-0">
             <Lock className="w-4 h-4" /> Cerrar caja
           </button>
         </div>
@@ -227,7 +227,7 @@ const Caja = () => {
       {error && <div className="p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>}
       {aviso && <div className="p-3 rounded-lg bg-emerald-50 text-emerald-700 text-sm font-medium">{aviso}</div>}
 
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
         <div className="px-5 pt-4 border-b border-slate-200 flex gap-1 overflow-x-auto" role="tablist">
           {PESTANAS.map(p => (
             <button key={p.id} role="tab" aria-selected={pestana === p.id} onClick={() => setPestana(p.id)}
@@ -243,10 +243,10 @@ const Caja = () => {
             <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Receipt className="w-5 h-5 text-slate-400" /> Cobros</h2>
             <div className="flex bg-slate-100 rounded-lg p-0.5 text-xs font-semibold">
               <button onClick={() => cambiarFiltro(false)}
-                className={`px-3 py-1.5 rounded-md transition-colors ${!soloAVerificar ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500'}`}>Todos</button>
+                className={`px-3 py-1.5 rounded-md transition-colors ${!soloAVerificar ? 'bg-white shadow-xs text-slate-800' : 'text-slate-500'}`}>Todos</button>
               <button onClick={() => cambiarFiltro(true)}
-                className={`px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 ${soloAVerificar ? 'bg-white shadow-sm text-amber-700' : 'text-slate-500'}`}>
-                A verificar {pendientes > 0 && <span className="bg-amber-500 text-white rounded-full px-1.5 min-w-[1.25rem] text-center">{pendientes}</span>}
+                className={`px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 ${soloAVerificar ? 'bg-white shadow-xs text-amber-700' : 'text-slate-500'}`}>
+                A verificar {pendientes > 0 && <span className="bg-amber-500 text-white rounded-full px-1.5 min-w-5 text-center">{pendientes}</span>}
               </button>
             </div>
           </div>
@@ -258,7 +258,7 @@ const Caja = () => {
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
                 placeholder="Buscar por socio, DNI, plan..."
-                className="pl-9 pr-4 py-2 w-full border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 transition-shadow"
+                className="pl-9 pr-4 py-2 w-full border border-slate-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-shadow"
               />
             </div>
             <button onClick={exportar} disabled={pagosFiltrados.length === 0} title="Exportar esta página a Excel (CSV)"
@@ -311,7 +311,7 @@ const Caja = () => {
                         {detalleCobro(p) && <div className="text-[11px] text-slate-400 mt-1">{detalleCobro(p)}</div>}
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2 py-1 rounded bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2 py-1 rounded-sm bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200 whitespace-nowrap">
                           {textoMetodoPago(p.metodoPago)}
                         </span>
                         <div className="text-[11px] text-slate-400 mt-1 whitespace-nowrap">{p.registradoPor ? `Cobró: ${p.registradoPor}` : 'Automático'}</div>

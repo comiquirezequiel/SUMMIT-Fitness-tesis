@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import { Link } from 'react-router';
 import { FileSpreadsheet, Download, Upload, ArrowLeft, CheckCircle2, AlertTriangle, XCircle, Users } from 'lucide-react';
 import { pedirJson, conJson } from '../services/api';
 import { COLUMNAS_EJEMPLO, FILA_EJEMPLO, leerPlanilla, sociosDePlanilla } from '../utils/planilla';
@@ -88,7 +88,7 @@ const ImportarSocios = () => {
         </button>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 space-y-4">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-xs p-6 space-y-4">
         <div className="text-sm text-slate-600 space-y-1">
           <p><span className="font-semibold text-slate-800">Columnas obligatorias:</span> Nombre y apellido (o Nombre y Apellido por separado), DNI y Email.</p>
           <p><span className="font-semibold text-slate-800">Opcionales:</span> Teléfono, Fecha de nacimiento, Género, Domicilio, Ciudad, Objetivo y Observaciones. Con <span className="font-semibold">Plan</span> (el nombre de uno de tus planes) y <span className="font-semibold">Vence</span> (la fecha), el socio queda con su membresía hasta ese día, sin cobro.</p>
@@ -112,7 +112,7 @@ const ImportarSocios = () => {
       )}
 
       {socios && (
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
           <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
             <p className="text-sm text-slate-700">
               <span className="font-semibold">{socios.length}</span> filas · <span className="font-semibold text-emerald-700">{validos.length} listas</span>

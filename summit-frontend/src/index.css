@@ -1,8 +1,58 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
+/* tactil: celulares y tablets (el dedo es el puntero principal). Ahí los botones van de 44 px o más y los campos con
+   letra de 16 px (con menos, el iPhone agranda la pantalla al escribir). En la PC no cambia nada. */
+@custom-variant tactil (@media (pointer: coarse));
+
+@theme {
+  /* Colores de la marca: bordó oscuro y bronce. Para texto: blanco sobre bordo-700 (12:1), bronce-300 sobre bordo-700
+     (5,3:1) y bronce-700 sobre blanco (5,8:1). bronce-500 es el bronce clásico: solo decorativo (íconos, bordes),
+     porque como texto no llega al contraste mínimo (3,1:1 sobre blanco). */
+  --color-bordo-50: #fbf3f5;
+  --color-bordo-100: #f5e1e6;
+  --color-bordo-200: #ebc3cd;
+  --color-bordo-300: #da97a8;
+  --color-bordo-400: #c2617a;
+  --color-bordo-500: #a33654;
+  --color-bordo-600: #861d3a;
+  --color-bordo-700: #6b1027;
+  --color-bordo-800: #4a0b1b;
+  --color-bordo-900: #330812;
+  --color-bordo-950: #1c0a10;
+
+  --color-bronce-50: #fbf6ef;
+  --color-bronce-100: #f5e9d7;
+  --color-bronce-200: #ebd2ae;
+  --color-bronce-300: #d9a066;
+  --color-bronce-400: #d38f4c;
+  --color-bronce-500: #cd7f32;
+  --color-bronce-600: #ad6a2b;
+  --color-bronce-700: #8c5a24;
+  --color-bronce-800: #6e4720;
+  --color-bronce-900: #57391b;
+  --color-bronce-950: #301e0e;
+}
+
+/* Tailwind 4 cambió algunos valores por defecto de la versión 3: así el panel se sigue viendo igual */
 @layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
   body {
     @apply antialiased text-slate-800 bg-slate-50;
   }

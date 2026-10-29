@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router';
 import {
   Building2, Users, UserPlus, UserX, AlertTriangle, Calendar,
   DollarSign, CalendarCheck, Activity, Search, Clock, CheckCircle, XCircle
@@ -102,7 +102,7 @@ const Dashboard = () => {
           <Building2 className="w-4 h-4 text-blue-600" />
           <span className="text-sm font-medium text-blue-900">Summit Fitness</span>
           {usuario?.rol && (
-            <span className="bg-blue-200 text-blue-800 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider ml-1">{usuario.rol}</span>
+            <span className="bg-blue-200 text-blue-800 text-[10px] px-1.5 py-0.5 rounded-sm uppercase font-bold tracking-wider ml-1">{usuario.rol}</span>
           )}
         </div>
       </div>
@@ -139,7 +139,7 @@ const Dashboard = () => {
         <ActivityStat title="Última hora" value={valor('ingresosUltimaHora')} icon={Clock} color="blue" />
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden min-h-[300px] flex flex-col shadow-sm">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden min-h-[300px] flex flex-col shadow-xs">
         <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-3 justify-between sm:items-center bg-slate-50/50">
           <h3 className="font-semibold text-slate-700 flex items-center gap-2">
             <Activity className="w-4 h-4 text-slate-500" />
@@ -154,7 +154,7 @@ const Dashboard = () => {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar socio o DNI..."
-              className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 w-full sm:w-[300px] transition-shadow"
+              className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-100 w-full sm:w-[300px] transition-shadow"
             />
           </div>
         </div>
@@ -188,7 +188,7 @@ const Dashboard = () => {
                           <FotoSocio idSocio={ingreso.idUsuario} fotoVersion={ingreso.fotoVersion} nombre={ingreso.nombre}
                             className="w-8 h-8 rounded-full" texto="text-[10px]" />
                           <span>{ingreso.nombre}</span>
-                          {ingreso.rol !== 'SOCIO' && <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">PERSONAL</span>}
+                          {ingreso.rol !== 'SOCIO' && <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-sm">PERSONAL</span>}
                         </div>
                       </td>
                       <td className="px-6 py-3 text-slate-500">{ingreso.dni}</td>

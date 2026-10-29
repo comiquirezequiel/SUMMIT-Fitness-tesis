@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import {
   User, FileText, AlertTriangle, CheckCircle, CheckCircle2, Save, Plus, Trash2, ArrowUp, ArrowDown, Pencil, ArrowLeft,
   ShieldAlert, Loader2, Dumbbell, CalendarPlus, Sparkles,
@@ -444,7 +444,7 @@ const Constructor = () => {
     const riesgos = item.riesgos?.length ? item.riesgos : riesgosDe(item.idEjercicio);
     const descanso = formatDescanso(item.descansoSegundos);
     return (
-      <li key={item.clave} className={`p-3 sm:p-4 rounded-xl border ${riesgos.length ? 'bg-amber-50/60 border-amber-200' : 'bg-white border-slate-200 shadow-sm'}`}>
+      <li key={item.clave} className={`p-3 sm:p-4 rounded-xl border ${riesgos.length ? 'bg-amber-50/60 border-amber-200' : 'bg-white border-slate-200 shadow-xs'}`}>
         <div className="flex items-start gap-3">
           <span className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 font-bold flex items-center justify-center text-sm border border-slate-200 shrink-0">
             {indice + 1}
@@ -483,10 +483,10 @@ const Constructor = () => {
         <ArrowDown className="w-4 h-4" />
       </button>
       <button onClick={() => abrirEdicion(item)} disabled={ocupado} aria-label={`Editar ${item.nombreEjercicio}`} title="Editar o mover de día"
-        className={conTexto ? `${botonIcono} !w-auto px-4 gap-2 ml-auto text-sm font-semibold text-slate-700` : botonIcono}>
+        className={conTexto ? `${botonIcono} w-auto! px-4 gap-2 ml-auto text-sm font-semibold text-slate-700` : botonIcono}>
         <Pencil className="w-4 h-4" />{conTexto && 'Editar'}
       </button>
-      <button onClick={() => quitar(item)} disabled={ocupado} className={`${botonIcono} hover:!text-rose-600 hover:!bg-rose-50`} aria-label={`Quitar ${item.nombreEjercicio}`} title="Quitar">
+      <button onClick={() => quitar(item)} disabled={ocupado} className={`${botonIcono} hover:text-rose-600! hover:bg-rose-50!`} aria-label={`Quitar ${item.nombreEjercicio}`} title="Quitar">
         <Trash2 className="w-4 h-4" />
       </button>
     </>

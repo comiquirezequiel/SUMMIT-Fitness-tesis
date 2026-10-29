@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Search, ChevronRight } from 'lucide-react';
 import Modal from '../Modal';
 import CobroModal from './CobroModal';

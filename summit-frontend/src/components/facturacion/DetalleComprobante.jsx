@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RotateCcw, Ban, FilePlus2, Loader2 } from 'lucide-react';
 import Modal from '../Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../Campo';

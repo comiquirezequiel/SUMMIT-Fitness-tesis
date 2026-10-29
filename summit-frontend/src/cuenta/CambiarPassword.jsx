@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Navigate, useNavigate } from 'react-router';
 import Marco from './Marco';
 import FormCambiarPassword from './FormCambiarPassword';
 import { cambiarPassword } from '../services/cuenta';

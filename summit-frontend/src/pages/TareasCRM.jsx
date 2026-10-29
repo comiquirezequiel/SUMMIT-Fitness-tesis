@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle2, Search, MessageCircle, Plus, RefreshCw, X, Check } from 'lucide-react';
 import Modal from '../components/Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../components/Campo';
@@ -171,7 +171,7 @@ const TareasCRM = () => {
           <button onClick={() => cargar(true)} className="flex items-center gap-2 px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 bg-white">
             <RefreshCw className={`w-4 h-4 ${cargando ? 'animate-spin' : ''}`} /> Actualizar
           </button>
-          <button onClick={() => setNueva(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm">
+          <button onClick={() => setNueva(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 shadow-xs">
             <Plus className="w-4 h-4" /> Nueva tarea
           </button>
         </div>
@@ -179,7 +179,7 @@ const TareasCRM = () => {
 
       {error && <div className="p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>}
 
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
         <div className="px-5 pt-4 border-b border-slate-200 flex gap-1" role="tablist">
           {[['pendientes', 'Pendientes'], ['resueltas', 'Resueltas']].map(([id, texto]) => (
             <button key={id} role="tab" aria-selected={vista === id} onClick={() => { setVista(id); setResolviendo(null); }}
@@ -202,7 +202,7 @@ const TareasCRM = () => {
           <div className="relative md:w-72">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar por socio o tarea..."
-              className="pl-9 pr-4 py-2 w-full border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100" />
+              className="pl-9 pr-4 py-2 w-full border border-slate-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-100" />
           </div>
         </div>
 
@@ -232,7 +232,7 @@ const TareasCRM = () => {
                         <p className={`text-xs mt-1 font-medium ${vence.clase}`}>{vence.texto}{t.creadaPor ? ` · cargada por ${t.creadaPor}` : ''}</p>
                       ) : (
                         <p className="text-xs mt-1 text-slate-500">
-                          <span className={`inline-flex px-1.5 py-0.5 rounded border text-[11px] font-semibold mr-1.5 ${estado?.clase}`}>{estado?.texto}</span>
+                          <span className={`inline-flex px-1.5 py-0.5 rounded-sm border text-[11px] font-semibold mr-1.5 ${estado?.clase}`}>{estado?.texto}</span>
                           {t.canal ? `${textoCanal(t.canal)} · ` : ''}{t.fechaResolucion ? formatFechaHora(t.fechaResolucion) : ''}
                           {t.resueltaPor ? ` · ${t.resueltaPor}` : ''}{t.nota ? ` · ${t.nota}` : ''}
                         </p>
@@ -266,7 +266,7 @@ const TareasCRM = () => {
                         </select>
                         <input value={resolviendo.nota} maxLength={300} placeholder="¿Qué te dijo? (opcional)"
                           onChange={e => setResolviendo(r => ({ ...r, nota: e.target.value }))}
-                          className="flex-1 min-w-[12rem] px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
+                          className="flex-1 min-w-48 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
                         <button onClick={() => resolver(t, 'HECHA')} disabled={resolviendo.enviando}
                           className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold disabled:opacity-50">
                           {resolviendo.enviando ? 'Guardando...' : 'Marcar como hecha'}

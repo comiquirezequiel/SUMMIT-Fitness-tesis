@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FileText, RefreshCw, Send, AlertTriangle, Settings, FlaskConical } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import Paginador from '../components/caja/Paginador';
 import DetalleComprobante from '../components/facturacion/DetalleComprobante';
 import {
@@ -104,7 +104,7 @@ const Facturas = () => {
       {estado && (esperando > 0 || estado.rechazados > 0) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {esperando > 0 && (
-            <div className="bg-white p-5 rounded-xl border border-amber-200 shadow-sm space-y-3">
+            <div className="bg-white p-5 rounded-xl border border-amber-200 shadow-xs space-y-3">
               <p className="text-sm font-medium text-slate-500">Esperando a ARCA</p>
               <p className="text-2xl font-bold text-slate-800">{esperando} {esperando === 1 ? 'factura' : 'facturas'}</p>
               {estado.ultimoError && <p className="text-xs text-amber-800">{estado.ultimoError}</p>}
@@ -115,7 +115,7 @@ const Facturas = () => {
           )}
           {estado.rechazados > 0 && (
             <button onClick={() => { setFiltro('RECHAZADO'); setNumeroPagina(0); }}
-              className="text-left bg-white p-5 rounded-xl border border-rose-200 shadow-sm hover:shadow-md transition-shadow">
+              className="text-left bg-white p-5 rounded-xl border border-rose-200 shadow-xs hover:shadow-md transition-shadow">
               <p className="text-sm font-medium text-slate-500">Rechazadas por ARCA</p>
               <p className="text-2xl font-bold text-rose-700">{estado.rechazados}</p>
               <p className="text-xs text-slate-500 mt-1">Abrí cada una para ver el motivo{esAdmin ? ' y reintentarla' : ''}.</p>
@@ -124,7 +124,7 @@ const Facturas = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="px-5 pt-4 border-b border-slate-200 flex gap-1 overflow-x-auto" role="tablist">
           {FILTROS.map((f) => (
             <button key={f.texto} role="tab" aria-selected={filtro === f.id} onClick={() => { setFiltro(f.id); setNumeroPagina(0); }}

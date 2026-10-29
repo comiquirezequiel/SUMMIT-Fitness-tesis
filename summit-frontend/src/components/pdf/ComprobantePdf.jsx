@@ -1,6 +1,5 @@
 // Comprobante de un cobro en PDF (A5 vertical), para imprimirlo o mandarlo por WhatsApp. No es una factura: lo dice
 // abajo. Se genera desde comprobante.js (documentoComprobante): no importarlo directo desde una pantalla.
-import React from 'react';
 import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
 import { COLORES, FUENTES, estilosBase, textoPdf } from './marca';
 import { Encabezado, Pie, contactoDe } from './Membrete';

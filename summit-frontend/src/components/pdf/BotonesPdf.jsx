@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Printer, Download, Share2, Loader2 } from 'lucide-react';
 import { botonPrimario, botonSecundario } from '../Campo';
 import { compartirPdf, descargarPdf, esTactil, imprimirPdf } from './index';

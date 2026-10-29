@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useMemo, useRef, useState } from 'react';
 import { Search, X, PersonStanding, AlertTriangle, Sparkles, Check, Loader2 } from 'lucide-react';
 import Modal from '../Modal';
 import { coincide, nombreGrupo } from './comun';
@@ -26,7 +26,7 @@ const Marca = ({ marca }) => (marca ? (
 const Opcion = ({ ejercicio, marca, onElegir }) => (
   <li>
     <button type="button" onClick={() => onElegir(ejercicio)}
-      className="w-full min-h-12 text-left px-3 py-2.5 flex items-center gap-3 hover:bg-blue-50 active:bg-blue-100 focus:outline-none focus-visible:bg-blue-50">
+      className="w-full min-h-12 text-left px-3 py-2.5 flex items-center gap-3 hover:bg-blue-50 active:bg-blue-100 focus:outline-hidden focus-visible:bg-blue-50">
       <span className="min-w-0 flex-1">
         <span className="block font-semibold text-slate-800 leading-snug">{ejercicio.nombre}</span>
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
@@ -109,7 +109,7 @@ const SelectorEjercicio = ({ catalogo, cargando, elegido, onElegir, marca = () =
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input type="search" value={texto} onChange={(e) => setTexto(e.target.value)} onKeyDown={teclas} disabled={deshabilitado}
             placeholder={cargando ? 'Cargando catálogo...' : 'Buscar ejercicio...'} aria-label="Buscar ejercicio en el catálogo"
-            className="w-full pl-9 pr-9 py-2.5 tactil:min-h-11 bg-white border border-slate-200 rounded-lg text-sm tactil:text-base focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 [&::-webkit-search-cancel-button]:hidden" />
+            className="w-full pl-9 pr-9 py-2.5 tactil:min-h-11 bg-white border border-slate-200 rounded-lg text-sm tactil:text-base focus:outline-hidden focus:ring-2 focus:ring-blue-100 focus:border-blue-400 [&::-webkit-search-cancel-button]:hidden" />
           {texto && (
             <button type="button" onClick={() => setTexto('')} aria-label="Borrar búsqueda"
               className="absolute right-0 top-0 h-full w-10 tactil:w-11 flex items-center justify-center text-slate-400 hover:text-slate-600">

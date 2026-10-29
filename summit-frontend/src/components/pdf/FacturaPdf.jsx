@@ -2,7 +2,6 @@
 // código, punto de venta y número, receptor, detalle, CAE con su vencimiento y el código QR (RG 4892). En la B, el IVA
 // contenido (Ley 27.743). Si no es de producción (simulador o pruebas de ARCA) lleva "SIN VALIDEZ FISCAL" de marca de
 // agua. Se genera desde factura.js: no importarlo directo desde una pantalla.
-import React from 'react';
 import { Document, Page, View, Text, Image, Svg, Path, StyleSheet } from '@react-pdf/renderer';
 import { COLORES, FUENTES, estilosBase, textoPdf } from './marca';
 import { Pie, contactoDe } from './Membrete';

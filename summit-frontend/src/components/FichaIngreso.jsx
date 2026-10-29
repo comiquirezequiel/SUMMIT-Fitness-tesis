@@ -1,4 +1,3 @@
-import React from 'react';
 import { XCircle, AlertTriangle, CalendarDays, Wallet, HeartPulse } from 'lucide-react';
 import { formatFecha, textoVencimiento } from '../utils/formato';
 

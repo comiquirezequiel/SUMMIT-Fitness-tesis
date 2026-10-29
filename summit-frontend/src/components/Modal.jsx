@@ -1,4 +1,3 @@
-import React from 'react';
 import { X } from 'lucide-react';
 
 /**
@@ -6,7 +5,7 @@ import { X } from 'lucide-react';
  */
 const Modal = ({ titulo, subtitulo, onClose, children, pie, ancho = 'max-w-lg' }) => (
   <div
-    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm"
+    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-xs"
     onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
   >
     {/* dvh: en el celular, el alto que queda visible con las barras del navegador (vh incluye lo que tapan) */}

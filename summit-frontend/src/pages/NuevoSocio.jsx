@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Fragment, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import {
   UserPlus, ChevronRight, ChevronLeft, User, Mail, Phone, Wallet,
   MapPin, Check, X, HeartPulse, Upload, CheckCircle2, XCircle, AlertTriangle, Camera, Trash2
@@ -230,7 +230,7 @@ const NuevoSocio = () => {
   const StepIndicator = () => (
     <div className="flex items-center justify-center gap-0 mb-8 overflow-x-auto">
       {STEPS.map((label, idx) => (
-        <React.Fragment key={idx}>
+        <Fragment key={idx}>
           <div className="flex flex-col items-center">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
               idx < step ? 'bg-blue-600 border-blue-600 text-white' :
@@ -246,7 +246,7 @@ const NuevoSocio = () => {
           {idx < STEPS.length - 1 && (
             <div className={`h-0.5 w-8 sm:w-16 mx-1 mb-4 transition-all ${idx < step ? 'bg-blue-600' : 'bg-slate-200'}`} />
           )}
-        </React.Fragment>
+        </Fragment>
       ))}
     </div>
   );
@@ -266,7 +266,7 @@ const NuevoSocio = () => {
     const { cobro } = resultado;
     const aVerificar = cobro?.ok && cobro.pago.estado === 'PENDIENTE';
     return (
-      <div className="max-w-2xl mx-auto bg-white border border-slate-200 rounded-xl shadow-sm p-8 space-y-6">
+      <div className="max-w-2xl mx-auto bg-white border border-slate-200 rounded-xl shadow-xs p-8 space-y-6">
         <div className="text-center">
           <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-3">
             <CheckCircle2 className="w-8 h-8 text-emerald-600" />
@@ -343,7 +343,7 @@ const NuevoSocio = () => {
         </button>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-5 md:p-8">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-xs p-5 md:p-8">
         <StepIndicator />
 
         {/* PASO 1: Datos Personales */}
@@ -593,7 +593,7 @@ const NuevoSocio = () => {
           {step < STEPS.length - 1 ? (
             <button
               onClick={siguiente}
-              className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm"
+              className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-xs"
             >
               Siguiente <ChevronRight className="w-4 h-4" />
             </button>
@@ -601,7 +601,7 @@ const NuevoSocio = () => {
             <button
               onClick={registrar}
               disabled={enviando || (Boolean(form.idPlan) && !cobroListo)}
-              className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm"
+              className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white rounded-lg text-sm font-semibold transition-colors shadow-xs"
             >
               <Check className="w-4 h-4" />
               {enviando ? 'Registrando...'

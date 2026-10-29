@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Copy, Check, ExternalLink, Smartphone } from 'lucide-react';
 
@@ -20,8 +20,8 @@ const QrAutorizacion = ({ link }) => {
   };
 
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-xl border border-sky-100 bg-gradient-to-br from-sky-50 to-white">
-      <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-100 shrink-0">
+    <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-xl border border-sky-100 bg-linear-to-br from-sky-50 to-white">
+      <div className="bg-white p-3 rounded-xl shadow-xs border border-slate-100 shrink-0">
         <QRCodeSVG value={link} size={148} level="M" />
       </div>
       <div className="space-y-2 text-sm">

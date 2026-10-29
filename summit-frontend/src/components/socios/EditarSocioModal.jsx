@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Save, UserX, UserCheck } from 'lucide-react';
 import Modal from '../Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../Campo';

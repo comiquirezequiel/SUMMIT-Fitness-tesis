@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Save, Receipt, ShieldCheck, PlugZap, CheckCircle, XCircle, AlertTriangle, FlaskConical } from 'lucide-react';
 import Campo, { inputClass, botonPrimario } from '../components/Campo';
 import {

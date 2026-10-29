@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Camera, CameraOff, Check, Loader2, RefreshCw, Upload } from 'lucide-react';
 import Modal from '../Modal';

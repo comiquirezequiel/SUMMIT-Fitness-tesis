@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Fragment, useState, useEffect, useCallback, useRef } from 'react';
 import {
   Clipboard, Users, Clock, CalendarDays, AlertTriangle, Download, Plus, ChevronLeft, ChevronRight, ChevronDown,
   Pencil, RefreshCw, Info, LogIn,
@@ -20,7 +20,7 @@ const Iniciales = ({ nombre }) => (
 );
 
 const Tarjeta = ({ titulo, valor, detalle, icon: Icon, color, alerta }) => (
-  <div className={`p-5 rounded-xl border shadow-sm flex items-center justify-between ${alerta ? 'bg-rose-50/60 border-rose-200' : 'bg-white border-slate-200'}`}>
+  <div className={`p-5 rounded-xl border shadow-xs flex items-center justify-between ${alerta ? 'bg-rose-50/60 border-rose-200' : 'bg-white border-slate-200'}`}>
     <div className="min-w-0">
       <p className="text-sm font-medium text-slate-500 mb-1">{titulo}</p>
       <h3 className={`text-2xl font-bold ${alerta ? 'text-rose-700' : 'text-slate-800'}`}>{valor}</h3>
@@ -195,7 +195,7 @@ const AjustesAsistencia = () => {
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={() => setCargandoTurno({ idUsuario: idUsuario || '', dia: incluyeHoy ? hoy : p.hasta })}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm">
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-xs">
             <Plus className="w-4 h-4" /> Cargar turno
           </button>
         </div>
@@ -214,7 +214,7 @@ const AjustesAsistencia = () => {
       {aviso && <div className="p-3 rounded-lg bg-emerald-50 text-emerald-700 text-sm font-medium">{aviso}</div>}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-5" aria-label="Trabajando ahora">
+        <section className="bg-white rounded-xl border border-slate-200 shadow-xs p-5" aria-label="Trabajando ahora">
           <div className="flex justify-between items-start mb-3">
             <div>
               <h2 className="font-semibold text-slate-800">Trabajando ahora</h2>
@@ -242,7 +242,7 @@ const AjustesAsistencia = () => {
           </div>
         </section>
 
-        <section className={`rounded-xl border shadow-sm p-5 ${sinSalida.length ? 'bg-rose-50/40 border-rose-200' : 'bg-white border-slate-200'}`}
+        <section className={`rounded-xl border shadow-xs p-5 ${sinSalida.length ? 'bg-rose-50/40 border-rose-200' : 'bg-white border-slate-200'}`}
           aria-label="Turnos sin salida">
           <div className="flex justify-between items-start mb-3">
             <div>
@@ -272,7 +272,7 @@ const AjustesAsistencia = () => {
         </section>
       </div>
 
-      <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden" aria-label="Horas del período">
+      <section className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden" aria-label="Horas del período">
         <div className="p-5 border-b border-slate-200 space-y-4">
           <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
             <div>
@@ -283,11 +283,11 @@ const AjustesAsistencia = () => {
             </div>
             <div className="flex flex-wrap gap-2">
               <button onClick={exportarResumen} disabled={personas.length === 0}
-                className="bg-white border border-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50 shadow-sm">
+                className="bg-white border border-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50 shadow-xs">
                 <Download className="w-4 h-4" /> Resumen (CSV)
               </button>
               <button onClick={exportarDetalle} disabled={!hayTurnos}
-                className="bg-white border border-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50 shadow-sm">
+                className="bg-white border border-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50 shadow-xs">
                 <Download className="w-4 h-4" /> Detalle por turno (CSV)
               </button>
             </div>
@@ -296,7 +296,7 @@ const AjustesAsistencia = () => {
             <div className="flex bg-slate-100 rounded-lg p-0.5 text-xs font-semibold" role="group" aria-label="Período">
               {MODOS.map(m => (
                 <button key={m.clave} onClick={() => setModo(m.clave)}
-                  className={`px-3 py-1.5 rounded-md transition-colors ${modo === m.clave ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500'}`}>
+                  className={`px-3 py-1.5 rounded-md transition-colors ${modo === m.clave ? 'bg-white shadow-xs text-slate-800' : 'text-slate-500'}`}>
                   {m.texto}
                 </button>
               ))}
@@ -380,7 +380,7 @@ const AjustesAsistencia = () => {
                     </span>
                   );
                   return (
-                    <React.Fragment key={pp.idUsuario}>
+                    <Fragment key={pp.idUsuario}>
                       <tr className="hover:bg-slate-50/60 transition-colors">
                         <td className="px-3 sm:px-6 py-3">
                           <button type="button" onClick={() => alternar(pp.idUsuario)} aria-expanded={abiertaFila}
@@ -425,7 +425,7 @@ const AjustesAsistencia = () => {
                           </td>
                         </tr>
                       )}
-                    </React.Fragment>
+                    </Fragment>
                   );
                 })}
               </tbody>

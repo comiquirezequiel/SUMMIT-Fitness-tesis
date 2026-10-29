@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FileText, Upload, HeartPulse, Wallet, User, LogIn, Sparkles, Camera, Trash2 } from 'lucide-react';
 import Modal from '../Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../Campo';
@@ -16,7 +16,7 @@ import { formatFecha, formatFechaHora, textoVencimiento, diasHasta, edad, hoyIso
 const Dato = ({ label, valor }) => (
   <div>
     <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-    <p className="text-sm text-slate-800 font-medium break-words">{valor || '—'}</p>
+    <p className="text-sm text-slate-800 font-medium wrap-break-word">{valor || '—'}</p>
   </div>
 );
 
@@ -267,8 +267,8 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
                   <div className="text-sm">
                     <p className="font-semibold text-slate-800">
                       Emitido {formatFecha(c.fechaEmision)} · vence {formatFecha(c.fechaVencimiento)}
-                      {c.idCertificado === idQueRige && <span className="ml-2 text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">ACTUAL</span>}
-                      {c.estadoLegal === 'RECHAZADO' && <span className="ml-2 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">RECHAZADO</span>}
+                      {c.idCertificado === idQueRige && <span className="ml-2 text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-sm">ACTUAL</span>}
+                      {c.estadoLegal === 'RECHAZADO' && <span className="ml-2 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded-sm">RECHAZADO</span>}
                     </p>
                     {c.estadoLegal === 'RECHAZADO' && (
                       <p className="text-rose-700 text-xs mt-0.5">
@@ -286,7 +286,7 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
                   </div>
                   <div className="flex flex-wrap gap-2 self-start sm:self-auto">
                     {puedeEditar && (
-                      <BotonIa estado={estadoIa} cargando={analizando === c.idCertificado} className="!px-3 !py-1.5 !text-xs"
+                      <BotonIa estado={estadoIa} cargando={analizando === c.idCertificado} className="px-3! py-1.5! text-xs!"
                         onClick={() => analizar(c.idCertificado)}>
                         Analizar con IA
                       </BotonIa>

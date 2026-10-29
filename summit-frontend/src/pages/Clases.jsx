@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock, Users, Plus, ChevronLeft, ChevronRight, User, Trash2, Save, CheckCircle2, XCircle, Ban } from 'lucide-react';
 import Modal from '../components/Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../components/Campo';
@@ -22,10 +22,10 @@ const hora = (h) => (h ? h.substring(0, 5) : '');
 const ClassCard = ({ clase, color, onClick }) => {
   const isFull = clase.reservados >= clase.capacidad;
   return (
-    <div onClick={onClick} className={`p-4 rounded-xl border border-l-4 ${color} relative shadow-sm hover:shadow-md transition-shadow cursor-pointer bg-white`}>
+    <div onClick={onClick} className={`p-4 rounded-xl border border-l-4 ${color} relative shadow-xs hover:shadow-md transition-shadow cursor-pointer bg-white`}>
       <div className="flex justify-between items-start mb-2 gap-2">
         <h3 className="font-bold text-slate-800">{clase.nombreClase}</h3>
-        <span className={`text-xs font-bold px-2 py-1 rounded whitespace-nowrap ${isFull ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+        <span className={`text-xs font-bold px-2 py-1 rounded-sm whitespace-nowrap ${isFull ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
           {clase.reservados}/{clase.capacidad}
         </span>
       </div>
@@ -325,13 +325,13 @@ const Clases = () => {
           <p className="text-sm text-slate-500">Horarios, reservas y asistencia de las clases grupales</p>
         </div>
         {esAdmin && (
-          <button onClick={() => setModal({ tipo: 'nueva' })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm whitespace-nowrap">
+          <button onClick={() => setModal({ tipo: 'nueva' })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-xs whitespace-nowrap">
             <Plus className="w-4 h-4" /> Nueva Clase
           </button>
         )}
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
         <div className="flex items-center justify-between mb-6 gap-2">
           <button onClick={() => moverSemana(-1)} title="Semana anterior" className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-500 transition-colors">
             <ChevronLeft className="w-5 h-5" />

@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Save, Building2, CheckCircle, AlertTriangle, Image as ImageIcon, Upload, Trash2 } from 'lucide-react';
 import { apiFetch } from '../services/api';
 
-const claseCampo = 'w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium text-slate-800 placeholder:text-slate-300 placeholder:font-normal';
+const claseCampo = 'w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium text-slate-800 placeholder:text-slate-300 placeholder:font-normal';
 
 const Tarjeta = ({ icono: Icono, titulo, children, className = '' }) => (
   <div className={`bg-white border border-slate-200 rounded-2xl p-6 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] ${className}`}>
@@ -154,7 +154,7 @@ const DatosGimnasio = () => {
           <p className="text-sm text-slate-500">Logo y contacto. Van en los comprobantes y rutinas en PDF.</p>
         </div>
         <button onClick={guardar} disabled={guardando}
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors shadow-sm shrink-0">
+          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors shadow-xs shrink-0">
           <Save className="w-4 h-4" /> {guardando ? 'Guardando...' : 'Guardar Cambios'}
         </button>
       </div>

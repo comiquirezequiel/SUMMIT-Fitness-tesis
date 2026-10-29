@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { Calendar } from 'lucide-react';
 import Paginador from './Paginador';
 import { anularGasto, listarGastos, textoCategoriaGasto } from '../../services/caja';
@@ -53,7 +53,7 @@ const TablaGastos = ({ version, onCambio }) => {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {gastos.map(g => (
-              <React.Fragment key={g.idGasto}>
+              <Fragment key={g.idGasto}>
                 <tr className={`hover:bg-slate-50/50 ${g.anulado ? 'opacity-60' : ''}`}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="font-medium text-slate-700">{formatFecha(g.fecha)}</div>
@@ -69,7 +69,7 @@ const TablaGastos = ({ version, onCambio }) => {
                     )}
                   </td>
                   <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2 py-1 rounded bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200 whitespace-nowrap">
+                    <span className="inline-flex items-center px-2 py-1 rounded-sm bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200 whitespace-nowrap">
                       {textoMetodoPago(g.metodoPago)}
                     </span>
                     {g.fueraDeCaja && <div className="text-[11px] text-slate-400 mt-1 whitespace-nowrap">No salió de la caja</div>}
@@ -89,7 +89,7 @@ const TablaGastos = ({ version, onCambio }) => {
                       <div className="flex flex-wrap items-center gap-2">
                         <input autoFocus value={anulando.motivo} maxLength={200} placeholder="¿Por qué se anula? (queda registrado)"
                           onChange={e => setAnulando(a => ({ ...a, motivo: e.target.value }))}
-                          className="flex-1 min-w-[14rem] px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-100" />
+                          className="flex-1 min-w-56 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-rose-100" />
                         <button onClick={confirmarAnulacion} disabled={anulando.enviando || anulando.motivo.trim().length < 5}
                           className="px-3 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold disabled:opacity-50">
                           {anulando.enviando ? 'Anulando...' : 'Anular gasto'}
@@ -102,7 +102,7 @@ const TablaGastos = ({ version, onCambio }) => {
                     </td>
                   </tr>
                 )}
-              </React.Fragment>
+              </Fragment>
             ))}
           </tbody>
         </table>

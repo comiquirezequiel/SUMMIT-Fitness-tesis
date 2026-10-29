@@ -1,4 +1,3 @@
-import React from 'react';
 import { Clock, Weight, Repeat } from 'lucide-react';
 import { agruparPorDia, formatDescanso, formatKg, nombreGrupo, seriesPorReps } from './comun';
 

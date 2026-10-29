@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useLocation } from 'react-router';
 import { Mail, MailCheck } from 'lucide-react';
 import Marco from './Marco';
 import { pedirLinkPorEmail } from '../services/cuenta';
@@ -54,7 +54,7 @@ export default function OlvidePassword() {
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" />
             <input id="email-recuperacion" type="email" required autoComplete="username" autoCapitalize="none" spellCheck={false}
               value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@email.com"
-              className="block w-full min-h-[48px] pl-10 pr-3 text-base text-slate-900 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-bordo-200 focus:border-bordo-400" />
+              className="block w-full min-h-[48px] pl-10 pr-3 text-base text-slate-900 border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-bordo-200 focus:border-bordo-400" />
           </div>
         </div>
         {error && <p className="rounded-xl bg-rose-50 text-rose-700 text-sm font-medium p-3" role="alert">{error}</p>}

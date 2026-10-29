@@ -1,4 +1,3 @@
-import React from 'react';
 import { Banknote, ArrowLeftRight, QrCode, CreditCard } from 'lucide-react';
 import { formatMoneda } from '../../utils/formato';
 import { METODOS_PAGO } from '../../utils/constantes';
@@ -17,7 +16,7 @@ const detallePlan = (p) => {
   return `${veces} · ${p.duracionDias} días`;
 };
 
-const claseOpcion = (elegida) => `cursor-pointer rounded-xl border transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-300 ${
+const claseOpcion = (elegida) => `cursor-pointer rounded-xl border transition-colors has-focus-visible:ring-2 has-focus-visible:ring-blue-300 ${
   elegida ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-100' : 'border-slate-200 bg-white hover:bg-slate-50'}`;
 
 /**

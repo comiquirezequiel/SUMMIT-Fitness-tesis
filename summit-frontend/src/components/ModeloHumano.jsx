@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { MUSCULOS_DATA } from '../data/musculos';
 import './modelo-humano.css';
 

@@ -1,5 +1,5 @@
-import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router';
 import Login from './pages/Login';
 import { sesionVigente, limpiarSesion } from './services/auth';
 import { useFunciones } from './services/funciones';

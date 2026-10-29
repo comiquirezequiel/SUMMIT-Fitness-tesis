@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Search, X, Loader2 } from 'lucide-react';
 import { coincide } from './comun';
 
@@ -73,7 +73,7 @@ const BuscadorSocio = ({ socios, cargando, error, seleccionado, onSeleccionar, d
           onKeyDown={teclas}
           placeholder={placeholder}
           aria-label="Buscar socio"
-          className="w-full pl-9 pr-10 py-2.5 tactil:min-h-11 bg-slate-50 border border-slate-200 rounded-xl text-sm tactil:text-base focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 focus:bg-white"
+          className="w-full pl-9 pr-10 py-2.5 tactil:min-h-11 bg-slate-50 border border-slate-200 rounded-xl text-sm tactil:text-base focus:outline-hidden focus:ring-2 focus:ring-blue-100 focus:border-blue-400 focus:bg-white"
         />
         {cargando && <Loader2 className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 animate-spin" />}
         {!cargando && texto && (
@@ -107,7 +107,7 @@ const BuscadorSocio = ({ socios, cargando, error, seleccionado, onSeleccionar, d
                       <span className="text-xs text-slate-500">DNI {s.dni}{detalle ? ` · ${detalle(s)}` : ''}</span>
                     </span>
                     {s.estado && s.estado !== 'ACTIVO' && (
-                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-500 shrink-0">{s.estado}</span>
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-sm bg-slate-100 text-slate-500 shrink-0">{s.estado}</span>
                     )}
                   </button>
                 </li>

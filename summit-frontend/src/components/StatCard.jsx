@@ -1,4 +1,3 @@
-import React from 'react';
 import { Info } from 'lucide-react';
 
 // icon: componente de lucide-react (ej. Users). Se pasa el componente y no un nombre

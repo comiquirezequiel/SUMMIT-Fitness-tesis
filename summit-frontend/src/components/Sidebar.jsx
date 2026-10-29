@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { NavLink, useLocation } from 'react-router';
 import { 
   Users, User, BarChart2,
   Wallet, Tag, TrendingUp, AlertTriangle,
@@ -142,7 +142,7 @@ const SidebarItem = ({ icon: Icon, text, path, subItems, activePath, onNavigate,
                 <SubIcon className={`w-4 h-4 ${isActive ? 'text-blue-500' : 'text-slate-400'}`} />
                 {sub.text}
                 {sub.demo && (
-                  <span className="ml-auto text-[9px] font-bold uppercase tracking-wide text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded" title="Pantalla con datos de ejemplo">
+                  <span className="ml-auto text-[9px] font-bold uppercase tracking-wide text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-sm" title="Pantalla con datos de ejemplo">
                     Demo
                   </span>
                 )}

@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router';
 import {
   ClipboardList, Search, Plus, Eye, Pencil, Ban, RefreshCw, UserX, Download,
 } from 'lucide-react';
@@ -176,7 +176,7 @@ const EntrenamientoPlanes = () => {
           <p className="text-sm text-slate-500">Rutina activa de cada socio y quién todavía no tiene</p>
         </div>
         {puedeEditar && (
-          <button onClick={() => navigate('/rutinas/constructor')} className={`${botonPrimario} whitespace-nowrap shadow-sm`}>
+          <button onClick={() => navigate('/rutinas/constructor')} className={`${botonPrimario} whitespace-nowrap shadow-xs`}>
             <Plus className="w-4 h-4" /> Nueva rutina
           </button>
         )}
@@ -200,7 +200,7 @@ const EntrenamientoPlanes = () => {
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input type="text" value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar por socio, DNI, rutina o profesor..." aria-label="Buscar rutinas"
-              className="w-full pl-9 pr-4 py-2 tactil:min-h-11 border-0 bg-slate-50 hover:bg-slate-100 rounded-lg text-sm tactil:text-base focus:outline-none focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all" />
+              className="w-full pl-9 pr-4 py-2 tactil:min-h-11 border-0 bg-slate-50 hover:bg-slate-100 rounded-lg text-sm tactil:text-base focus:outline-hidden focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all" />
           </div>
           <div className="flex gap-2 shrink-0">
             <button onClick={exportar} disabled={visibles.length === 0}
@@ -224,7 +224,7 @@ const EntrenamientoPlanes = () => {
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
         {error ? (
           <div className="p-4"><ErrorCaja mensaje={error} onReintentar={cargar} /></div>
         ) : cargando && filas.length === 0 ? (
@@ -245,7 +245,7 @@ const EntrenamientoPlanes = () => {
                       <p className="font-semibold text-slate-800 truncate">{fila.socio.nombreCompleto}</p>
                       <p className="text-xs text-slate-500">DNI {fila.socio.dni || '—'}</p>
                     </div>
-                    {!fila.rutina && <span className="text-[11px] font-bold px-2 py-0.5 h-fit rounded bg-slate-100 text-slate-500 shrink-0">SIN RUTINA</span>}
+                    {!fila.rutina && <span className="text-[11px] font-bold px-2 py-0.5 h-fit rounded-sm bg-slate-100 text-slate-500 shrink-0">SIN RUTINA</span>}
                   </div>
                   {fila.rutina && (
                     <div className="text-sm text-slate-600 space-y-1 flex-1">
@@ -284,7 +284,7 @@ const EntrenamientoPlanes = () => {
                             <div className="text-xs text-slate-500">{fila.rutina.objetivo || 'Sin objetivo'} · desde {formatFecha(fila.rutina.fechaCreacion)}</div>
                           </>
                         ) : (
-                          <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-500">SIN RUTINA</span>
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-sm bg-slate-100 text-slate-500">SIN RUTINA</span>
                         )}
                       </td>
                       <td className="px-5 py-3.5 text-slate-600 whitespace-nowrap">

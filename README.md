@@ -6,7 +6,7 @@ asistente de IA local que lee certificados médicos.
 | Parte | Tecnología | Puerto |
 |---|---|---|
 | Backend (`summit-backend`) | Java 21 + Spring Boot 4.1 | 8080 |
-| Frontend (`summit-frontend`) | React 18 + Vite 5 | 5173 |
+| Frontend (`summit-frontend`) | React 19 + Vite 8 + Tailwind CSS 4 | 5173 |
 | Base de datos | MySQL 8 (`summit_fitness_db`, la crea el backend sola) | 3306 |
 | Asistente de IA (opcional) | Ollama con el modelo `gemma4:12b` | 11434 |
 
@@ -14,7 +14,7 @@ asistente de IA local que lee certificados médicos.
 
 - **JDK 21** (por ejemplo Eclipse Temurin), con `JAVA_HOME` configurado: lo necesita `mvnw.cmd`.
 - **MySQL 8** corriendo en `localhost:3306` (el usuario y la contraseña se cargan en el paso 2).
-- **Node.js** 20 o superior.
+- **Node.js** 22.22 o superior.
 - **Ollama** con `ollama pull gemma4:12b` (opcional: sin Ollama todo funciona menos los botones de IA).
 
 ## Levantar el proyecto

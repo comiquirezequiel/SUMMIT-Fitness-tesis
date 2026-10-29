@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { Lock, Mail, WifiOff } from 'lucide-react';
 import Marco from '../cuenta/Marco';
 import { apiFetch } from '../services/api';
@@ -111,7 +111,7 @@ export default function Login() {
               spellCheck={false}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="block w-full min-h-[44px] pl-10 pr-3 py-2 text-base border border-gray-300 rounded-xl shadow-sm focus:ring-bordo-600 focus:border-bordo-600"
+              className="block w-full min-h-[44px] pl-10 pr-3 py-2 text-base border border-gray-300 rounded-xl shadow-xs focus:ring-bordo-600 focus:border-bordo-600"
               placeholder="tu@email.com"
             />
           </div>
@@ -132,7 +132,7 @@ export default function Login() {
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="block w-full min-h-[44px] pl-10 pr-3 py-2 text-base border border-gray-300 rounded-xl shadow-sm focus:ring-bordo-600 focus:border-bordo-600"
+              className="block w-full min-h-[44px] pl-10 pr-3 py-2 text-base border border-gray-300 rounded-xl shadow-xs focus:ring-bordo-600 focus:border-bordo-600"
               placeholder="••••••••"
             />
           </div>
@@ -141,7 +141,7 @@ export default function Login() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full min-h-[48px] flex items-center justify-center px-4 rounded-xl shadow-sm text-base font-bold text-white bg-bordo-700 hover:bg-bordo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bordo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full min-h-[48px] flex items-center justify-center px-4 rounded-xl shadow-xs text-base font-bold text-white bg-bordo-700 hover:bg-bordo-800 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-bordo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {loading ? 'Ingresando…' : 'Ingresar'}
         </button>

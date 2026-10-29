@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Save, Settings, Info, AlertTriangle, CheckCircle } from 'lucide-react';
 import { apiFetch } from '../services/api';
 
@@ -6,11 +6,11 @@ import { apiFetch } from '../services/api';
 const Interruptor = ({ activo, onChange }) => (
   <label className="relative inline-flex items-center cursor-pointer shrink-0">
     <input type="checkbox" className="sr-only peer" checked={activo} onChange={(e) => onChange(e.target.checked)} />
-    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
   </label>
 );
 
-const claseCampo = 'w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium text-slate-800';
+const claseCampo = 'w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium text-slate-800';
 
 const ConfiguracionAcceso = () => {
   const [config, setConfig] = useState({
@@ -87,7 +87,7 @@ const ConfiguracionAcceso = () => {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors shadow-sm"
+          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors shadow-xs"
         >
           <Save className="w-4 h-4" />
           {saving ? 'Guardando...' : 'Guardar Cambios'}

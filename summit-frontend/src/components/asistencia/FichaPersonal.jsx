@@ -1,4 +1,3 @@
-import React from 'react';
 import { LogIn, LogOut, ArrowLeftRight } from 'lucide-react';
 import { AvisosIngreso } from '../FichaIngreso';
 import { duracion, hora, diaCorto, sumarDias, textoRol } from './comun';

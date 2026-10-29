@@ -1,4 +1,3 @@
-import React from 'react';
 import { Loader2, Inbox, AlertTriangle, CheckCircle2, Info, X, RefreshCw } from 'lucide-react';
 
 // Estados de carga, vacío, error y avisos de las pantallas de entrenamiento
@@ -46,7 +45,7 @@ export const Aviso = ({ tipo = 'info', children, onCerrar, className = '' }) => 
       <div className="flex-1 min-w-0">{children}</div>
       {onCerrar && (
         // En el celular y la tablet, 44 px para el dedo sin agrandar el aviso (los márgenes negativos lo compensan)
-        <button onClick={onCerrar} className="p-0.5 tactil:p-3.5 tactil:-m-3 rounded hover:bg-black/5 shrink-0" aria-label="Cerrar aviso">
+        <button onClick={onCerrar} className="p-0.5 tactil:p-3.5 tactil:-m-3 rounded-sm hover:bg-black/5 shrink-0" aria-label="Cerrar aviso">
           <X className="w-4 h-4" />
         </button>
       )}

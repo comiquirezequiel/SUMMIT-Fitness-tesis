@@ -1,4 +1,4 @@
-import React, { useId, useState } from 'react';
+import { useId, useState } from 'react';
 import { Check, Eye, EyeOff } from 'lucide-react';
 import { esErrorDeConexion } from '../utils/conexion';
 
@@ -15,12 +15,12 @@ const REGLAS = [
 const ESTILOS = {
   app: {
     etiqueta: 'block text-sm font-semibold text-slate-700 mb-1.5',
-    campo: 'block w-full min-h-[48px] px-3 text-base text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-bordo-200 focus:border-bordo-400',
+    campo: 'block w-full min-h-[48px] px-3 text-base text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-bordo-200 focus:border-bordo-400',
     boton: 'w-full min-h-[48px] rounded-xl bg-bordo-700 text-white text-base font-bold active:bg-bordo-800 hover:bg-bordo-800 disabled:opacity-50',
   },
   panel: {
     etiqueta: 'block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide',
-    campo: 'w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400',
+    campo: 'w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-800 bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-100 focus:border-blue-400',
     boton: 'w-full px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 rounded-lg',
   },
 };

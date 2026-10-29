@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router';
 import Marco from './Marco';
 import FormCambiarPassword from './FormCambiarPassword';
 import { restablecerConLink } from '../services/cuenta';

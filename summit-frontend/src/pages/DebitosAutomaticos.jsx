@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router';
 import { Repeat, RefreshCw, AlertTriangle, Hourglass, Wallet, Search, Info } from 'lucide-react';
 import { apiFetch } from '../services/api';
 import { formatFecha, formatMoneda } from '../utils/formato';
 import { ESTADOS_DEBITO, textoMedioPago } from '../utils/constantes';
 
 const Kpi = ({ titulo, valor, detalle, icon: Icon, color }) => (
-  <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+  <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
     <div>
       <p className="text-sm font-medium text-slate-500 mb-1">{titulo}</p>
       <h3 className="text-2xl font-bold text-slate-800 tabular-nums">{valor}</h3>
@@ -97,7 +97,7 @@ const DebitosAutomaticos = () => {
           <p className="text-sm text-slate-500">Socios que pagan su plan solos cada mes con Mercado Pago</p>
         </div>
         <button onClick={sincronizar} disabled={!habilitado || sincronizando}
-          className="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm disabled:opacity-50">
+          className="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-xs disabled:opacity-50">
           <RefreshCw className={`w-4 h-4 ${sincronizando ? 'animate-spin' : ''}`} /> Sincronizar ahora
         </button>
       </div>
@@ -108,7 +108,7 @@ const DebitosAutomaticos = () => {
           <div>
             <p className="font-semibold">El débito automático todavía no está activado.</p>
             <p className="mt-1">Para activarlo, cargá la credencial de Mercado Pago del gimnasio (Access Token) en la variable de
-              entorno <code className="bg-white/70 px-1 rounded">MP_ACCESS_TOKEN</code> del servidor y reiniciá el backend.
+              entorno <code className="bg-white/70 px-1 rounded-sm">MP_ACCESS_TOKEN</code> del servidor y reiniciá el backend.
               Mientras tanto, los cobros siguen siendo presenciales en recepción.</p>
           </div>
         </div>
@@ -127,7 +127,7 @@ const DebitosAutomaticos = () => {
         <Kpi titulo="Con rechazo" valor={conRechazo} detalle={conRechazo ? 'Conviene avisarles' : 'Todo en orden'} icon={AlertTriangle} color="bg-rose-50 text-rose-600" />
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
         <div className="p-5 border-b border-slate-200 flex flex-col lg:flex-row justify-between lg:items-center gap-4">
           <div className="flex flex-wrap gap-1.5">
             {FILTROS.map(f => (
@@ -140,7 +140,7 @@ const DebitosAutomaticos = () => {
           <div className="relative lg:w-64">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar socio, DNI o plan..."
-              className="pl-9 pr-4 py-2 w-full border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100" />
+              className="pl-9 pr-4 py-2 w-full border border-slate-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-100" />
           </div>
         </div>
 

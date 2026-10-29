@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ScanLine, ShieldCheck, XCircle, UserX, DoorOpen, Camera, Snowflake, Wallet, CheckCircle2 } from 'lucide-react';
 import FotoSocio from './socios/FotoSocio';
 import CapturaFoto from './socios/CapturaFoto';
@@ -148,7 +148,7 @@ const ControlAcceso = ({ onIngreso }) => {
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+    <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
       <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center gap-3 justify-between">
         <div>
           <h2 className="font-bold text-slate-800 flex items-center gap-2">
@@ -165,7 +165,7 @@ const ControlAcceso = ({ onIngreso }) => {
             value={dni}
             onChange={(e) => setDni(e.target.value)}
             placeholder="DNI"
-            className="flex-1 md:w-64 text-lg font-bold tracking-widest px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-normal placeholder:tracking-normal"
+            className="flex-1 md:w-64 text-lg font-bold tracking-widest px-4 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl focus:outline-hidden focus:border-blue-500 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-normal placeholder:tracking-normal"
             autoComplete="off"
             disabled={loading}
           />
@@ -280,7 +280,7 @@ const ControlAcceso = ({ onIngreso }) => {
                   <input autoFocus value={excepcion.motivo} maxLength={200}
                     onChange={e => setExcepcion({ ...excepcion, motivo: e.target.value })}
                     placeholder="Ej.: pagó por transferencia y se acredita mañana"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-100" />
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-amber-100" />
                   <p className="text-xs text-slate-500">Queda registrado con tu nombre. Con el apto médico vencido no se puede.</p>
                   <div className="flex gap-2">
                     <button type="button" onClick={confirmarExcepcion} disabled={excepcion.enviando || excepcion.motivo.trim().length < 5}

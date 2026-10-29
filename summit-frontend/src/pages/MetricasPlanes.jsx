@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowUpRight, ArrowDownRight, Receipt, Ticket, UserCheck, Repeat, Hourglass } from 'lucide-react';
 import { apiFetch } from '../services/api';
 import { formatMoneda } from '../utils/formato';

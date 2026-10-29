@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Save, BadgePercent, Snowflake, Ticket, Plus, Pencil, Trash2, CheckCircle, AlertTriangle, Users } from 'lucide-react';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../components/Campo';
 import {
@@ -162,7 +162,7 @@ const DescuentosReglas = () => {
           <p className="text-sm text-slate-500">La matrícula, los congelamientos y los descuentos que recepción aplica al cobrar.</p>
         </div>
         <button onClick={guardar} disabled={guardando}
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors shadow-sm">
+          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors shadow-xs">
           <Save className="w-4 h-4" /> {guardando ? 'Guardando...' : 'Guardar reglas'}
         </button>
       </div>
@@ -233,7 +233,7 @@ const DescuentosReglas = () => {
                     onCancel={() => setEdicion(null)} procesando={procesando} error={errorDescuento} />
                 ) : (
                   <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex-1 min-w-[10rem]">
+                    <div className="flex-1 min-w-40">
                       <p className={`font-semibold ${d.activo ? 'text-slate-800' : 'text-slate-400'}`}>{d.nombre}</p>
                       <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
                         <Users className="w-3.5 h-3.5" />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { CreditCard, Tag, CalendarDays, Users, Plus, Search, Edit, Filter, Download, RefreshCw, Power, Save } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import Modal from '../components/Modal';
@@ -150,7 +150,7 @@ const Planes = () => {
           <p className="text-sm text-slate-500 mt-1">Gestión de planes y membresías</p>
         </div>
         {esAdmin && (
-          <button onClick={() => setModal({ plan: null })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm whitespace-nowrap">
+          <button onClick={() => setModal({ plan: null })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-xs whitespace-nowrap">
             <Plus className="w-4 h-4" /> Nuevo plan
           </button>
         )}
@@ -165,7 +165,7 @@ const Planes = () => {
       </div>
 
       {/* Barra de búsqueda */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
         <div className="flex flex-wrap gap-4 items-center">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -174,7 +174,7 @@ const Planes = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar planes..."
-              className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 transition-shadow"
+              className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-shadow"
             />
           </div>
           <Filter className="w-4 h-4 text-slate-400" />
@@ -189,7 +189,7 @@ const Planes = () => {
               type="checkbox"
               checked={showInactive}
               onChange={(e) => setShowInactive(e.target.checked)}
-              className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              className="rounded-sm border-slate-300 text-blue-600 focus:ring-blue-500"
             />
             Mostrar inactivos
           </label>
@@ -210,13 +210,13 @@ const Planes = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {planesFiltrados.map(plan => (
-            <div key={plan.idPlan} className={`bg-white border rounded-xl p-5 shadow-sm transition-colors ${plan.activo ? 'border-slate-200 hover:border-blue-300' : 'border-dashed border-slate-300 opacity-70'}`}>
+            <div key={plan.idPlan} className={`bg-white border rounded-xl p-5 shadow-xs transition-colors ${plan.activo ? 'border-slate-200 hover:border-blue-300' : 'border-dashed border-slate-300 opacity-70'}`}>
               <div className="flex items-start justify-between mb-3 gap-2">
                 <h3 className="font-bold text-slate-800">{plan.nombrePlan}</h3>
-                {!plan.activo && <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">INACTIVO</span>}
+                {!plan.activo && <span className="px-2 py-0.5 rounded-sm text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">INACTIVO</span>}
               </div>
 
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold border mb-3 ${plan.vecesPorSemana ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[11px] font-bold border mb-3 ${plan.vecesPorSemana ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
                 <CalendarDays className="w-3 h-3" /> {textoFrecuencia(plan.vecesPorSemana)}
               </span>
 

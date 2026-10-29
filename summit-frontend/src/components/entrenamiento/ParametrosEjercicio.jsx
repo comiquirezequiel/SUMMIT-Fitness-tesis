@@ -1,4 +1,3 @@
-import React from 'react';
 import Campo, { inputClass } from '../Campo';
 import Contador from './Contador';
 import { formatDescanso } from './comun';

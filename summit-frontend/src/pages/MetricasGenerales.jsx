@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { LogIn, Users, Repeat, UserCheck, UserPlus, UserMinus, Sparkles } from 'lucide-react';
 import { apiFetch } from '../services/api';
 import {
@@ -86,7 +86,7 @@ const MetricasGenerales = () => {
           </div>
 
           {hayVisitas && (
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-white border border-blue-100 text-sm text-slate-700">
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-linear-to-r from-blue-50 to-white border border-blue-100 text-sm text-slate-700">
               <Sparkles className="w-5 h-5 text-blue-500 shrink-0" />
               <p>
                 En promedio vienen <b>{decimal(ind.promedioDiario.valor)} personas por día</b>.

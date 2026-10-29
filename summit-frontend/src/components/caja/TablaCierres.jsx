@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import Paginador from './Paginador';
 import { TablaMetodos, textoDiferencia } from './CierreCajaModal';
@@ -46,7 +46,7 @@ const TablaCierres = ({ version }) => {
               const dif = textoDiferencia(c.diferencia);
               const estaAbierto = abierto === c.idCierre;
               return (
-                <React.Fragment key={c.idCierre}>
+                <Fragment key={c.idCierre}>
                   <tr className="hover:bg-slate-50/50 cursor-pointer" onClick={() => setAbierto(estaAbierto ? null : c.idCierre)}>
                     <td className="px-6 py-4">
                       <div className="font-medium text-slate-800 whitespace-nowrap">{formatFechaHora(c.hasta)}</div>
@@ -80,7 +80,7 @@ const TablaCierres = ({ version }) => {
                       </td>
                     </tr>
                   )}
-                </React.Fragment>
+                </Fragment>
               );
             })}
           </tbody>

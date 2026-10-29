@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ejerciciosAEvitar } from '../../services/ia';
 import { useEstadoIa, BotonIa, AvisoIaNoDisponible } from './AsistenteIa';
 
@@ -65,7 +65,7 @@ const SugerenciasEjercicios = ({ idSocio, onSugerencias }) => {
                 <li key={e.idEjercicio} className="p-2 rounded-lg border border-slate-200 bg-white">
                   <div className="flex items-start justify-between gap-2">
                     <span className="font-semibold text-slate-800">{e.nombre}</span>
-                    <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded border ${ORIGEN[e.origen]?.clase}`}>
+                    <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-sm border ${ORIGEN[e.origen]?.clase}`}>
                       {ORIGEN[e.origen]?.texto}
                     </span>
                   </div>

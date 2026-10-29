@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { AlertTriangle, CalendarX, Clock, CheckCircle2, UserX, Wallet, Phone, Snowflake } from 'lucide-react';
 import CobroModal from '../components/socios/CobroModal';
 import { apiFetch } from '../services/api';
@@ -53,7 +53,7 @@ const EstadoMembresias = () => {
 
   const getTabColors = (tab, isActive) => {
     const theme = COLORES[tab.color];
-    if (isActive) return `${theme.activeBg} ${theme.activeBorder} ${theme.text} shadow-sm`;
+    if (isActive) return `${theme.activeBg} ${theme.activeBorder} ${theme.text} shadow-xs`;
     return `bg-white ${theme.border} text-slate-500 hover:bg-slate-50 opacity-70`;
   };
 
@@ -69,7 +69,7 @@ const EstadoMembresias = () => {
 
       {error && <div className="p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>}
 
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs">
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
           {TABS.map(tab => {
             const Icon = tab.icon;
