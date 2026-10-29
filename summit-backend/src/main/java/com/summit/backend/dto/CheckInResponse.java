@@ -1,0 +1,63 @@
+package com.summit.backend.dto;
+
+import lombok.*;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Resultado de un intento de ingreso: es lo que ve el recepcionista en su monitor.
+ */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class CheckInResponse {
+
+    private boolean permitido;
+    private String resultado;   // "PERMITIDO", "DENEGADO_CUOTA_VENCIDA", etc. (el primer motivo de rechazo)
+    private String mensaje;     // Mensaje legible para el usuario
+    private String fechaHora;
+    private String nombreSocio;
+
+    // --- Ficha que se muestra en recepción ---
+    private Long idUsuario;
+    private Long fotoVersion; // null si no tiene foto: recepción la puede sacar en ese momento
+    private String dni;
+    private String rol;
+    private String plan;
+
+    @Builder.Default
+    private List<String> faltas = new ArrayList<>();  // motivos que bloquean el ingreso
+    @Builder.Default
+    private List<String> avisos = new ArrayList<>();  // advertencias que no bloquean
+
+    // Días de la semana (lunes a domingo). Permitidos null = pase libre
+    private Integer diasSemanaPermitidos;
+    private Integer diasSemanaUsados;
+    private Integer diasSemanaRestantes;
+
+    // Vencimientos: los "días para vencer" son negativos si ya venció
+    private LocalDate vencimientoCuota;
+    private Long diasParaVencerCuota;
+    private LocalDate vencimientoApto;
+    private Long diasParaVencerApto;
+    // true si recepción puede dejarlo pasar por excepción (solo cuota vencida o límite semanal; nunca el apto médico)
+    private boolean excepcionPosible;
+
+    // Congelamiento que rige hoy (null si no tiene): si volvió antes, recepción lo termina desde la ficha
+    private Long idCongelamiento;
+    private LocalDate congeladaHasta;
+
+    // --- Personal del gimnasio: cada paso por recepción es su entrada o su salida (AsistenciaPersonalService) ---
+    private String fichada;             // "ENTRADA" o "SALIDA" (null en los socios)
+    private Long idTurno;               // el turno que abrió o cerró
+    private LocalDateTime entradaTurno; // en una salida: a qué hora había entrado
+    private Long minutosTrabajados;     // en una salida: cuánto duró el turno
+    private boolean fichadaRepetida;    // el mismo DNI otra vez enseguida: no se registró nada nuevo
+    // Recepción puede corregir en el momento un paso que el sistema tomó al revés ("Es una entrada" / "Es una salida")
+    private boolean inversionPosible;
+}

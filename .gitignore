@@ -1,0 +1,30 @@
+# Dependencias y compilados
+node_modules/
+dist/
+target/
+
+# Logs
+*.log
+
+# Archivos subidos por usuarios (certificados médicos: datos de salud, Ley 25.326)
+uploads*/
+
+# Entorno local
+.env
+.env.*
+!.env.example
+# Configuración privada del backend (contraseñas y clave de los tokens): cada PC tiene la suya
+application-local.properties
+
+# Editores / SO
+.idea/
+.DS_Store
+Thumbs.db
+
+# Certificado de ARCA y su clave privada (factura electrónica): nunca al repositorio
+*.p12
+*.pfx
+*.key
+*.csr
+*.crt
+*.pem

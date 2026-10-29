@@ -1,0 +1,58 @@
+# Configuración privada de cada PC: contraseñas y clave de los tokens.
+#
+# Este archivo es solo el ejemplo. El de verdad se llama application-local.properties, va en esta misma
+# carpeta y NO se sube al repositorio (está en .gitignore). Para crearlo, desde la carpeta summit:
+#
+#   Copy-Item summit-backend\src\main\resources\application-local.properties.example summit-backend\src\main\resources\application-local.properties
+#
+# Después completá los valores de abajo. application.properties lo carga solo al arrancar el backend.
+# Cada valor también se puede dar como variable de entorno con el mismo nombre (por ejemplo, en un
+# servidor): la variable de entorno tiene prioridad sobre este archivo.
+
+# Usuario y contraseña de MySQL (los que elegiste al instalarlo).
+DB_USERNAME=root
+DB_PASSWORD=
+
+# Clave con la que el backend firma los tokens de sesión: al azar y de 48 caracteres o más.
+# Generá una en PowerShell con este comando y pegá el resultado:
+#   $b = [byte[]]::new(64); [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)
+# Si la cambiás, las sesiones abiertas dejan de valer y hay que volver a entrar.
+JWT_SECRET=
+
+# Contraseña del administrador inicial (admin@summit.com). Solo se usa cuando la base no tiene ningún
+# administrador, es decir, la primera vez que arranca con una base vacía. Si queda vacía, no se crea.
+# Al entrar por primera vez, el sistema pide cambiarla.
+ADMIN_PASSWORD=
+
+# "¿Olvidaste tu contraseña?" por email (opcional): el correo desde el que salen los mails. Vacío = el login no
+# ofrece la opción y la contraseña la restablece recepción o el admin.
+# Con Gmail: MAIL_HOST=smtp.gmail.com y, en MAIL_PASSWORD, una "contraseña de aplicación" (Cuenta de Google >
+# Seguridad > Verificación en 2 pasos > Contraseñas de aplicaciones), nunca la contraseña de la cuenta.
+MAIL_HOST=
+MAIL_PORT=587
+MAIL_USERNAME=
+MAIL_PASSWORD=
+# Dirección con la que se entra al panel (por ejemplo https://summit.local).
+# Es la del link que llega por mail: sin ella tampoco se ofrece la opción.
+APP_URL=
+
+# Débito automático con Mercado Pago (opcional): credencial privada de la cuenta del gimnasio.
+# Vacía = débito automático apagado; el resto del sistema funciona igual.
+MP_ACCESS_TOKEN=
+
+# Cobro con tarjeta en recepción (opcional): MP_TARJETA=SIMULADOR para probarlo sin cuenta, o MERCADO_PAGO con la
+# clave pública de la misma cuenta (Mercado Pago Developers > Tus integraciones > Credenciales). Con credenciales de
+# prueba (TEST-...) se cobra con las tarjetas de prueba de Mercado Pago.
+MP_TARJETA=APAGADO
+MP_PUBLIC_KEY=
+
+# Factura electrónica de ARCA (opcional, ver FACTURACION.md). ARCA_HABILITADA=true la prende.
+# ARCA_AMBIENTE: SIMULADOR (para probar y mostrar sin certificado: las facturas no valen nada), HOMOLOGACION (el
+# ambiente de pruebas de ARCA) o PRODUCCION (facturas reales).
+ARCA_HABILITADA=false
+ARCA_AMBIENTE=SIMULADOR
+# El archivo .p12 con el certificado de ARCA y su clave privada (guardalo fuera de esta carpeta) y su contraseña.
+# Escribí la ruta con barras /, por ejemplo C:/ProgramData/Summit/arca/summit-arca.p12 (en este archivo la barra
+# invertida no se puede usar sola). En el simulador no hacen falta.
+ARCA_CERTIFICADO=
+ARCA_CERTIFICADO_PASSWORD=

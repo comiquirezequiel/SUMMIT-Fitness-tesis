@@ -1,0 +1,83 @@
+{
+  "properties": [
+    {
+      "name": "jwt.secret",
+      "type": "java.lang.String",
+      "description": "Clave con la que se firman los tokens JWT de inicio de sesión."
+    },
+    {
+      "name": "jwt.expiration",
+      "type": "java.lang.Long",
+      "description": "Duración de un token JWT, en milisegundos."
+    },
+    {
+      "name": "summit.cors.origins",
+      "type": "java.util.List<java.lang.String>",
+      "description": "Orígenes que pueden llamar a la API desde el navegador (separados por coma)."
+    },
+    {
+      "name": "summit.uploads.dir",
+      "type": "java.lang.String",
+      "description": "Carpeta donde se guardan los archivos subidos (certificados médicos)."
+    },
+    {
+      "name": "summit.ia.habilitada",
+      "type": "java.lang.Boolean",
+      "description": "Interruptor general del asistente de IA local (Ollama).",
+      "defaultValue": true
+    },
+    {
+      "name": "summit.ia.url",
+      "type": "java.lang.String",
+      "description": "Dirección donde escucha Ollama."
+    },
+    {
+      "name": "summit.ia.modelo",
+      "type": "java.lang.String",
+      "description": "Modelo de Ollama que usa el asistente de IA."
+    },
+    {
+      "name": "summit.ia.timeout-segundos",
+      "type": "java.lang.Long",
+      "description": "Espera máxima de una respuesta de Ollama, en segundos.",
+      "defaultValue": 180
+    },
+    {
+      "name": "summit.seed.admin.email",
+      "type": "java.lang.String",
+      "description": "Email del admin inicial que crea DataSeeder si no existe ningún ADMIN."
+    },
+    {
+      "name": "summit.seed.admin.password",
+      "type": "java.lang.String",
+      "description": "Contraseña del admin inicial que crea DataSeeder."
+    },
+    {
+      "name": "summit.seed.admin.dni",
+      "type": "java.lang.String",
+      "description": "DNI del admin inicial que crea DataSeeder."
+    },
+    {
+      "name": "summit.pagos.mp.access-token",
+      "type": "java.lang.String",
+      "description": "Credencial privada de Mercado Pago del gimnasio. Vacía = débito automático apagado."
+    },
+    {
+      "name": "summit.pagos.mp.url",
+      "type": "java.lang.String",
+      "description": "URL base de la API de Mercado Pago.",
+      "defaultValue": "https://api.mercadopago.com"
+    },
+    {
+      "name": "summit.pagos.mp.back-url",
+      "type": "java.lang.String",
+      "description": "Adónde vuelve el socio después de autorizar el débito en Mercado Pago (https).",
+      "defaultValue": "https://www.mercadopago.com.ar"
+    },
+    {
+      "name": "summit.pagos.mp.sincronizar-ms",
+      "type": "java.lang.Long",
+      "description": "Cada cuánto se consulta a Mercado Pago si hubo cobros nuevos, en milisegundos."
+    }
+  ]
+}
