@@ -75,7 +75,7 @@ function New-SummitConfigBase {
         ServicioBackend       = 'SUMMIT-Backend'
         ServicioWeb           = 'SUMMIT-Web'
         UrlBackend            = 'http://127.0.0.1:8080'
-        UrlWeb                = 'http://localhost'
+        UrlWeb                = 'https://localhost'
         TareaCopia            = 'SUMMIT - Copia de seguridad'
         UrlOllama             = 'http://127.0.0.1:11434'
         ModeloIa              = 'gemma4:12b'
@@ -724,8 +724,15 @@ function Copy-SummitWeb {
 }
 
 # ¿Responde una dirección? Cualquier respuesta HTTP (también 401 o 404) quiere decir que el programa está andando.
+# IPv4 de esta PC en la red (sin la de loopback ni la que Windows se pone sola cuando no hay red)
+function Get-SummitIps {
+    return @([Net.Dns]::GetHostAddresses($env:COMPUTERNAME) | Where-Object { $_.AddressFamily -eq 'InterNetwork' -and -not $_.ToString().StartsWith('127.') -and -not $_.ToString().StartsWith('169.254.') } | ForEach-Object { $_.ToString() })
+}
+
 function Get-SummitRespuestaHttp {
     param([Parameter(Mandatory)][string]$Url, [int]$Segundos = 5)
+    # Caddy pide TLS 1.2 o más nuevo: en Windows PowerShell 5.1 hay que habilitarlo por si la PC no lo tiene por defecto
+    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
     try {
         $r = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec $Segundos -MaximumRedirection 0
         return [pscustomobject]@{ Responde = $true; Estado = [int]$r.StatusCode; Contenido = [string]$r.Content; Encabezados = $r.Headers; Error = $null }

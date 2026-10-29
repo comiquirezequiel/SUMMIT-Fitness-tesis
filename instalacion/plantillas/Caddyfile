@@ -10,9 +10,10 @@
 	# Sin panel de administración ni copia automática de la configuración: los cambios se aplican reiniciando el servicio
 	admin off
 	persist_config off
-	# Dónde guarda Caddy sus certificados (solo se usan con https en la red local, ver al final)
+	# Dónde guarda Caddy sus certificados de https (y la clave privada de su autoridad de certificados)
 	storage file_system {$SUMMIT_CADDY_DATOS:C:/SUMMIT/caddy/datos}
-	# El certificado raíz de Caddy se instala a mano en cada PC que lo necesite (INSTALACION.md): Caddy no lo intenta
+	# El certificado raíz de Caddy lo instala instalar-servicios.ps1 en esta PC, y a mano cada PC de recepción
+	# (INSTALACION.md, paso 8): Caddy no lo intenta
 	skip_install_trust
 	servers {
 		# Solo se acepta la IP real que informa otro programa de esta misma PC
@@ -61,15 +62,17 @@
 	}
 }
 
-# Red del gimnasio, sin certificados: http://IP-DE-ESTA-PC desde las otras PC y http://localhost en esta
-{$SUMMIT_SITIO::80} {
+# Red del gimnasio, siempre con https: las contraseñas y las sesiones viajan cifradas por la red (un socio conectado al
+# WiFi no puede leerlas). preparar-pc.ps1 pone acá las direcciones de esta PC (localhost, su nombre y su IP fija); si la
+# IP cambia, agregala a la lista separada por coma (https://192.168.1.50) y reiniciá SUMMIT-Web.
+# tls internal: Caddy crea su propia autoridad de certificados y renueva solo los certificados. Quien entre por
+# http://... pasa solo a https://... (Caddy escucha en el puerto 80 únicamente para eso).
+{$SUMMIT_SITIO:https://localhost} {
+	tls internal
 	import summit
 }
 
-# Opcional: https en la red local, que hace falta para usar la cámara desde las otras PC de recepción. Reemplazá
-# 192.168.1.50 por la IP fija de esta PC, sacá los # de las 4 líneas y reiniciá SUMMIT-Web. Después instalá el
-# certificado raíz de Caddy en cada PC de recepción (INSTALACION.md, apéndice "https en la red local").
-#https://192.168.1.50 {
-#	tls internal
+# Sin https (no recomendado: las contraseñas viajan sin cifrar por la red): reemplazá el bloque de arriba por este.
+#{$SUMMIT_SITIO::80} {
 #	import summit
 #}

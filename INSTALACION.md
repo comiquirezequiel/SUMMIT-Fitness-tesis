@@ -19,19 +19,21 @@ queda en uso.
 | Ollama (opcional) | El asistente de IA que lee certificados | Al iniciar sesión |
 
 ```
-PC de recepción ──> http://IP-DE-LA-PC ──> SUMMIT-Web (Caddy, puerto 80) ──/api──> SUMMIT-Backend (solo en esta PC)
-                                                   │                                   ├──> MySQL (solo en esta PC)
-                                                   └── la app (C:\SUMMIT\web)          └──> C:\SUMMIT\datos\uploads
+PC de recepción ──> https://IP-DE-LA-PC ──> SUMMIT-Web (Caddy, puerto 443) ──/api──> SUMMIT-Backend (solo en esta PC)
+                                                    │                                    ├──> MySQL (solo en esta PC)
+                                                    └── la app (C:\SUMMIT\web)           └──> C:\SUMMIT\datos\uploads
 ```
 
-Todo queda en la carpeta `C:\SUMMIT`. Los datos de salud no salen de la PC sin cifrar (Ley 25.326).
+Todo queda en la carpeta `C:\SUMMIT`. Los datos de salud no salen de la PC sin cifrar (Ley 25.326), y entre las PC de
+recepción y SUMMIT todo viaja con **https**: nadie conectado a la red del gimnasio (por ejemplo, al WiFi) puede leer
+las contraseñas, las sesiones ni los datos de los socios.
 
 ## Antes de empezar
 
 - **La PC.** Windows 10 u 11 de 64 bits, con disco SSD y 50 GB libres. 8 GB de RAM alcanzan sin el asistente de IA;
   con IA hacen falta 16 GB. Ideal: una PC dedicada que quede prendida todo el día, con una UPS para los cortes de luz.
 - **Una IP fija en la red.** Las otras PC van a entrar escribiendo la dirección de esta (por ejemplo
-  `http://192.168.1.50`), así que no tiene que cambiar. Se configura en el router como "reserva de DHCP" (o "IP
+  `https://192.168.1.50`), así que no tiene que cambiar (el certificado de https se hace para esa IP). Se configura en el router como "reserva de DHCP" (o "IP
   estática"): si no sabés hacerlo, pedíselo a quien instaló internet. Para ver la IP actual: `ipconfig`, línea
   "Dirección IPv4".
 - **Un usuario de Windows administrador** y conexión a internet (para descargar los programas).
@@ -145,9 +147,10 @@ La primera vez tarda unos minutos porque descarga lo que necesita. Termina con `
 ```
 
 Descarga Shawl y Caddy (versiones fijas, verificadas), crea los servicios SUMMIT-Backend y SUMMIT-Web, los arranca y
-espera a que respondan. Al final muestra las direcciones para entrar.
+espera a que respondan. También instala en esta PC el certificado de https que crea Caddy y deja una copia en
+`C:\SUMMIT\certificado-summit.crt`, para las PC de recepción. Al final muestra las direcciones para entrar.
 
-Abrí **http://localhost** en el navegador de esta PC y entrá con `admin@summit.com` y la contraseña inicial del paso
+Abrí **https://localhost** en el navegador de esta PC y entrá con `admin@summit.com` y la contraseña inicial del paso
 3. SUMMIT te pide elegir una contraseña propia: anotala en un lugar seguro. Desde ahora, SUMMIT arranca solo cada vez
 que se prende la PC (tarda un minuto más que Windows).
 
@@ -159,19 +162,27 @@ que se prende la PC (tarda un minuto más que Windows).
    administrador:
 
    ```powershell
-   New-NetFirewallRule -DisplayName 'SUMMIT - app (red del gimnasio)' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 80 -Profile Private -RemoteAddress LocalSubnet
+   New-NetFirewallRule -DisplayName 'SUMMIT - app (red del gimnasio)' -Direction Inbound -Action Allow -Protocol TCP -LocalPort 80,443 -Profile Private -RemoteAddress LocalSubnet
    ```
 
-   Es la única que hace falta: MySQL (3306) y el backend (8080) no se abren nunca.
-3. **En cada PC de recepción**, abrí el navegador en `http://IP-DE-LA-PC` (la IP fija del paso "Antes de empezar",
-   por ejemplo `http://192.168.1.50`) y guardala en favoritos. Muchas redes también aceptan el nombre de la PC
-   (`http://nombre-de-la-pc`), pero la IP no falla nunca.
+   Es la única que hace falta (el 443 es https; el 80 solo pasa a https a quien entre por http): MySQL (3306) y el
+   backend (8080) no se abren nunca.
+3. **En cada PC de recepción, instalar el certificado de SUMMIT** (una sola vez). Llevá `C:\SUMMIT\certificado-summit.crt`
+   en un pendrive (es público: no tiene ninguna clave) y, en PowerShell como administrador de esa PC, parado en la
+   carpeta del pendrive:
 
-No hay que tocar `summit.cors.origins`: la app y la API llegan por la misma dirección (la de Caddy).
+   ```powershell
+   certutil -addstore -f Root certificado-summit.crt
+   ```
 
-**La cámara** (la foto del socio) funciona en esta PC (`http://localhost`), pero los navegadores no la dejan usar
-desde otra PC por `http`. En las PC de recepción se puede subir una foto desde un archivo, o activar https en la red
-(apéndice, [https en la red local](#h-https-en-la-red-local)).
+   Así el navegador confía en el https de SUMMIT. Sin este paso, muestra "La conexión no es privada".
+4. **En cada PC de recepción**, abrí el navegador en `https://IP-DE-LA-PC` (la IP fija del paso "Antes de empezar",
+   por ejemplo `https://192.168.1.50`) y guardala en favoritos. También sirve el nombre de la PC
+   (`https://nombre-de-la-pc`), si la red lo reconoce.
+
+No hay que tocar `summit.cors.origins`: la app y la API llegan por la misma dirección (la de Caddy). Con https también
+funcionan la cámara (la foto del socio) y el cobro con tarjeta de Mercado Pago, que los navegadores solo permiten con
+https. Más detalles en el apéndice [https en la red local](#h-https-en-la-red-local).
 
 ## Paso 9: copias de seguridad automáticas
 
@@ -323,7 +334,8 @@ El administrador y los usuarios de SUMMIT vuelven con la copia, con sus contrase
 | `doctor.cmd` dice que MySQL está detenido | `services.msc` > `MySQL84` > *Iniciar*. Si no arranca, *Visor de eventos* > *Registros de Windows* > *Aplicación* dice por qué |
 | El backend no responde | Mirá el final de `C:\SUMMIT\logs\summit-backend_rCURRENT.log`. Si dice `Access denied for user 'summit_app'`, corré `.\crear-usuarios-mysql.ps1 -Solo App` y reiniciá el servicio SUMMIT-Backend |
 | Las otras PC no entran | Revisá que la red sea *Privada* y que exista la regla del firewall (paso 8). Si cambió la IP de la PC, falta la reserva en el router |
-| `instalar-servicios.ps1` dice que el puerto 80 está en uso | Otro programa usa ese puerto: el mensaje explica cómo usar otro (por ejemplo 8000) |
+| `instalar-servicios.ps1` dice que el puerto 443 o el 80 está en uso | Otro programa usa ese puerto (por ejemplo IIS, Skype viejo u otro servidor web): cerralo o desinstalalo y volvé a correr el script |
+| Las PC de recepción muestran "La conexión no es privada" | Falta instalar el certificado de SUMMIT en esa PC (paso 8.3), o se entró por una dirección que no está en el `Caddyfile` (apéndice H) |
 | Se actualizó Java y SUMMIT no arranca | Corré de nuevo `.\instalar-servicios.ps1` (toma el Java nuevo) |
 | La copia dice que el destino externo no está disponible | Conectá el disco USB (o abrí OneDrive / Google Drive). La copia de la PC se hizo igual |
 | La copia falla con "no tengo permiso para leer" | Corrélo como administrador (o con `copia-ahora.cmd`) |
@@ -341,11 +353,11 @@ El administrador y los usuarios de SUMMIT vuelven con la copia, con sus contrase
 |---|---|---|---|
 | MySQL 8.4 | `127.0.0.1:3306` (`bind-address`) | `NT AUTHORITY\NetworkService` (instalador) | Visor de eventos |
 | SUMMIT-Backend | `127.0.0.1:8080` (`server.address`) | `NT SERVICE\SUMMIT-Backend` (cuenta virtual) | `logs\summit-backend_rCURRENT.log` (diario, 30 días) |
-| SUMMIT-Web (Caddy 2.11.7) | `:80` en todas las interfaces | `NT SERVICE\SUMMIT-Web` (cuenta virtual) | `logs\summit-web_rCURRENT.log` |
+| SUMMIT-Web (Caddy 2.11.7) | `:443` (https) y `:80` (solo redirige a https) en todas las interfaces | `NT SERVICE\SUMMIT-Web` (cuenta virtual) | `logs\summit-web_rCURRENT.log` |
 | Copia diaria | — | `SYSTEM` (tarea `\SUMMIT\SUMMIT - Copia de seguridad`) | `logs\copias.log`, `copias\estado-copias.json` |
 | Ollama (opcional) | `127.0.0.1:11434` | el usuario que inició sesión | — |
 
-Solo el puerto 80 (y el 443 si se activa https) se abre en el firewall, y solo para la subred local con perfil
+Solo los puertos 443 y 80 se abren en el firewall, y solo para la subred local con perfil
 privado. El backend no es accesible desde la red: todo pasa por Caddy, que además es el único proxy en el que confía el
 backend para tomar la IP real del cliente (`X-Forwarded-For`, que usa el limitador de pedidos).
 
@@ -503,23 +515,38 @@ respuestas de `/api` conservan el `Cache-Control: no-store` de Spring Security.
 
 ### H. https en la red local
 
-Hace falta para usar la cámara desde las PC de recepción (los navegadores solo la permiten en `localhost` o con
-https) y para cobrar con tarjeta por Mercado Pago de verdad (su formulario solo funciona con https). En `C:\SUMMIT\caddy\Caddyfile`, al final, cambiá `192.168.1.50` por la IP fija de la PC, sacá los `#` de esas
-cuatro líneas y reiniciá SUMMIT-Web. Caddy crea su propia autoridad de certificados; su certificado raíz queda en
-`C:\SUMMIT\caddy\datos\pki\authorities\local\root.crt`. Copialo a cada PC de recepción y, en PowerShell como
-administrador de esa PC:
+SUMMIT se instala **con https por defecto**. Sin https, la contraseña de quien entra y el token de su sesión viajan
+sin cifrar por la red: cualquiera conectado a ella (por ejemplo, al WiFi del gimnasio) podría leerlos con un programa
+como Wireshark y entrar al panel con esa sesión. Además, los navegadores solo permiten la cámara y el formulario de
+tarjeta de Mercado Pago en `localhost` o con https.
 
-```powershell
-certutil -addstore -f Root root.crt
-```
+Cómo queda armado:
 
-Después entrá con `https://IP-DE-LA-PC`. En la PC de SUMMIT, sumá el puerto 443 a la regla del firewall:
+- **Certificados.** El sitio del `Caddyfile` usa `tls internal`: Caddy crea su propia autoridad de certificados (la
+  raíz y su clave privada quedan en `C:\SUMMIT\caddy\datos\pki`, carpeta privada) y firma con ella un certificado para
+  cada dirección de la lista, que renueva solo. `preparar-pc.ps1` arma la lista con `localhost`, el nombre de la PC y
+  sus IP. Si la IP cambia, agregala en `C:\SUMMIT\caddy\Caddyfile` (`https://localhost, https://nombre-pc, https://IP-NUEVA`)
+  y reiniciá SUMMIT-Web.
+- **Confianza.** `instalar-servicios.ps1` instala el certificado raíz (`root.crt`, el público) en *Entidades de
+  certificación raíz de confianza* de esta PC y lo copia a `C:\SUMMIT\certificado-summit.crt`; en cada PC de recepción
+  se instala con `certutil` (paso 8).
+- **http.** Caddy escucha en el puerto 80 solo para mandar a `https://` a quien entre por `http://`.
+
+**Una instalación hecha antes, sin https**, se pasa así: en `C:\SUMMIT\caddy\Caddyfile` reemplazá el bloque
+`{$SUMMIT_SITIO::80} { import summit }` por el de la plantilla (`instalacion\plantillas\Caddyfile`), con las
+direcciones de la PC; en `C:\SUMMIT\config\summit.psd1` poné `UrlWeb = 'https://localhost'`; corré
+`instalar-servicios.ps1` de nuevo y sumá el 443 a la regla del firewall:
 
 ```powershell
 Set-NetFirewallRule -DisplayName 'SUMMIT - app (red del gimnasio)' -LocalPort 80,443
 ```
 
-Chrome y Edge usan el almacén de Windows; Firefox también, en Windows, mientras `security.enterprise_roots.enabled`
+Después, el paso 8.3 en cada PC de recepción.
+
+**Sin https** (no recomendado): en el `Caddyfile`, usá el bloque comentado del final en lugar del de https, y en
+`summit.psd1` poné `UrlWeb = 'http://localhost'`.
+
+Navegadores: Chrome y Edge usan el almacén de Windows; Firefox también, en Windows, mientras `security.enterprise_roots.enabled`
 esté activo. La raíz dura 10 años; los certificados que firma los renueva Caddy solo. Probado con OpenSSL: con la raíz
 de Caddy instalada, la cadena verifica sin advertencias.
 

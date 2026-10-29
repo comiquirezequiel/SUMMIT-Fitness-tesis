@@ -110,6 +110,9 @@ try {
     if (-not (Test-Path -LiteralPath $rutaCaddyfile)) {
         $texto = [IO.File]::ReadAllText((Join-Path $PSScriptRoot 'plantillas\Caddyfile'), [Text.Encoding]::UTF8)
         $texto = $texto.Replace('C:/SUMMIT', $Raiz.Replace('\', '/'))
+        # https para localhost, el nombre de la PC y sus IP: Caddy hace un certificado para cada dirección
+        $sitios = @('localhost', $env:COMPUTERNAME.ToLowerInvariant()) + @(Get-SummitIps) | ForEach-Object { "https://$_" }
+        $texto = $texto.Replace('{$SUMMIT_SITIO:https://localhost}', ($sitios -join ', '))
         [IO.File]::WriteAllText($rutaCaddyfile, $texto, (New-Object System.Text.UTF8Encoding($false)))
         Write-Host "Creado $rutaCaddyfile." -ForegroundColor Green
     } else {

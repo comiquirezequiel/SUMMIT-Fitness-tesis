@@ -181,16 +181,22 @@ try {
     if ($validacion.Codigo -ne 0) { throw "El Caddyfile tiene un error: $((Get-SummitLineas $validacion.Errores | Select-Object -Last 2) -join ' ')" }
     Write-Host 'Caddyfile válido.'
 
-    # El puerto de la app tiene que estar libre (o ser del propio SUMMIT-Web, si se está reinstalando)
-    $puertoWeb = 80
+    # Los puertos de la app tienen que estar libres (o ser del propio SUMMIT-Web, si se está reinstalando). Con https,
+    # Caddy usa el 443 y el 80 (para pasar a https a quien entre por http)
+    $conHttps = $cfg.UrlWeb -like 'https:*'
+    $puertoWeb = if ($conHttps) { 443 } else { 80 }
     if ($cfg.UrlWeb -match ':(\d+)/?$') { $puertoWeb = [int]$Matches[1] }
-    $ocupado = @(netstat -ano 2>$null | Select-String -Pattern "^\s*TCP\s+\S+:$puertoWeb\s+\S+\s+(LISTENING|ESCUCHANDO)\s+(\d+)" | ForEach-Object { [int]$_.Matches[0].Groups[2].Value }) | Select-Object -Unique
+    $puertos = @($puertoWeb)
+    if ($conHttps) { $puertos = @($puertoWeb, 80) | Select-Object -Unique }
     $servicioWebActual = Get-CimInstance -ClassName Win32_Service -Filter "Name='$nombreWeb'" -ErrorAction SilentlyContinue
-    $ocupado = @($ocupado | Where-Object { -not $servicioWebActual -or $_ -ne $servicioWebActual.ProcessId })
-    if ($ocupado.Count -gt 0) {
-        $quien = (Get-Process -Id $ocupado[0] -ErrorAction SilentlyContinue).ProcessName
-        if ($ocupado[0] -eq 4) { $quien = 'Windows (IIS u otro servicio web de Windows)' }
-        throw "El puerto $puertoWeb ya lo usa otro programa ($quien). Cambiá el puerto en $caddyfile ({`$SUMMIT_SITIO::$puertoWeb} -> {`$SUMMIT_SITIO::8000}, por ejemplo) y UrlWeb en $($cfg.RutaConfig)."
+    foreach ($puerto in $puertos) {
+        $ocupado = @(netstat -ano 2>$null | Select-String -Pattern "^\s*TCP\s+\S+:$puerto\s+\S+\s+(LISTENING|ESCUCHANDO)\s+(\d+)" | ForEach-Object { [int]$_.Matches[0].Groups[2].Value }) | Select-Object -Unique
+        $ocupado = @($ocupado | Where-Object { -not $servicioWebActual -or $_ -ne $servicioWebActual.ProcessId })
+        if ($ocupado.Count -gt 0) {
+            $quien = (Get-Process -Id $ocupado[0] -ErrorAction SilentlyContinue).ProcessName
+            if ($ocupado[0] -eq 4) { $quien = 'Windows (IIS u otro servicio web de Windows)' }
+            throw "El puerto $puerto ya lo usa otro programa ($quien). Cerralo o desinstalalo: SUMMIT necesita los puertos $($puertos -join ' y ')."
+        }
     }
 
     # --- Servicios (si ya existían, se reinstalan con la configuración actual)
@@ -261,16 +267,31 @@ try {
     Start-Service -Name $nombreWeb
     Write-Host 'Esperando que el backend termine de arrancar (hasta 3 minutos)...'
     $backendBien = Wait-SummitUrl -Url ($cfg.UrlBackend.TrimEnd('/') + '/api/planes') -Segundos 180 -Estados @(200, 401, 403)
+    $certificadoRecepcion = $null
+    if ($conHttps) {
+        # Caddy crea su autoridad de certificados al arrancar. Su certificado raíz (el público, no la clave) se instala
+        # en esta PC, para que el navegador y los chequeos confíen en https://localhost, y se deja a mano para las PC
+        # de recepción (INSTALACION.md, paso 8)
+        $raizCaddy = Join-Path $carpetaCaddy 'datos\pki\authorities\local\root.crt'
+        $limite = (Get-Date).AddSeconds(30)
+        while (-not (Test-Path -LiteralPath $raizCaddy) -and (Get-Date) -lt $limite) { Start-Sleep -Seconds 1 }
+        if (-not (Test-Path -LiteralPath $raizCaddy)) { throw "Caddy no creó su certificado raíz ($raizCaddy). Mirá $carpetaLogs\summit-web_rCURRENT.log." }
+        [void](Import-Certificate -FilePath $raizCaddy -CertStoreLocation 'Cert:\LocalMachine\Root')
+        $certificadoRecepcion = Join-Path $raiz 'certificado-summit.crt'
+        Copy-Item -LiteralPath $raizCaddy -Destination $certificadoRecepcion -Force
+        Write-Host 'Certificado de https instalado en esta PC.' -ForegroundColor Green
+    }
     $webBien = Wait-SummitUrl -Url ($cfg.UrlWeb.TrimEnd('/') + '/') -Segundos 30 -Estados @(200)
     if (-not $backendBien) { throw "El backend no respondió. Mirá $carpetaLogs\summit-backend_rCURRENT.log (las últimas líneas dicen por qué)." }
     if (-not $webBien) { throw "La app no respondió en $($cfg.UrlWeb). Mirá $carpetaLogs\summit-web_rCURRENT.log." }
     Write-Host 'SUMMIT está funcionando.' -ForegroundColor Green
     Write-Host "  En esta PC:          $($cfg.UrlWeb)"
-    $direcciones = @([Net.Dns]::GetHostAddresses($env:COMPUTERNAME) | Where-Object { $_.AddressFamily -eq 'InterNetwork' -and -not $_.ToString().StartsWith('127.') -and -not $_.ToString().StartsWith('169.254.') } | ForEach-Object { $_.ToString() })
+    $esquema = if ($conHttps) { 'https' } else { 'http' }
     $sufijo = ''
-    if ($puertoWeb -ne 80) { $sufijo = ":$puertoWeb" }
-    foreach ($ip in $direcciones) { Write-Host "  Desde otras PC:      http://$ip$sufijo   (o http://$($env:COMPUTERNAME.ToLowerInvariant())$sufijo)" }
+    if ($puertoWeb -ne $(if ($conHttps) { 443 } else { 80 })) { $sufijo = ":$puertoWeb" }
+    foreach ($ip in Get-SummitIps) { Write-Host "  Desde otras PC:      ${esquema}://$ip$sufijo   (o ${esquema}://$($env:COMPUTERNAME.ToLowerInvariant())$sufijo)" }
     Write-Host '  Para que las otras PC entren hace falta la regla del firewall (INSTALACION.md, paso 8).'
+    if ($certificadoRecepcion) { Write-Host "  Y en cada una, instalar el certificado $certificadoRecepcion (INSTALACION.md, paso 8)." }
     $codigo = 0
 } catch {
     Write-Host "ERROR: $($_.Exception.Message)" -ForegroundColor Red

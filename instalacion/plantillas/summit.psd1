@@ -52,7 +52,8 @@
     ServicioBackend       = 'SUMMIT-Backend'
     ServicioWeb           = 'SUMMIT-Web'
     UrlBackend            = 'http://127.0.0.1:8080'
-    UrlWeb                = 'http://localhost'
+    # Con https (el Caddyfile de siempre). Si se instaló sin https: 'http://localhost'
+    UrlWeb                = 'https://localhost'
     TareaCopia            = 'SUMMIT - Copia de seguridad'
 
     # --- Asistente de IA (opcional) ---
