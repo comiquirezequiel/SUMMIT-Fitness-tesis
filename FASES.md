@@ -11,28 +11,28 @@ no esté acá, sumalo.
 
 | Fase | Qué incluyó | Commits |
 |---|---|---|
-| Fase 1 | Arreglos de seguridad y bugs al levantar el sistema; admin y planes iniciales, planes por frecuencia y alta de personal | `59937ca`, `8db37a8` |
-| Control de acceso | Recepción: límite semanal, ficha del socio y Dashboard con datos reales | `129985e` |
-| Paso 2 | Pantallas conectadas al backend: socios, certificados (con archivo), caja, clases y reservas | `107b608` |
-| Seguridad | Los tokens de cuentas desactivadas dejan de servir, CORS configurable, errores unificados y limitador de pedidos | `108c0a6`, `ac2acb9`, `462664d`, `c6872d8` |
-| Paso 3 | Rutinas organizadas por día | `9ddfcf5`, `d829904` |
-| Asistente de IA | Ollama local: lee certificados médicos y sugiere ejercicios a evitar | `2636880`, `cee3671` |
+| Fase 1 | Arreglos de seguridad y bugs al levantar el sistema; admin y planes iniciales, planes por frecuencia y alta de personal | `0d83f30`, `a547b07` |
+| Control de acceso | Recepción: límite semanal, ficha del socio y Dashboard con datos reales | `6b96885` |
+| Paso 2 | Pantallas conectadas al backend: socios, certificados (con archivo), caja, clases y reservas | `75f761f` |
+| Seguridad | Los tokens de cuentas desactivadas dejan de servir, CORS configurable, errores unificados y limitador de pedidos | `d451dfc`, `14a37ce`, `d74fe15`, `b15c0c5` |
+| Paso 3 | Rutinas organizadas por día | `f486431`, `c86d9cd` |
+| Asistente de IA | Ollama local: lee certificados médicos y sugiere ejercicios a evitar | `e4d17de`, `ed08401` |
 
 ### Etapa 2: pagos y control (11 de octubre)
 
 | Fase | Qué incluyó | Commits |
 |---|---|---|
-| Fase 1 | Estado de los pagos presenciales (aprobado, a verificar, rechazado) y quién cobró | `6891ff0` |
-| Fase 2 | Débito automático mensual opcional con Mercado Pago | `119aae7`, `9d6dd66` |
-| Fase 3 | Métricas reales: Analítica de Socios y Métricas de Planes | `ce0dad4` |
-| Fase 4 | Ingreso por excepción, con motivo y registro de quién lo autorizó | `68e25b5` |
-| Fase 5 | Rechazar o volver a aprobar certificados médicos | `4092ebd` |
+| Fase 1 | Estado de los pagos presenciales (aprobado, a verificar, rechazado) y quién cobró | `4764856` |
+| Fase 2 | Débito automático mensual opcional con Mercado Pago | `e721299`, `1781841` |
+| Fase 3 | Métricas reales: Analítica de Socios y Métricas de Planes | `a2f791d` |
+| Fase 4 | Ingreso por excepción, con motivo y registro de quién lo autorizó | `969e283` |
+| Fase 5 | Rechazar o volver a aprobar certificados médicos | `6d6e2d6` |
 
 ### Después de la etapa 2 (14 al 19 de octubre)
 
-- Aviso de certificados médicos que parecen falsos (`ff16f3a`).
-- README con los pasos para levantar el proyecto (`b6a36a3`).
-- Contraseñas y clave de las sesiones fuera del repositorio (`73118b1`).
+- Aviso de certificados médicos que parecen falsos (`652e830`).
+- README con los pasos para levantar el proyecto (`fe04efc`).
+- Contraseñas y clave de las sesiones fuera del repositorio (`26cb0d8`).
 
 ## Pendiente (propuesta, en este orden)
 
@@ -233,6 +233,6 @@ Argentina. El 20/10/2026 se reemplazó por *Ajustes > Datos del gimnasio* (nombr
 - Se borraron `Membresias.jsx` (no se usaba) y la pantalla de ejemplo *Tablas del Sistema*.
 - El backend ya no avisa al arrancar: sin `MySQL8Dialect` (lo detecta Hibernate) y con `spring.jpa.open-in-view`
   explícito. `spring.jpa.show-sql` quedó en false.
-- Se borró la rama `pagos-debito-metricas`, que ya estaba incluida en `main` (era el commit 5183acf).
+- Se borró la rama `pagos-debito-metricas`, que ya estaba incluida en `main` (era el commit 9e27221).
 - `npm run lint` pasa: el frontend tiene `.eslintrc.cjs` y se corrigieron los imports sin usar.
 - La barra de arriba ya no tiene los botones de ejemplo (idioma, modo oscuro y la flecha).
