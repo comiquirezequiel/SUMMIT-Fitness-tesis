@@ -37,8 +37,8 @@
 		file
 	}
 	header @inmutables Cache-Control "public, max-age=31536000, immutable"
-	# Todo lo demás de la app (la página, el service worker, el manifiesto): el navegador pregunta siempre si hay una
-	# versión nueva. /api queda afuera: el backend pone sus propias reglas (no guardar nada)
+	# Todo lo demás (la página): el navegador pregunta siempre si hay una versión nueva. /api queda afuera: el backend
+	# pone sus propias reglas (no guardar nada)
 	@revisar not path /assets/* /api/*
 	header @revisar Cache-Control "no-cache"
 
