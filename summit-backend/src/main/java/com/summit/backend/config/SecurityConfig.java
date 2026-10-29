@@ -1,6 +1,5 @@
 package com.summit.backend.config;
 
-import com.summit.backend.security.CustomUserDetailsService;
 import com.summit.backend.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,10 +7,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -29,8 +24,9 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Configuración central de Spring Security 6.
- * Define endpoints públicos/privados, CORS, sesión stateless y filtro JWT.
+ * Configuración central de Spring Security.
+ * Define endpoints públicos/privados, CORS, sesión stateless y filtro JWT. El login lo resuelve AuthService
+ * (contraseña con BCrypt) y cada pedido se autentica con su token en JwtAuthenticationFilter.
  */
 @Configuration
 @EnableWebSecurity
@@ -38,7 +34,6 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final CustomUserDetailsService customUserDetailsService;
 
     // Origenes del frontend que pueden llamar a la API (summit.cors.origins, separados por coma)
     @Value("${summit.cors.origins}")
@@ -50,25 +45,11 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(customUserDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
-    }
-
-    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             // Sin token o con token vencido: 401 (el 403 queda para "logueado pero sin permiso")
             .exceptionHandling(ex -> ex.authenticationEntryPoint(

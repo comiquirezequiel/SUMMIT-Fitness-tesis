@@ -1,5 +1,6 @@
 package com.summit.backend.security;
 
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -40,16 +41,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         String token = getTokenFromRequest(request);
+        Claims datos = StringUtils.hasText(token) ? jwtTokenProvider.leer(token) : null;
 
-        if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
-            String email = jwtTokenProvider.getEmailFromToken(token);
+        if (datos != null) {
+            String email = datos.getSubject();
 
             // Si la cuenta se desactivó o se borró después de emitir el token, o si la contraseña cambió después
             // (se cerraron todas las sesiones), el pedido sigue sin autenticar y termina en 401: el frontend
             // vuelve al login
             UsuarioAutenticado usuario = cargarUsuario(email);
             if (usuario != null && usuario.isEnabled()
-                    && !usuario.tokenAnteriorAlCambio(jwtTokenProvider.getIssuedAt(token))) {
+                    && !usuario.tokenAnteriorAlCambio(datos.getIssuedAt())) {
                 if (usuario.isDebeCambiarPassword() && !request.getRequestURI().startsWith("/api/auth/")) {
                     response.setStatus(HttpStatus.FORBIDDEN.value());
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);

@@ -21,7 +21,7 @@ import com.summit.backend.repository.UsuarioRepository;
 import com.summit.backend.security.JwtTokenProvider;
 import com.summit.backend.service.ConfiguracionAccesoService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;

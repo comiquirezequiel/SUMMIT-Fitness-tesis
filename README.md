@@ -5,7 +5,7 @@ asistente de IA local que lee certificados médicos.
 
 | Parte | Tecnología | Puerto |
 |---|---|---|
-| Backend (`summit-backend`) | Java 21 + Spring Boot 3.2 | 8080 |
+| Backend (`summit-backend`) | Java 21 + Spring Boot 4.1 | 8080 |
 | Frontend (`summit-frontend`) | React 18 + Vite 5 | 5173 |
 | Base de datos | MySQL 8 (`summit_fitness_db`, la crea el backend sola) | 3306 |
 | Asistente de IA (opcional) | Ollama con el modelo `gemma4:12b` | 11434 |

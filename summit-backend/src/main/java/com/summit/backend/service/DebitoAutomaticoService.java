@@ -1,6 +1,6 @@
 package com.summit.backend.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.summit.backend.dto.DebitoAutomaticoDTO;
 import com.summit.backend.model.DebitoAutomatico;
 import com.summit.backend.model.EstadoDebito;

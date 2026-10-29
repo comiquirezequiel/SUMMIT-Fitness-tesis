@@ -2,8 +2,8 @@ package com.summit.backend.service;
 
 // Jackson: la librería de JSON que ya trae Spring Boot. JsonNode representa un JSON ya leído (un árbol de nodos)
 // y ObjectMapper convierte entre objetos Java y texto JSON. No hizo falta agregar ninguna dependencia nueva.
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 // Lombok: @Slf4j genera automáticamente el campo "log" para escribir mensajes en la consola del servidor.
 import lombok.extern.slf4j.Slf4j;
 // @Value: lee valores de application.properties (summit.ia.*) y los inyecta en el constructor.

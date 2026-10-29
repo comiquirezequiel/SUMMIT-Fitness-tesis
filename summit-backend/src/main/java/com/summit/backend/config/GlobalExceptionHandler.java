@@ -10,7 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
-import com.fasterxml.jackson.databind.JsonMappingException;
+import tools.jackson.databind.DatabindException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -53,8 +53,8 @@ public class GlobalExceptionHandler {
     // JSON mal formado o con un dato de otro tipo (ej. "42,5" en un número): si se sabe, se nombra el campo
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, Object>> handleCuerpoInvalido(HttpMessageNotReadableException ex) {
-        if (ex.getCause() instanceof JsonMappingException mapeo && !mapeo.getPath().isEmpty()) {
-            String campo = mapeo.getPath().get(mapeo.getPath().size() - 1).getFieldName();
+        if (ex.getCause() instanceof DatabindException mapeo && !mapeo.getPath().isEmpty()) {
+            String campo = mapeo.getPath().get(mapeo.getPath().size() - 1).getPropertyName();
             if (campo != null) {
                 return error(HttpStatus.BAD_REQUEST, "El campo " + campo + " tiene un formato inválido");
             }

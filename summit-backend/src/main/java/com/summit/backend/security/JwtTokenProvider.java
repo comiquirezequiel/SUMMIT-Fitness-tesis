@@ -1,12 +1,14 @@
 package com.summit.backend.security;
 
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
-import java.security.Key;
+import javax.crypto.SecretKey;
 import java.util.Base64;
 import java.util.Date;
 
@@ -23,7 +25,7 @@ public class JwtTokenProvider {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
-    private Key signingKey;
+    private SecretKey signingKey;
 
     @PostConstruct
     public void init() {
@@ -42,63 +44,24 @@ public class JwtTokenProvider {
      */
     public String generateToken(String email, String rol) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtExpiration);
-
         return Jwts.builder()
-                .setSubject(email)
+                .subject(email)
                 .claim("rol", rol)
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(signingKey, SignatureAlgorithm.HS512)
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + jwtExpiration))
+                .signWith(signingKey, Jwts.SIG.HS512)
                 .compact();
     }
 
     /**
-     * Extrae el email (subject) del token.
+     * Los datos del token (email en el subject y fecha de emisión), o null si el token está vencido, mal formado o
+     * tiene la firma inválida.
      */
-    public String getEmailFromToken(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(signingKey)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-        return claims.getSubject();
-    }
-
-    /**
-     * Fecha de emisión del token (en segundos): si la contraseña cambió después, el token ya no sirve.
-     */
-    public Date getIssuedAt(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(signingKey)
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getIssuedAt();
-    }
-
-    /**
-     * Valida la integridad y vigencia del token.
-     * Retorna false si el token está expirado, mal formado o con firma inválida.
-     */
-    public boolean validateToken(String token) {
+    public Claims leer(String token) {
         try {
-            Jwts.parserBuilder()
-                    .setSigningKey(signingKey)
-                    .build()
-                    .parseClaimsJws(token);
-            return true;
-        } catch (ExpiredJwtException ex) {
-            // Token expirado
-        } catch (MalformedJwtException ex) {
-            // Token mal formado
-        } catch (UnsupportedJwtException ex) {
-            // Token no soportado
-        } catch (IllegalArgumentException ex) {
-            // Claims vacíos
-        } catch (io.jsonwebtoken.security.SecurityException ex) {
-            // Firma inválida
+            return Jwts.parser().verifyWith(signingKey).build().parseSignedClaims(token).getPayload();
+        } catch (JwtException | IllegalArgumentException e) {
+            return null;
         }
-        return false;
     }
 }
