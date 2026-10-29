@@ -17,7 +17,7 @@ public interface DebitoAutomaticoRepository extends JpaRepository<DebitoAutomati
     @EntityGraph(attributePaths = {"usuario", "plan", "creadoPor"})
     List<DebitoAutomatico> findByEstadoInOrderByFechaAltaDesc(Collection<EstadoDebito> estados);
 
-    // La adhesión más reciente del socio (aunque esté dada de baja), para su ficha y su portal
+    // La adhesión más reciente del socio (aunque esté dada de baja), para su ficha
     @EntityGraph(attributePaths = {"usuario", "plan", "creadoPor"})
     Optional<DebitoAutomatico> findFirstByUsuarioIdUsuarioOrderByFechaAltaDesc(Long idUsuario);
 

@@ -63,7 +63,7 @@ public class DebitoAutomatico {
     @Column(name = "fecha_alta", nullable = false)
     private LocalDateTime fechaAlta;
 
-    // Quién la dio de alta: el socio desde el portal o el empleado de recepción
+    // Quién la dio de alta (el empleado de recepción)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creado_por_id")
     private Usuario creadoPor;

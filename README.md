@@ -52,7 +52,7 @@ Abrilo en el editor y completá:
 - `ADMIN_PASSWORD`: la contraseña del administrador inicial. Solo se usa la primera vez, con la base vacía.
 - `MP_ACCESS_TOKEN` (opcional): la credencial de Mercado Pago para el débito automático.
 - `MAIL_HOST`, `MAIL_USERNAME`, `MAIL_PASSWORD` y `APP_URL` (opcionales): el correo desde el que sale el mail de
-  "¿Olvidaste tu contraseña?" y la dirección pública de la app, que va en el link. Sin ellos, el login no ofrece
+  "¿Olvidaste tu contraseña?" y la dirección del panel, que va en el link. Sin ellos, el login no ofrece
   la opción y la contraseña la restablece recepción o el admin. El ejemplo explica cómo hacerlo con Gmail.
 
 **3. Arrancá el backend** (terminal 1):
@@ -140,12 +140,6 @@ Para revisar si todo el backend compila sin arrancarlo: `.\mvnw.cmd compile` den
   [FACTURACION.md](FACTURACION.md).
 - Débito automático con Mercado Pago (opcional): se activa con `MP_ACCESS_TOKEN` en
   `application-local.properties`.
-- La app del socio está suspendida hasta después de la tesis (`summit.app-socios.habilitada=false` en
-  `application.properties`): los socios no pueden entrar y el panel oculta lo que es solo para la app. Para volver a
-  usarla, se pone en `true` y se reinicia el backend.
-- Notificaciones de la app del socio: funcionan con la app servida por HTTPS (en el iPhone, además, agregada a la
-  pantalla de inicio). Las claves se generan solas la primera vez y quedan en la base: no hay que configurar nada.
-  Conviene cargar el email del gimnasio en *Ajustes > Datos del gimnasio*, porque va como contacto en cada aviso.
 - Ninguna contraseña va en `application.properties`, porque ese archivo se sube al repositorio. Los valores
   privados van en `application-local.properties`. En un servidor también se pueden dar como variables de
   entorno con el mismo nombre (`DB_PASSWORD`, `JWT_SECRET`, etc.), que tienen prioridad sobre el archivo.

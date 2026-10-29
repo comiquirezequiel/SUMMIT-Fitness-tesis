@@ -2,7 +2,6 @@ import React from 'react';
 
 /**
  * Pantallas de la cuenta (login, contraseñas): fondo bordó de punta a punta, la marca y una tarjeta blanca.
- * En la app instalada en el iPhone, la barra de estado queda transparente encima del fondo.
  */
 const Marco = ({ titulo, children }) => (
   <div className="min-h-screen bg-bordo-800 flex items-center justify-center px-4 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))]">

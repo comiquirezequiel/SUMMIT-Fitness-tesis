@@ -1,10 +1,7 @@
 package com.summit.backend.service;
 
 import com.summit.backend.dto.DatosGimnasioDTO;
-import com.summit.backend.model.ConfiguracionAcceso;
 import com.summit.backend.model.DatosGimnasio;
-import com.summit.backend.model.DiaSemana;
-import com.summit.backend.model.HorarioGimnasio;
 import com.summit.backend.repository.DatosGimnasioRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -14,16 +11,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
- * Datos del gimnasio (PLAN-APP-SOCIOS.md, A5; reemplaza la pantalla de ejemplo de Ajustes > General).
+ * Datos del gimnasio (Ajustes > Datos del gimnasio): nombre, contacto y logo, que salen en los PDF.
  */
 @Service
 @RequiredArgsConstructor
@@ -31,19 +23,15 @@ import java.util.regex.Pattern;
 public class DatosGimnasioService {
 
     private static final Long ID = 1L;
-    private static final int CAPACIDAD_MAXIMA = 2000;
-    private static final int LARGO_MAXIMO_REGLAMENTO = 5000;
     private static final Pattern EMAIL = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
     private static final Pattern TELEFONO = Pattern.compile("^[0-9+()\\-\\s]{6,25}$");
     private static final Pattern INSTAGRAM = Pattern.compile("^[A-Za-z0-9._]{1,30}$");
 
     private final DatosGimnasioRepository repository;
-    private final ConfiguracionAccesoService configuracionAccesoService;
     private final ArchivoService archivoService;
 
     /**
-     * Crea los datos por defecto la primera vez: el nombre y un horario típico, para que la app tenga algo que
-     * mostrar hasta que el admin cargue los reales.
+     * Crea los datos por defecto la primera vez (solo el nombre), hasta que el admin cargue los reales.
      */
     @PostConstruct
     public void crearSiNoExisten() {
@@ -51,15 +39,7 @@ public class DatosGimnasioService {
             return;
         }
         log.info("Creando los datos del gimnasio por defecto...");
-        List<HorarioGimnasio> horarios = new ArrayList<>();
-        for (DiaSemana dia : DiaSemana.values()) {
-            boolean domingo = dia == DiaSemana.DOMINGO;
-            boolean sabado = dia == DiaSemana.SABADO;
-            horarios.add(new HorarioGimnasio(dia,
-                    domingo ? null : LocalTime.of(sabado ? 9 : 7, 0),
-                    domingo ? null : LocalTime.of(sabado ? 20 : 23, 0)));
-        }
-        repository.save(DatosGimnasio.builder().idDatos(ID).nombre("SUMMIT Fitness").horarios(horarios).build());
+        repository.save(DatosGimnasio.builder().idDatos(ID).nombre("SUMMIT Fitness").build());
     }
 
     public DatosGimnasio obtener() {
@@ -121,62 +101,12 @@ public class DatosGimnasioService {
             }
         }
         datos.setInstagram(instagram);
-
-        datos.setReglamento(largoMaximo(texto(pedido.reglamento()), LARGO_MAXIMO_REGLAMENTO, "El reglamento"));
-
-        Integer capacidad = pedido.capacidad();
-        if (capacidad != null && (capacidad < 1 || capacidad > CAPACIDAD_MAXIMA)) {
-            throw new IllegalArgumentException("La capacidad tiene que estar entre 1 y " + CAPACIDAD_MAXIMA + " personas");
-        }
-        datos.setCapacidad(capacidad);
-
-        datos.getHorarios().clear();
-        datos.getHorarios().addAll(horarios(pedido.horarios()));
         return aDTO(repository.save(datos));
     }
 
-    // Los 7 días en orden; un día que no vino queda cerrado
-    private static List<HorarioGimnasio> horarios(List<DatosGimnasioDTO.Horario> pedido) {
-        Map<DiaSemana, DatosGimnasioDTO.Horario> porDia = new EnumMap<>(DiaSemana.class);
-        if (pedido != null) {
-            for (DatosGimnasioDTO.Horario h : pedido) {
-                DiaSemana dia;
-                try {
-                    dia = DiaSemana.valueOf(String.valueOf(h.dia()).toUpperCase());
-                } catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("Día de la semana inválido: " + h.dia());
-                }
-                porDia.put(dia, h);
-            }
-        }
-        List<HorarioGimnasio> horarios = new ArrayList<>();
-        for (DiaSemana dia : DiaSemana.values()) {
-            DatosGimnasioDTO.Horario h = porDia.get(dia);
-            if (h == null || h.abre() == null) {
-                horarios.add(new HorarioGimnasio(dia, null, null));
-                continue;
-            }
-            if (h.cierra() == null) {
-                throw new IllegalArgumentException("Falta la hora de cierre del " + nombreDia(dia));
-            }
-            // Cerrar a las 00:00 es cerrar a medianoche
-            boolean medianoche = h.cierra().equals(LocalTime.MIDNIGHT);
-            if (!medianoche && !h.cierra().isAfter(h.abre())) {
-                throw new IllegalArgumentException("El " + nombreDia(dia) + " la hora de cierre tiene que ser después de la de apertura");
-            }
-            horarios.add(new HorarioGimnasio(dia, h.abre(), h.cierra()));
-        }
-        return horarios;
-    }
-
-    private DatosGimnasioDTO aDTO(DatosGimnasio d) {
-        ConfiguracionAcceso acceso = configuracionAccesoService.obtenerConfiguracionGlobal();
-        List<DatosGimnasioDTO.Horario> horarios = d.getHorarios().stream()
-                .map(h -> new DatosGimnasioDTO.Horario(h.getDia().name(), h.getAbre(), h.getCierra()))
-                .toList();
+    private static DatosGimnasioDTO aDTO(DatosGimnasio d) {
         return new DatosGimnasioDTO(d.getNombre(), d.getDireccion(), d.getCiudad(), d.getTelefono(), d.getWhatsapp(),
-                d.getEmail(), d.getInstagram(), d.getReglamento(), d.getCapacidad(), horarios,
-                acceso.getLatitudGimnasio(), acceso.getLongitudGimnasio(),
+                d.getEmail(), d.getInstagram(),
                 d.getLogoUrl() != null ? "/api/configuracion/gimnasio/logo?v=" + Fotos.version(d.getLogoActualizado()) : null);
     }
 
@@ -227,15 +157,4 @@ public class DatosGimnasioService {
         return valor;
     }
 
-    private static String nombreDia(DiaSemana dia) {
-        return switch (dia) {
-            case LUNES -> "lunes";
-            case MARTES -> "martes";
-            case MIERCOLES -> "miércoles";
-            case JUEVES -> "jueves";
-            case VIERNES -> "viernes";
-            case SABADO -> "sábado";
-            case DOMINGO -> "domingo";
-        };
-    }
 }

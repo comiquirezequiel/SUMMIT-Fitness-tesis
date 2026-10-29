@@ -65,7 +65,7 @@ const RestablecerPasswordModal = ({ nombre, ruta, onClose, onListo }) => {
       ) : (
         <div className="space-y-3 text-sm text-slate-600">
           <p>Se le va a generar una contraseña temporal nueva para que se la des en persona.</p>
-          <p>La contraseña que tiene ahora deja de funcionar y se cierran sus sesiones abiertas, también la de la app del celular.</p>
+          <p>La contraseña que tiene ahora deja de funcionar y se cierran sus sesiones abiertas.</p>
           {error && <p className="rounded-lg bg-rose-50 text-rose-700 font-medium p-3" role="alert">{error}</p>}
         </div>
       )}

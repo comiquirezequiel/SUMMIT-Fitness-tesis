@@ -97,14 +97,6 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/configuracion/**").hasAnyRole("ADMIN", "RECEPCION")
                 .requestMatchers("/api/configuracion/**").hasRole("ADMIN")
 
-                // Chat con los socios (A8): lo atienden recepción y el admin. El socio usa /api/portal/chat
-                .requestMatchers("/api/chat/**").hasAnyRole("ADMIN", "RECEPCION")
-
-                // Novedades del gimnasio (avisos en la app): RECEPCION consulta, solo ADMIN publica.
-                // El socio las lee en /api/portal/novedades
-                .requestMatchers(HttpMethod.GET, "/api/novedades/**").hasAnyRole("ADMIN", "RECEPCION")
-                .requestMatchers("/api/novedades/**").hasRole("ADMIN")
-
                 // Gestión de planes: solo ADMIN
                 .requestMatchers(HttpMethod.POST, "/api/planes/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/planes/**").hasRole("ADMIN")
@@ -124,7 +116,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/facturacion/**").hasAnyRole("ADMIN", "RECEPCION")
                 .requestMatchers(HttpMethod.POST, "/api/facturacion/procesar").hasAnyRole("ADMIN", "RECEPCION")
                 .requestMatchers("/api/facturacion/**").hasRole("ADMIN")
-                // Débito automático desde recepción (el socio usa /api/portal/debito)
+                // Débito automático desde recepción
                 .requestMatchers("/api/debitos/**").hasAnyRole("ADMIN", "RECEPCION")
 
                 // Asistencia del personal (horas trabajadas y correcciones): solo ADMIN
@@ -141,15 +133,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/metricas/**").hasAnyRole("ADMIN", "RECEPCION")
 
                 // Rutinas: las arman ADMIN y PROFESOR. El cruce con las patologías del socio es dato de salud.
-                // Consulta: cualquier usuario autenticado (un socio solo ve la suya: lo controla RutinaController)
+                // Consulta: cualquier usuario del personal
                 .requestMatchers(HttpMethod.GET, "/api/rutinas/validar-ejercicio").hasAnyRole("ADMIN", "PROFESOR")
                 .requestMatchers(HttpMethod.GET, "/api/rutinas/**").authenticated()
                 .requestMatchers("/api/rutinas/**").hasAnyRole("ADMIN", "PROFESOR")
-
-                // Entrenamientos (peso y RPE): RECEPCION solo consulta; el socio ve y carga solo lo suyo
-                // (lo controla EntrenamientoController)
-                .requestMatchers(HttpMethod.GET, "/api/entrenamientos/**").hasAnyRole("ADMIN", "RECEPCION", "PROFESOR", "SOCIO")
-                .requestMatchers("/api/entrenamientos/**").hasAnyRole("ADMIN", "PROFESOR", "SOCIO")
 
                 // Catálogo de ejercicios: lo mantienen ADMIN y PROFESOR
                 .requestMatchers(HttpMethod.POST, "/api/ejercicios/**").hasAnyRole("ADMIN", "PROFESOR")
@@ -164,8 +151,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PATCH, "/api/reservas/**").hasAnyRole("ADMIN", "RECEPCION", "PROFESOR")
                 .requestMatchers(HttpMethod.GET, "/api/reservas/horario/**").hasAnyRole("ADMIN", "RECEPCION", "PROFESOR")
 
-                // Lectura de ejercicios y clases, y reservas: cualquier usuario autenticado
-                // (un socio solo opera sobre sus propias reservas: lo controla ReservaController)
+                // Lectura de ejercicios y clases, y reservas: cualquier usuario del personal
                 .requestMatchers("/api/ejercicios/**", "/api/clases/**", "/api/reservas/**").authenticated()
 
                 // Todo lo demás requiere autenticación

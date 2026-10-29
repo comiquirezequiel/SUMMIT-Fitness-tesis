@@ -1,6 +1,5 @@
 package com.summit.backend.service;
 
-import com.summit.backend.dto.CheckInRequest;
 import com.summit.backend.dto.CheckInResponse;
 import com.summit.backend.model.*;
 import com.summit.backend.repository.*;
@@ -9,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -22,7 +20,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -33,10 +30,7 @@ import java.util.stream.Collectors;
  * 3. Cuota al día (con días de gracia)
  * 4. Límite semanal del plan (ej. 3 veces por semana)
  * 5. Certificado médico vigente (Ley 5397, con días de gracia)
- * Recepción arma con esa evaluación la ficha del monitor y registra el intento; el portal del socio
- * la usa para mostrarle si puede entrar, sin registrar nada.
- * El ingreso con QR desde la app del socio (ingresoConQr) además controla el código del QR impreso, que el
- * celular esté dentro del radio del gimnasio (Reglas de acceso) y una espera anti-repetición.
+ * Recepción arma con esa evaluación la ficha del monitor y registra el intento.
  * El personal no pasa por estas reglas en recepción: su paso es su entrada o su salida (AsistenciaPersonalService).
  */
 @Service
@@ -47,37 +41,16 @@ public class AsistenciaService {
     private final SuscripcionRepository suscripcionRepository;
     private final CertificadoMedicoRepository certificadoMedicoRepository;
     private final LogAsistenciaRepository logAsistenciaRepository;
-    private final GeolocationService geolocationService;
     private final ConfiguracionAccesoService configService;
     private final FotoSocioService fotoSocioService;
     private final CongelamientoService congelamientoService;
     private final AsistenciaPersonalService asistenciaPersonalService;
 
-    // Mapa de cooldown: idUsuario -> último intento
-    private final ConcurrentHashMap<Long, LocalDateTime> cooldownMap = new ConcurrentHashMap<>();
-
-    // Fichas de los últimos ingresos con el QR de la app (idLog -> ficha), para el tablero de recepción.
-    // Solo en memoria y por unos minutos: el tablero las destaca durante 3
-    private static final Duration VIGENCIA_FICHA_QR = Duration.ofMinutes(10);
-    private record FichaIngresoQr(CheckInResponse ficha, LocalDateTime momento) {}
-    private final ConcurrentHashMap<Long, FichaIngresoQr> fichasIngresoQr = new ConcurrentHashMap<>();
-
-    private static final int COOLDOWN_SEGUNDOS = 30;
-
-    // Ingreso con QR desde la app: espera corta (el que estaba lejos se acerca y vuelve a probar)
-    private static final int COOLDOWN_INGRESO_QR_SEGUNDOS = 10;
-    // Adentro de un edificio el GPS erra: a la distancia se le descuenta la precisión que informa el celular,
-    // como mucho estos metros (así, con radio de 20 m, se acepta hasta 50 m con una ubicación imprecisa).
-    // La app los recibe en /api/portal/ingreso/config para hacer el mismo control antes de abrir la cámara.
-    public static final int TOLERANCIA_MAXIMA_METROS = 30;
-    // Con una precisión peor que esta, la ubicación no sirve para saber si está en el gimnasio
-    public static final int PRECISION_MAXIMA_METROS = 150;
-
     // Con cuántos días de anticipación se avisa que algo está por vencer
     private static final int DIAS_AVISO_CUOTA = 7;
     private static final int DIAS_AVISO_APTO = 15;
 
-    // Formatos de los textos (también los usa el portal del socio)
+    // Formatos de los textos
     static final DateTimeFormatter FECHA_CORTA = DateTimeFormatter.ofPattern("dd/MM");
     private static final String[] DIAS_SEMANA = {"lun", "mar", "mié", "jue", "vie", "sáb", "dom"};
 
@@ -158,120 +131,7 @@ public class AsistenciaService {
     }
 
     /**
-     * Procesa un intento de check-in con validación completa.
-     */
-    public CheckInResponse procesarCheckIn(CheckInRequest request) {
-        // 1. Identificar al socio (por DNI directo o por código QR que contiene el DNI)
-        String dniSocio = request.getCodigoQr() != null ? request.getCodigoQr() : request.getDni();
-        if (dniSocio == null || dniSocio.isEmpty()) {
-            throw new RuntimeException("Debe proporcionar un DNI o código QR");
-        }
-
-        Usuario socio = usuarioRepository.findByDni(dniSocio)
-                .orElseThrow(() -> new RuntimeException("No se encontró un socio con DNI: " + dniSocio));
-
-        // 2. Verificar cooldown anti-spam
-        LocalDateTime ultimoIntento = cooldownMap.get(socio.getIdUsuario());
-        if (ultimoIntento != null) {
-            long segundosDesdeUltimo = java.time.Duration.between(ultimoIntento, LocalDateTime.now()).getSeconds();
-            if (segundosDesdeUltimo < COOLDOWN_SEGUNDOS) {
-                throw new RuntimeException(
-                        "Debe esperar " + (COOLDOWN_SEGUNDOS - segundosDesdeUltimo) +
-                        " segundos antes del próximo intento de check-in");
-            }
-        }
-
-        // Determinar tipo de evento
-        TipoEventoAsistencia tipoEvento = TipoEventoAsistencia.CHECKIN_MANUAL;
-        if (request.getTipoEvento() != null) {
-            try {
-                tipoEvento = TipoEventoAsistencia.valueOf(request.getTipoEvento());
-            } catch (IllegalArgumentException ignored) {
-                // Mantener CHECKIN_MANUAL por defecto
-            }
-        }
-
-        // 3. Verificar geolocalización (Haversine) contra la ubicación y el radio de Reglas de acceso
-        ConfiguracionAcceso config = configService.obtenerConfiguracionGlobal();
-        if (!geolocationService.ubicacionConfigurada(config)) {
-            throw new RuntimeException("La ubicación del gimnasio no está cargada en Reglas de acceso");
-        }
-        double distancia = geolocationService.getDistanciaAlGimnasio(request.getLatitud(), request.getLongitud(), config);
-        int radio = ConfiguracionAccesoService.radioIngreso(config);
-
-        if (distancia > radio) {
-            registrarLog(socio, tipoEvento, ResultadoAsistencia.DENEGADO_FUERA_DE_RANGO_GPS,
-                    request.getLatitud(), request.getLongitud(), distancia);
-            cooldownMap.put(socio.getIdUsuario(), LocalDateTime.now());
-
-            String motivo = String.format("Fuera de rango GPS. Distancia: %.1f metros (máx. %d m)", distancia, radio);
-            CheckInResponse respuesta = fichaBase(socio, distancia);
-            respuesta.setPermitido(false);
-            respuesta.setResultado(ResultadoAsistencia.DENEGADO_FUERA_DE_RANGO_GPS.name());
-            respuesta.setMensaje(motivo);
-            respuesta.getFaltas().add(motivo);
-            return respuesta;
-        }
-
-        return validarAccesoInterno(socio, tipoEvento, distancia);
-    }
-
-    /** Resultado del ingreso con QR: si pudo pasar, si estaba fuera del radio y a qué distancia estaba. */
-    public record ResultadoIngresoQr(boolean permitido, boolean fueraDeRango, double distanciaMetros) {}
-
-    /** El intento de ingreso con QR no se pudo evaluar (QR equivocado, sin ubicación, función apagada...). */
-    public static class IngresoQrException extends RuntimeException {
-        public IngresoQrException(String mensaje) {
-            super(mensaje);
-        }
-    }
-
-    /**
-     * Ingreso del socio desde su celular (PLAN-APP-SOCIOS.md, A4): escanea el QR impreso en recepción y manda
-     * su ubicación. Si está dentro del radio, se aplican las mismas reglas que en recepción y se registra el
-     * ingreso (tipo CHECKIN_QR). Fuera del radio se registra el intento como DENEGADO_FUERA_DE_RANGO_GPS. Se
-     * guarda solo la distancia, nunca las coordenadas del celular.
-     *
-     * @param codigo    lo que dice el QR después de "SUMMIT-INGRESO:"
-     * @param precision precisión de la ubicación que informa el celular, en metros (puede ser null)
-     * @throws IngresoQrException si el ingreso con QR está apagado, el QR no es el del gimnasio, falta la
-     *                            ubicación o es muy imprecisa, o se repite el intento enseguida
-     */
-    public ResultadoIngresoQr ingresoConQr(Usuario socio, String codigo, Double latitud, Double longitud, Double precision) {
-        ConfiguracionAcceso config = configService.obtenerConfiguracionGlobal();
-        if (!config.isIngresoQrHabilitado() || !geolocationService.ubicacionConfigurada(config)) {
-            throw new IngresoQrException("El ingreso con QR no está habilitado en este gimnasio: ingresá por recepción");
-        }
-        if (codigo == null || !codigo.equals(config.getCodigoQrIngreso())) {
-            throw new IngresoQrException("Ese no es el QR de ingreso del gimnasio: escaneá el que está en recepción");
-        }
-        if (latitud == null || longitud == null) {
-            throw new IngresoQrException("No llegó tu ubicación: activala y probá de nuevo");
-        }
-        if (precision != null && precision > PRECISION_MAXIMA_METROS) {
-            throw new IngresoQrException("La ubicación de tu celular es muy imprecisa (" + Math.round(precision)
-                    + " m): esperá unos segundos con la ubicación activada y probá de nuevo");
-        }
-        LocalDateTime ultimoIntento = cooldownMap.get(socio.getIdUsuario());
-        if (ultimoIntento != null
-                && java.time.Duration.between(ultimoIntento, LocalDateTime.now()).getSeconds() < COOLDOWN_INGRESO_QR_SEGUNDOS) {
-            throw new IngresoQrException("Esperá unos segundos antes de volver a intentar");
-        }
-        cooldownMap.put(socio.getIdUsuario(), LocalDateTime.now());
-
-        double distancia = geolocationService.getDistanciaAlGimnasio(latitud, longitud, config);
-        double tolerancia = Math.min(precision != null ? Math.max(0, precision) : 0, TOLERANCIA_MAXIMA_METROS);
-        if (distancia - tolerancia > ConfiguracionAccesoService.radioIngreso(config)) {
-            registrarLog(socio, TipoEventoAsistencia.CHECKIN_QR, ResultadoAsistencia.DENEGADO_FUERA_DE_RANGO_GPS,
-                    null, null, distancia);
-            return new ResultadoIngresoQr(false, true, distancia);
-        }
-        CheckInResponse ficha = validarAccesoInterno(socio, TipoEventoAsistencia.CHECKIN_QR, distancia);
-        return new ResultadoIngresoQr(ficha.isPermitido(), false, distancia);
-    }
-
-    /**
-     * RF-06: Ingreso por recepción (sin GPS). El resultado es la notificación del monitor del recepcionista.
+     * RF-06: Ingreso por recepción. El resultado es la notificación del monitor del recepcionista.
      */
     public CheckInResponse verificarAccesoMolinete(String dni) {
         if (dni == null || dni.isBlank()) {
@@ -286,12 +146,12 @@ public class AsistenciaService {
             // Personal del gimnasio: cada paso por recepción es su entrada o su salida
             return asistenciaPersonalService.ficharEnRecepcion(usuario);
         }
-        return validarAccesoInterno(usuario, TipoEventoAsistencia.INGRESO_MOLINETE, null);
+        return validarAccesoInterno(usuario, TipoEventoAsistencia.INGRESO_MOLINETE);
     }
 
     /**
      * Evalúa todas las reglas de ingreso de hoy sin registrar nada (no se detiene en la primera falta).
-     * La usan la verificación de recepción y el portal del socio: así los dos aplican las mismas reglas.
+     * La usan la verificación de recepción y el ingreso por excepción: así las dos aplican las mismas reglas.
      */
     @Transactional(readOnly = true)
     public EvaluacionAcceso evaluarAcceso(Usuario usuario) {
@@ -348,14 +208,10 @@ public class AsistenciaService {
     /**
      * Evalúa las reglas, arma la ficha del monitor de recepción y registra el intento en el log.
      */
-    private CheckInResponse validarAccesoInterno(Usuario usuario, TipoEventoAsistencia tipoEvento, Double distancia) {
+    private CheckInResponse validarAccesoInterno(Usuario usuario, TipoEventoAsistencia tipoEvento) {
         EvaluacionAcceso evaluacion = evaluarAcceso(usuario);
-        CheckInResponse respuesta = fichaRecepcion(evaluacion, distancia);
-        LogAsistencia log = registrarLog(usuario, tipoEvento, evaluacion.resultado(), null, null, distancia);
-        if (tipoEvento == TipoEventoAsistencia.CHECKIN_QR) {
-            // Recalcularla después daría otra cosa (por ejemplo, "ya había ingresado hoy"): se guarda la de este momento
-            guardarFichaQr(log.getIdLog(), respuesta);
-        }
+        CheckInResponse respuesta = fichaRecepcion(evaluacion);
+        registrarLog(usuario, tipoEvento, evaluacion.resultado());
         return respuesta;
     }
 
@@ -412,9 +268,9 @@ public class AsistenciaService {
      * Ficha del monitor de recepción: los textos le hablan al recepcionista.
      * Las faltas siguen el orden de las reglas: cuenta → congelada → cuota → límite semanal → apto médico.
      */
-    private CheckInResponse fichaRecepcion(EvaluacionAcceso ev, Double distancia) {
+    private CheckInResponse fichaRecepcion(EvaluacionAcceso ev) {
         Usuario usuario = ev.usuario();
-        CheckInResponse respuesta = fichaBase(usuario, distancia);
+        CheckInResponse respuesta = fichaBase(usuario);
 
         if (usuario.getEstado() != EstadoUsuario.ACTIVO) {
             respuesta.getFaltas().add("Cuenta " + textoEstado(usuario.getEstado()) + ": no puede ingresar");
@@ -565,7 +421,7 @@ public class AsistenciaService {
                 .motivoExcepcion(motivoLimpio)
                 .build());
 
-        CheckInResponse respuesta = fichaRecepcion(evaluacion, null);
+        CheckInResponse respuesta = fichaRecepcion(evaluacion);
         // Lo que faltaba pasa a ser un aviso: el ingreso quedó permitido por excepción
         respuesta.getAvisos().addAll(0, respuesta.getFaltas());
         respuesta.getFaltas().clear();
@@ -620,44 +476,21 @@ public class AsistenciaService {
         return graciaRestante == 0 ? "hoy es el último" : "quedan " + textoDias(graciaRestante);
     }
 
-    private LogAsistencia registrarLog(Usuario usuario, TipoEventoAsistencia tipoEvento,
-                                       ResultadoAsistencia resultado,
-                                       Double lat, Double lon, Double distancia) {
-        LogAsistencia log = LogAsistencia.builder()
+    private void registrarLog(Usuario usuario, TipoEventoAsistencia tipoEvento, ResultadoAsistencia resultado) {
+        logAsistenciaRepository.save(LogAsistencia.builder()
                 .usuario(usuario)
                 .tipoEvento(tipoEvento)
                 .resultado(resultado)
-                .latitudSocio(lat)
-                .longitudSocio(lon)
-                .distanciaMetros(distancia)
-                .build();
-        return logAsistenciaRepository.save(log);
+                .build());
     }
 
-    /**
-     * Ficha de un ingreso con el QR de la app tal como se evaluó en ese momento (null si pasaron más de
-     * VIGENCIA_FICHA_QR, si el servidor se reinició o si estaba fuera del radio y no se evaluaron las reglas).
-     * La muestra el tablero de recepción: la misma ficha que el control por DNI.
-     */
-    public CheckInResponse fichaDeIngresoQr(Long idLog) {
-        FichaIngresoQr guardada = fichasIngresoQr.get(idLog);
-        return guardada != null ? guardada.ficha() : null;
-    }
-
-    private void guardarFichaQr(Long idLog, CheckInResponse ficha) {
-        LocalDateTime ahora = LocalDateTime.now();
-        fichasIngresoQr.values().removeIf(f -> f.momento().isBefore(ahora.minus(VIGENCIA_FICHA_QR)));
-        fichasIngresoQr.put(idLog, new FichaIngresoQr(ficha, ahora));
-    }
-
-    private CheckInResponse fichaBase(Usuario usuario, Double distancia) {
+    private CheckInResponse fichaBase(Usuario usuario) {
         return CheckInResponse.builder()
                 .idUsuario(usuario.getIdUsuario())
                 .fotoVersion(fotoSocioService.version(usuario.getIdUsuario()))
                 .nombreSocio(usuario.getNombreCompleto())
                 .dni(usuario.getDni())
                 .rol(usuario.getRol().name())
-                .distanciaMetros(distancia)
                 .fechaHora(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")))
                 .build();
     }

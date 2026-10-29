@@ -15,7 +15,7 @@
 	# El certificado raíz de Caddy se instala a mano en cada PC que lo necesite (INSTALACION.md): Caddy no lo intenta
 	skip_install_trust
 	servers {
-		# Solo se acepta la IP real que informa otro programa de esta misma PC (por ejemplo, un túnel de Cloudflare)
+		# Solo se acepta la IP real que informa otro programa de esta misma PC
 		trusted_proxies static 127.0.0.1/32 ::1/128
 	}
 }

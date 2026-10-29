@@ -10,7 +10,7 @@ const Modal = ({ titulo, subtitulo, onClose, children, pie, ancho = 'max-w-lg' }
     onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
   >
     {/* dvh: en el celular, el alto que queda visible con las barras del navegador (vh incluye lo que tapan) */}
-    <div className={`bg-superficie rounded-2xl shadow-xl w-full ${ancho} max-h-[90vh] supports-[height:100dvh]:max-h-[90dvh] flex flex-col`} role="dialog" aria-modal="true">
+    <div className={`bg-white rounded-2xl shadow-xl w-full ${ancho} max-h-[90vh] supports-[height:100dvh]:max-h-[90dvh] flex flex-col`} role="dialog" aria-modal="true">
       <div className="flex justify-between items-start gap-4 p-5 border-b border-slate-100">
         <div className="min-w-0">
           <h3 className="text-lg font-bold text-slate-800">{titulo}</h3>

@@ -39,15 +39,6 @@ public class LogAsistencia {
     @Column(name = "resultado", nullable = false, length = 35)
     private ResultadoAsistencia resultado;
 
-    @Column(name = "latitud_socio")
-    private Double latitudSocio;
-
-    @Column(name = "longitud_socio")
-    private Double longitudSocio;
-
-    @Column(name = "distancia_metros")
-    private Double distanciaMetros;
-
     // Ingreso por excepción: el empleado que lo autorizó y el motivo (auditoría).
     // @JsonIgnore: en el historial solo sale el nombre (ver autorizadoPorNombre), no la cuenta completa del empleado
     @JsonIgnore

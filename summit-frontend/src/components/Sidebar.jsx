@@ -6,20 +6,17 @@ import {
   Dumbbell, ClipboardList, ListChecks,
   Calendar, CalendarDays, Settings,
   LogOut, LayoutDashboard, ChevronDown, ChevronUp, Clipboard,
-  MessageCircle, CheckSquare, UserX, Repeat, Building2, Megaphone, BadgePercent, FileText, Receipt
+  CheckSquare, UserX, Repeat, Building2, BadgePercent, FileText, Receipt
 } from 'lucide-react';
 import { usuarioActual } from '../utils/formato';
 import { cerrarSesion } from '../services/auth';
-import { useSinLeerChat } from '../services/chat';
 import { useTareasPendientes } from '../services/seguimiento';
 import { useAvisoFacturacion } from '../services/facturacion';
 import { useFunciones } from '../services/funciones';
 
 // Roles que ven cada opción (los mismos permisos que exige el backend).
 // demo: pantallas que todavía muestran datos de ejemplo (no están conectadas al backend).
-// contador: globito con un número (las conversaciones del chat con mensajes sin leer, las tareas de seguimiento
-// pendientes, las facturas rechazadas o sin confirmar).
-// soloConApp: existe solo para la app del socio; mientras está suspendida no aparece.
+// contador: globito con un número (las tareas de seguimiento pendientes, las facturas rechazadas o sin confirmar).
 // soloConFacturacion: existe solo con la factura electrónica prendida.
 const STAFF = ['ADMIN', 'RECEPCION'];
 const MENU_ITEMS = [
@@ -29,8 +26,6 @@ const MENU_ITEMS = [
       { icon: User, text: "Lista de Socios", path: "/socios", roles: ['ADMIN', 'RECEPCION', 'PROFESOR'] },
       { icon: Dumbbell, text: "Constructor de Rutinas", path: "/rutinas/constructor", roles: ['ADMIN', 'PROFESOR'] },
       { icon: BarChart2, text: "Analítica de Socios", path: "/socios/metricas", roles: STAFF },
-      { icon: Megaphone, text: "Novedades", path: "/socios/novedades", roles: STAFF, soloConApp: true },
-      { icon: MessageCircle, text: "Chat", path: "/socios/chat", roles: STAFF, contador: 'chat', soloConApp: true },
       { icon: CheckSquare, text: "Tareas de seguimiento", path: "/socios/tareas", roles: STAFF, contador: 'tareas' },
       { icon: UserX, text: "Inactividad", path: "/socios/inactividad", roles: STAFF },
     ]
@@ -77,13 +72,12 @@ const MENU_ITEMS = [
   }
 ];
 
-// Menú filtrado por el rol del usuario (sin lo de la app del socio si está suspendida, ni lo de la facturación si está
-// apagada): se ocultan los grupos que quedan vacíos
-const menuParaRol = (rol, { appSocios, facturacion }) => MENU_ITEMS
+// Menú filtrado por el rol del usuario (sin lo de la facturación si está apagada): se ocultan los grupos que quedan
+// vacíos
+const menuParaRol = (rol, { facturacion }) => MENU_ITEMS
   .map(item => ({
     ...item,
-    subItems: item.subItems.filter(sub => sub.roles.includes(rol) && (appSocios || !sub.soloConApp)
-      && (facturacion || !sub.soloConFacturacion)),
+    subItems: item.subItems.filter(sub => sub.roles.includes(rol) && (facturacion || !sub.soloConFacturacion)),
   }))
   .filter(item => item.subItems.length > 0);
 
@@ -116,7 +110,7 @@ const SidebarItem = ({ icon: Icon, text, path, subItems, activePath, onNavigate,
           <div className="flex items-center gap-3">
             <Icon className={`w-5 h-5 ${isActiveParent ? 'text-blue-500' : 'text-slate-500'}`} />
             <span className="text-sm">{text}</span>
-            {!isOpen && pendiente && <span className="w-2 h-2 rounded-full bg-blue-600" aria-label="Hay mensajes sin leer" />}
+            {!isOpen && pendiente && <span className="w-2 h-2 rounded-full bg-blue-600" aria-label="Hay algo pendiente" />}
           </div>
           {isOpen ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
         </button>
@@ -166,10 +160,9 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   const location = useLocation();
   const rol = usuarioActual()?.rol;
   const funciones = useFunciones();
-  const { appSocios, facturacion } = funciones;
+  const { facturacion } = funciones;
   const avisoFacturacion = useAvisoFacturacion(facturacion && STAFF.includes(rol));
   const contadores = {
-    chat: useSinLeerChat(appSocios && STAFF.includes(rol)),
     tareas: useTareasPendientes(STAFF.includes(rol)).pendientes,
     facturas: avisoFacturacion.rechazados + avisoFacturacion.inciertos,
   };

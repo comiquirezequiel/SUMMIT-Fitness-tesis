@@ -32,7 +32,7 @@ MAIL_HOST=
 MAIL_PORT=587
 MAIL_USERNAME=
 MAIL_PASSWORD=
-# Dirección pública de la app, la que abren los socios en el celular (por ejemplo https://app.tugimnasio.com.ar).
+# Dirección con la que se entra al panel (por ejemplo https://summit.local).
 # Es la del link que llega por mail: sin ella tampoco se ofrece la opción.
 APP_URL=
 

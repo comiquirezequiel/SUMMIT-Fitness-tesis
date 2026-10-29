@@ -16,7 +16,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * Foto del socio, para que recepción vea quién entra (PLAN-APP-SOCIOS.md, A4).
+ * Foto del socio, para que recepción vea quién entra.
  * Permisos de SecurityConfig para /api/socios/**: la sacan o quitan ADMIN y RECEPCION; la ve también PROFESOR.
  */
 @RestController
@@ -59,7 +59,7 @@ public class FotoSocioController {
     }
 
     /**
-     * Respuesta con la imagen, o 404 si no hay foto (o el archivo ya no está). La usa también el portal del socio.
+     * Respuesta con la imagen, o 404 si no hay foto (o el archivo ya no está).
      * "private": la guarda solo el navegador de quien la pidió, nunca un intermediario (Cloudflare).
      */
     static ResponseEntity<?> respuestaFoto(Supplier<Optional<ArchivoService.Archivo>> buscar) {

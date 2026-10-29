@@ -28,13 +28,9 @@ module.exports = {
   },
   overrides: [
     {
-      // Archivos que corren en Node (configuración de Vite y Tailwind) y el service worker
+      // Archivos que corren en Node (configuración de Vite y Tailwind)
       files: ['vite.config.js', 'tailwind.config.js', 'postcss.config.js'],
       env: { node: true, browser: false },
-    },
-    {
-      files: ['public/sw.js', 'src/sw.js'],
-      env: { serviceworker: true, browser: false },
     },
   ],
 };

@@ -1,7 +1,6 @@
 package com.summit.backend.config;
 
 import com.summit.backend.controller.EjercicioController;
-import com.summit.backend.controller.EntrenamientoController;
 import com.summit.backend.controller.RutinaController;
 import com.summit.backend.service.RutinaService;
 import org.springframework.core.Ordered;
@@ -15,11 +14,11 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 /**
- * Errores propios de rutinas, ejercicios y entrenamientos: el riesgo de lesión (con la lista de riesgos)
+ * Errores propios de rutinas y ejercicios: el riesgo de lesión (con la lista de riesgos)
  * y el 404 cuando lo pedido no existe. Solo para estos controllers y con prioridad; el resto de los errores
  * (formato de datos, parámetros, validaciones) los resuelve GlobalExceptionHandler.
  */
-@RestControllerAdvice(assignableTypes = {RutinaController.class, EjercicioController.class, EntrenamientoController.class})
+@RestControllerAdvice(assignableTypes = {RutinaController.class, EjercicioController.class})
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class EntrenamientoExceptionHandler {
 

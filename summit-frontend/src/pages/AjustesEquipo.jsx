@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, UserPlus, Save, Power, Contact, KeyRound } from 'lucide-react';
+import { Users, UserPlus, Save, Power, KeyRound } from 'lucide-react';
 import Modal from '../components/Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../components/Campo';
-import PerfilProfesorModal from '../components/equipo/PerfilProfesorModal';
 import RestablecerPasswordModal from '../components/RestablecerPasswordModal';
 import { apiFetch } from '../services/api';
 import { usuarioActual } from '../utils/formato';
-import { useFunciones } from '../services/funciones';
 import { ESTADOS_USUARIO } from '../utils/constantes';
 
 const ROLES = {
@@ -81,12 +79,9 @@ const NuevoMiembroModal = ({ onClose, onGuardado }) => {
 
 const AjustesEquipo = () => {
   const usuario = usuarioActual();
-  // El perfil público del profesor es para la app del socio: mientras está suspendida no se muestra
-  const { appSocios } = useFunciones();
   const [miembros, setMiembros] = useState([]);
   const [error, setError] = useState('');
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [perfilDe, setPerfilDe] = useState(null); // profesor cuyo perfil para la app se edita
   const [restableciendo, setRestableciendo] = useState(null); // miembro al que se le da una contraseña temporal
 
   const cargar = useCallback(async () => {
@@ -183,12 +178,6 @@ const AjustesEquipo = () => {
                     </td>
                     {esAdmin && (
                       <td className="px-6 py-4 text-right whitespace-nowrap">
-                        {m.rol === 'PROFESOR' && appSocios && (
-                          <button onClick={() => setPerfilDe(m)} title="Perfil que ven los socios en la app"
-                            className="mr-2 px-3 py-2 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 text-xs font-semibold inline-flex items-center gap-1.5">
-                            <Contact className="w-4 h-4" /> Perfil
-                          </button>
-                        )}
                         {!esYo && (
                           <button onClick={() => setRestableciendo(m)} title="Restablecer contraseña"
                             className="mr-2 p-2 rounded-lg border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 transition-colors">
@@ -212,7 +201,6 @@ const AjustesEquipo = () => {
       </div>
 
       {modalAbierto && <NuevoMiembroModal onClose={() => setModalAbierto(false)} onGuardado={() => { setModalAbierto(false); cargar(); }} />}
-      {perfilDe && <PerfilProfesorModal profesor={perfilDe} onClose={() => setPerfilDe(null)} />}
       {restableciendo && (
         <RestablecerPasswordModal nombre={restableciendo.nombreCompleto} ruta={`/usuarios/${restableciendo.idUsuario}`}
           onClose={() => setRestableciendo(null)} onListo={cargar} />

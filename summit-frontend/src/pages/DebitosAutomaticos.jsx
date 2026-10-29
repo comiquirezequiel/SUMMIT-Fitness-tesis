@@ -147,7 +147,7 @@ const DebitosAutomaticos = () => {
         {visibles.length === 0 ? (
           <div className="p-10 text-center text-sm text-slate-500">
             {cargando ? 'Cargando...' : debitos.length === 0
-              ? 'Todavía nadie se adhirió. Se hace desde la ficha del socio (Lista de Socios) o desde su portal.'
+              ? 'Todavía nadie se adhirió. Se hace desde la ficha del socio (Lista de Socios).'
               : 'No hay débitos con ese filtro.'}
           </div>
         ) : (

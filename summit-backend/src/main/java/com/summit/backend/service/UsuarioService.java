@@ -22,7 +22,6 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
-    private final SesionService sesionService;
     private final PasswordService passwordService;
 
     /**
@@ -62,7 +61,7 @@ public class UsuarioService {
 
     /**
      * Restablece la contraseña de otro usuario con una temporal, que el admin le da en persona y hay que
-     * cambiar al entrar. Cierra las sesiones abiertas de esa cuenta. La propia se cambia con PUT /api/auth/password.
+     * cambiar al entrar. La propia se cambia con PUT /api/auth/password.
      *
      * @param emailAdmin quien lo pide
      * @return la contraseña temporal (no se guarda en ningún lado salvo su hash)
@@ -99,11 +98,6 @@ public class UsuarioService {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado con DNI: " + dni));
     }
 
-    public Usuario buscarPorEmail(String email) {
-        return usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con email: " + email));
-    }
-
     /**
      * Actualiza los datos de un usuario existente.
      */
@@ -122,15 +116,13 @@ public class UsuarioService {
     }
 
     /**
-     * Baja lógica: cambia el estado a INACTIVO sin borrar el registro. Si es un socio, también se cierra su
-     * sesión en la app en todos sus celulares.
+     * Baja lógica: cambia el estado a INACTIVO sin borrar el registro.
      */
     @Transactional
     public void desactivar(Long id) {
         Usuario usuario = buscarPorId(id);
         usuario.setEstado(EstadoUsuario.INACTIVO);
         usuarioRepository.save(usuario);
-        sesionService.cerrarTodas(id);
     }
 
     /**

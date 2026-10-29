@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * Controller de rutinas de entrenamiento.
- * Las arman ADMIN y PROFESOR (SecurityConfig); un socio solo consulta las suyas.
+ * Las arman ADMIN y PROFESOR (SecurityConfig); recepción las consulta.
  * Los errores (404 / 400 con {"error"}) los arma EntrenamientoExceptionHandler.
  */
 @RestController
@@ -26,15 +26,10 @@ public class RutinaController {
     private final RutinaService rutinaService;
 
     /**
-     * Rutinas activas de todos los socios (nombre, días, ejercicios, profesor y último entrenamiento),
-     * para el listado del personal. Un socio no accede: solo ve la suya.
+     * Rutinas activas de todos los socios (nombre, días, ejercicios y profesor), para el listado del personal.
      */
     @GetMapping
-    public ResponseEntity<?> listarActivas(Authentication auth) {
-        if (esSocio(auth)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "El listado de rutinas es solo para el personal del gimnasio"));
-        }
+    public ResponseEntity<?> listarActivas() {
         return ResponseEntity.ok(rutinaService.listarActivas());
     }
 
@@ -42,25 +37,8 @@ public class RutinaController {
      * Rutinas activas del socio, la más reciente primero.
      */
     @GetMapping("/socio/{idSocio}")
-    public ResponseEntity<?> listarPorSocio(@PathVariable Long idSocio, Authentication auth) {
-        if (esOtroSocio(auth, idSocio)) {
-            return soloLaPropia();
-        }
+    public ResponseEntity<?> listarPorSocio(@PathVariable Long idSocio) {
         return ResponseEntity.ok(rutinaService.listarActivasPorSocio(idSocio));
-    }
-
-    /**
-     * Rutina del día: qué día le toca, lo que ya cargó hoy y lo de la vez pasada.
-     * Con ?dia=N muestra otro día de la rutina.
-     */
-    @GetMapping("/socio/{idSocio}/hoy")
-    public ResponseEntity<?> rutinaDeHoy(@PathVariable Long idSocio,
-                                         @RequestParam(required = false) Integer dia,
-                                         Authentication auth) {
-        if (esOtroSocio(auth, idSocio)) {
-            return soloLaPropia();
-        }
-        return ResponseEntity.ok(rutinaService.rutinaDeHoy(idSocio, dia));
     }
 
     /**
@@ -78,12 +56,8 @@ public class RutinaController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> buscarPorId(@PathVariable Long id, Authentication auth) {
-        RutinaDTO rutina = rutinaService.buscarPorId(id);
-        if (esOtroSocio(auth, rutina.getIdSocio())) {
-            return soloLaPropia();
-        }
-        return ResponseEntity.ok(rutina);
+    public ResponseEntity<RutinaDTO> buscarPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(rutinaService.buscarPorId(id));
     }
 
     /**
@@ -128,19 +102,5 @@ public class RutinaController {
     public ResponseEntity<?> quitarEjercicio(@PathVariable Long id, @PathVariable Long idRutinaEjercicio) {
         rutinaService.quitarEjercicio(id, idRutinaEjercicio);
         return ResponseEntity.ok(Map.of("mensaje", "Ejercicio quitado de la rutina"));
-    }
-
-    // Un socio solo ve sus propias rutinas; el personal, las de cualquier socio
-    private boolean esOtroSocio(Authentication auth, Long idSocio) {
-        return esSocio(auth) && !rutinaService.esElSocio(auth.getName(), idSocio);
-    }
-
-    private static boolean esSocio(Authentication auth) {
-        return auth.getAuthorities().stream().anyMatch(a -> "ROLE_SOCIO".equals(a.getAuthority()));
-    }
-
-    private static ResponseEntity<Map<String, String>> soloLaPropia() {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(Map.of("error", "Solo podés ver tu propia rutina"));
     }
 }

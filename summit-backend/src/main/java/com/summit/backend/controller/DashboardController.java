@@ -28,9 +28,8 @@ public class DashboardController {
         return ResponseEntity.ok(dashboardService.resumen());
     }
 
-    // ?despuesDe=idLog: solo los ingresos posteriores a ese (para preguntar seguido sin traer todo el día)
     @GetMapping("/ingresos-hoy")
-    public ResponseEntity<List<IngresoDTO>> ingresosDeHoy(@RequestParam(required = false) Long despuesDe) {
-        return ResponseEntity.ok(dashboardService.ingresosDeHoy(despuesDe));
+    public ResponseEntity<List<IngresoDTO>> ingresosDeHoy() {
+        return ResponseEntity.ok(dashboardService.ingresosDeHoy());
     }
 }

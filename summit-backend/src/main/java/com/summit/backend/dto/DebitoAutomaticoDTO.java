@@ -10,7 +10,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * Una adhesión al débito automático, para la ficha del socio, el listado de recepción y el portal.
+ * Una adhesión al débito automático, para la ficha del socio y el listado de recepción.
  */
 @Data
 @Builder

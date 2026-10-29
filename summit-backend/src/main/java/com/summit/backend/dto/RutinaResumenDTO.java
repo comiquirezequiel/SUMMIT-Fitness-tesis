@@ -9,7 +9,6 @@ import java.time.LocalDate;
 
 /**
  * Fila del listado de rutinas activas del personal (sin el detalle de ejercicios).
- * ultimoEntrenamiento = último día que el socio registró un entrenamiento (con cualquier rutina).
  */
 @Data
 @Builder
@@ -26,5 +25,4 @@ public class RutinaResumenDTO {
     private LocalDate fechaCreacion;
     private int totalDias;
     private long cantidadEjercicios;
-    private LocalDate ultimoEntrenamiento;
 }

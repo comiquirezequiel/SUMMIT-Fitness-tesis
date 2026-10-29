@@ -3,20 +3,17 @@ package com.summit.backend.service;
 import com.summit.backend.dto.RutinaDTO;
 import com.summit.backend.dto.RutinaEjercicioDTO;
 import com.summit.backend.dto.RutinaEjercicioRequestDTO;
-import com.summit.backend.dto.RutinaHoyDTO;
 import com.summit.backend.dto.RutinaRequestDTO;
 import com.summit.backend.dto.RutinaResumenDTO;
 import com.summit.backend.model.CertificadoMedico;
 import com.summit.backend.model.Ejercicio;
 import com.summit.backend.model.EstadoUsuario;
-import com.summit.backend.model.LogEntrenamiento;
 import com.summit.backend.model.Rol;
 import com.summit.backend.model.Rutina;
 import com.summit.backend.model.RutinaEjercicio;
 import com.summit.backend.model.Usuario;
 import com.summit.backend.repository.CertificadoMedicoRepository;
 import com.summit.backend.repository.EjercicioRepository;
-import com.summit.backend.repository.LogEntrenamientoRepository;
 import com.summit.backend.repository.RutinaEjercicioRepository;
 import com.summit.backend.repository.RutinaRepository;
 import com.summit.backend.repository.UsuarioRepository;
@@ -35,7 +32,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -60,7 +56,6 @@ public class RutinaService {
     private final EjercicioRepository ejercicioRepository;
     private final UsuarioRepository usuarioRepository;
     private final CertificadoMedicoRepository certificadoMedicoRepository;
-    private final LogEntrenamientoRepository logEntrenamientoRepository;
 
     /**
      * Rutinas activas del socio, la más reciente primero.
@@ -88,7 +83,6 @@ public class RutinaService {
                         .fechaCreacion((LocalDate) fila[7])
                         .totalDias(fila[8] != null ? ((Number) fila[8]).intValue() : 0)
                         .cantidadEjercicios(((Number) fila[9]).longValue())
-                        .ultimoEntrenamiento((LocalDate) fila[10])
                         .build())
                 .toList();
     }
@@ -203,14 +197,12 @@ public class RutinaService {
     }
 
     /**
-     * Quita el ejercicio de la rutina. Su historial de entrenamientos se conserva:
-     * los registros guardan ejercicio, rutina y día.
+     * Quita el ejercicio de la rutina.
      */
     @Transactional
     public void quitarEjercicio(Long idRutina, Long idRutinaEjercicio) {
         Rutina rutina = rutinaModificable(idRutina);
         RutinaEjercicio item = ejercicioDeLaRutina(rutina, idRutinaEjercicio);
-        logEntrenamientoRepository.desvincularEjercicioDeRutina(idRutinaEjercicio);
         rutina.getEjercicios().remove(item);
         renumerarDia(rutina, dia(item));
     }
@@ -224,70 +216,6 @@ public class RutinaService {
         Ejercicio ejercicio = ejercicioRepository.findById(idEjercicio)
                 .orElseThrow(() -> new IllegalArgumentException("Ejercicio no encontrado"));
         return riesgosDelSocio(idSocio, ejercicio);
-    }
-
-    /**
-     * Rutina del día del socio. Si hoy ya registró algo de su rutina, sigue en ese día; si no,
-     * le toca el siguiente al último que entrenó (después del último vuelve al primero);
-     * si nunca entrenó, el primero. Con diaPedido se puede ver otro día.
-     */
-    @Transactional(readOnly = true)
-    public RutinaHoyDTO rutinaDeHoy(Long idSocio, Integer diaPedido) {
-        if (diaPedido != null) {
-            validarDia(diaPedido);
-        }
-        Rutina rutina = rutinaRepository.findBySocioIdUsuarioAndActivaTrueOrderByFechaCreacionDescIdRutinaDesc(idSocio)
-                .stream().findFirst()
-                .orElseThrow(() -> new NoSuchElementException("El socio no tiene una rutina activa"));
-        LocalDate hoy = LocalDate.now();
-        List<RutinaEjercicioDTO> ejercicios = ejerciciosOrdenados(rutina);
-        List<LogEntrenamiento> registrosDeHoy = logEntrenamientoRepository
-                .findByRutinaIdRutinaAndFechaOrderByFechaRegistroDesc(rutina.getIdRutina(), hoy);
-
-        int dia = diaPedido != null ? diaPedido : diaQueToca(rutina, ejercicios, registrosDeHoy, hoy);
-        List<RutinaEjercicioDTO> delDia = ejercicios.stream().filter(e -> e.getDiaNumero() == dia).toList();
-
-        // Lo cargado hoy, por ejercicio de la rutina
-        Map<Long, LogEntrenamiento> deHoy = new HashMap<>();
-        for (LogEntrenamiento registro : registrosDeHoy) {
-            if (registro.getRutinaEjercicio() != null) {
-                deHoy.putIfAbsent(registro.getRutinaEjercicio().getIdRutinaEjercicio(), registro);
-            }
-        }
-        // La vez pasada, por ejercicio del catálogo (aunque haya sido con otra rutina)
-        Set<Long> idsEjercicio = delDia.stream().map(RutinaEjercicioDTO::getIdEjercicio).collect(Collectors.toSet());
-        Map<Long, LogEntrenamiento> anteriores = new HashMap<>();
-        if (!idsEjercicio.isEmpty()) {
-            for (LogEntrenamiento registro : logEntrenamientoRepository.findUltimosAntesDe(idSocio, idsEjercicio, hoy)) {
-                anteriores.merge(registro.getEjercicio().getIdEjercicio(), registro,
-                        (a, b) -> a.getFechaRegistro().isAfter(b.getFechaRegistro()) ? a : b);
-            }
-        }
-
-        return RutinaHoyDTO.builder()
-                .idRutina(rutina.getIdRutina())
-                .nombreRutina(rutina.getNombre())
-                .fecha(hoy)
-                .diaNumero(dia)
-                .totalDias(totalDias(ejercicios))
-                .yaEntrenoHoy(!registrosDeHoy.isEmpty())
-                .ejercicios(delDia.stream()
-                        .map(e -> RutinaHoyDTO.EjercicioDelDia.builder()
-                                .ejercicio(e)
-                                .registroHoy(registroHoy(deHoy.get(e.getIdRutinaEjercicio())))
-                                .ultimoRegistro(ultimoRegistro(anteriores.get(e.getIdEjercicio())))
-                                .build())
-                        .toList())
-                .build();
-    }
-
-    /**
-     * Indica si el usuario logueado (identificado por su email) es ese socio.
-     */
-    public boolean esElSocio(String email, Long idSocio) {
-        return usuarioRepository.findByEmail(email)
-                .map(u -> u.getIdUsuario().equals(idSocio))
-                .orElse(false);
     }
 
     // ---- Mapeo a DTO ----
@@ -355,29 +283,6 @@ public class RutinaService {
         return ejercicios.stream().mapToInt(RutinaEjercicioDTO::getDiaNumero).max().orElse(0);
     }
 
-    private static RutinaHoyDTO.RegistroHoy registroHoy(LogEntrenamiento registro) {
-        if (registro == null) return null;
-        return RutinaHoyDTO.RegistroHoy.builder()
-                .idLog(registro.getIdLog())
-                .pesoKg(registro.getPesoKg())
-                .repeticiones(registro.getRepeticiones())
-                .series(registro.getSeries())
-                .rpe(registro.getRpe())
-                .comentario(registro.getComentario())
-                .build();
-    }
-
-    private static RutinaHoyDTO.UltimoRegistro ultimoRegistro(LogEntrenamiento registro) {
-        if (registro == null) return null;
-        return RutinaHoyDTO.UltimoRegistro.builder()
-                .fecha(registro.getFecha())
-                .pesoKg(registro.getPesoKg())
-                .repeticiones(registro.getRepeticiones())
-                .series(registro.getSeries())
-                .rpe(registro.getRpe())
-                .build();
-    }
-
     // ---- Reglas internas ----
 
     private Rutina buscarRutina(Long idRutina) {
@@ -414,22 +319,6 @@ public class RutinaService {
         return usuarioRepository.findById(idProfesor)
                 .filter(u -> u.getRol() == Rol.PROFESOR && u.getEstado() == EstadoUsuario.ACTIVO)
                 .orElseThrow(() -> new IllegalArgumentException("El profesor indicado no existe o no está activo"));
-    }
-
-    private int diaQueToca(Rutina rutina, List<RutinaEjercicioDTO> ejercicios,
-                           List<LogEntrenamiento> registrosDeHoy, LocalDate hoy) {
-        if (!registrosDeHoy.isEmpty()) {
-            return registrosDeHoy.get(0).getDiaNumero();
-        }
-        // Días con ejercicios en orden (puede haber días salteados, ej. 1, 2 y 4)
-        List<Integer> dias = ejercicios.stream().map(RutinaEjercicioDTO::getDiaNumero).distinct().toList();
-        if (dias.isEmpty()) {
-            return 1;
-        }
-        return logEntrenamientoRepository
-                .findFirstByRutinaIdRutinaAndFechaBeforeOrderByFechaDescFechaRegistroDesc(rutina.getIdRutina(), hoy)
-                .map(ultimo -> dias.stream().filter(d -> d > ultimo.getDiaNumero()).findFirst().orElse(dias.get(0)))
-                .orElse(dias.get(0));
     }
 
     /**

@@ -15,7 +15,6 @@ import java.util.function.Supplier;
 
 /**
  * Débito automático mensual desde recepción (ADMIN y RECEPCION: lo exige SecurityConfig).
- * El portal del socio tiene sus propios endpoints en PortalController.
  */
 @RestController
 @RequestMapping("/api/debitos")

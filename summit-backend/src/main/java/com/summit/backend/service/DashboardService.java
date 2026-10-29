@@ -35,7 +35,6 @@ public class DashboardService {
     private final SuscripcionRepository suscripcionRepository;
     private final LogAsistenciaRepository logAsistenciaRepository;
     private final FotoSocioService fotoSocioService;
-    private final AsistenciaService asistenciaService;
 
     public DashboardResumenDTO resumen() {
         LocalDate hoy = LocalDate.now();
@@ -66,24 +65,19 @@ public class DashboardService {
     }
 
     /**
-     * Intentos de ingreso de hoy, del más reciente al más antiguo. Con despuesDe (un idLog), solo los posteriores:
-     * el tablero lo pregunta cada pocos segundos para mostrar enseguida quién entró con la app. Sin las salidas del
-     * personal: esas se ven en Asistencia del personal.
+     * Intentos de ingreso de hoy, del más reciente al más antiguo. Sin las salidas del personal: esas se ven en
+     * Asistencia del personal.
      */
-    public List<IngresoDTO> ingresosDeHoy(Long despuesDe) {
+    public List<IngresoDTO> ingresosDeHoy() {
         LocalDate hoy = LocalDate.now();
         LocalDateTime inicio = hoy.atStartOfDay();
         LocalDateTime fin = hoy.atTime(LocalTime.MAX);
-        List<LogAsistencia> logs = despuesDe == null
-                ? logAsistenciaRepository.findByTipoEventoNotAndFechaHoraBetweenOrderByFechaHoraDesc(SALIDA, inicio, fin)
-                : logAsistenciaRepository.findByTipoEventoNotAndFechaHoraBetweenAndIdLogGreaterThanOrderByFechaHoraDesc(
-                        SALIDA, inicio, fin, despuesDe);
+        List<LogAsistencia> logs = logAsistenciaRepository
+                .findByTipoEventoNotAndFechaHoraBetweenOrderByFechaHoraDesc(SALIDA, inicio, fin);
         Map<Long, Long> fotos = fotoSocioService.versiones(
                 logs.stream().map(log -> log.getUsuario().getIdUsuario()).collect(Collectors.toSet()));
         return logs.stream()
-                .map(log -> {
-                    boolean conQr = log.getTipoEvento() == TipoEventoAsistencia.CHECKIN_QR;
-                    return IngresoDTO.builder()
+                .map(log -> IngresoDTO.builder()
                             .idLog(log.getIdLog())
                             .fechaHora(log.getFechaHora())
                             .idUsuario(log.getUsuario().getIdUsuario())
@@ -93,10 +87,7 @@ public class DashboardService {
                             .resultado(log.getResultado().name())
                             .tipoEvento(log.getTipoEvento() != null ? log.getTipoEvento().name() : null)
                             .fotoVersion(fotos.get(log.getUsuario().getIdUsuario()))
-                            .distanciaMetros(conQr ? log.getDistanciaMetros() : null)
-                            .ficha(conQr ? asistenciaService.fichaDeIngresoQr(log.getIdLog()) : null)
-                            .build();
-                })
+                            .build())
                 .toList();
     }
 }

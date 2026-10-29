@@ -48,7 +48,7 @@ export default function RestablecerPassword() {
 
   return (
     <Marco titulo="Elegí una contraseña nueva">
-      <p className="text-sm text-slate-600 mb-5">Vas a usarla para entrar a partir de ahora, en la app y en todos tus dispositivos.</p>
+      <p className="text-sm text-slate-600 mb-5">Vas a usarla para entrar a partir de ahora, en todos tus dispositivos.</p>
       <FormCambiarPassword pedirActual={false} textoBoton="Guardar contraseña" alEnviar={guardar} />
     </Marco>
   );

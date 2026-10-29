@@ -92,7 +92,7 @@ const ImportarSocios = () => {
         <div className="text-sm text-slate-600 space-y-1">
           <p><span className="font-semibold text-slate-800">Columnas obligatorias:</span> Nombre y apellido (o Nombre y Apellido por separado), DNI y Email.</p>
           <p><span className="font-semibold text-slate-800">Opcionales:</span> Teléfono, Fecha de nacimiento, Género, Domicilio, Ciudad, Objetivo y Observaciones. Con <span className="font-semibold">Plan</span> (el nombre de uno de tus planes) y <span className="font-semibold">Vence</span> (la fecha), el socio queda con su membresía hasta ese día, sin cobro.</p>
-          <p>Un DNI que ya está registrado no se modifica. Los socios importados no tienen contraseña para la app: si vuelve, se la da recepción.</p>
+          <p>Un DNI que ya está registrado no se modifica.</p>
         </div>
         <input ref={entrada} type="file" accept=".xlsx,.csv" className="hidden" onChange={(e) => elegir(e.target.files?.[0])} />
         <button onClick={() => entrada.current?.click()} disabled={importando}

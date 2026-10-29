@@ -1,6 +1,5 @@
 package com.summit.backend.service;
 
-import com.summit.backend.config.AppSocios;
 import com.summit.backend.model.EstadoUsuario;
 import com.summit.backend.model.RecuperacionPassword;
 import com.summit.backend.model.Rol;
@@ -25,11 +24,15 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.util.StringUtils;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
+import java.util.HexFormat;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -38,8 +41,7 @@ import java.util.concurrent.CompletableFuture;
  * Contraseñas (Fase 6 de FASES.md): cambiar la propia, restablecerla con una temporal (recepción o el admin) y
  * recuperarla por email con un link de un solo uso.
  *
- * <p>Cada cambio cierra las sesiones abiertas de la cuenta y deja sin efecto los tokens emitidos antes
- * (JwtAuthenticationFilter compara con passwordCambiada).</p>
+ * <p>Cada cambio deja sin efecto los tokens emitidos antes (JwtAuthenticationFilter compara con passwordCambiada).</p>
  */
 @Service
 @RequiredArgsConstructor
@@ -58,14 +60,12 @@ public class PasswordService {
     private final UsuarioRepository usuarioRepository;
     private final RecuperacionPasswordRepository recuperacionRepository;
     private final PasswordEncoder passwordEncoder;
-    private final SesionService sesionService;
     private final DatosGimnasioService datosGimnasioService;
-    private final AppSocios appSocios;
     // Spring lo arma con spring.mail.* (MAIL_HOST y compañía)
     private final ObjectProvider<JavaMailSender> correo;
     private final SecureRandom azar = new SecureRandom();
 
-    // Dirección pública de la app: la del link del mail. Sale de la configuración y nunca del pedido, porque
+    // Dirección del panel: la del link del mail. Sale de la configuración y nunca del pedido, porque
     // si no, alguien podría pedir el link para otro con una dirección suya y quedarse con el token.
     @Value("${summit.app.url:}")
     private String urlApp;
@@ -139,14 +139,13 @@ public class PasswordService {
     }
 
     /**
-     * Una contraseña al azar (para un socio que se da de alta sin contraseña porque la app está suspendida: si la app
-     * vuelve, recepción le da una temporal con "Restablecer contraseña").
+     * Una contraseña al azar para la ficha de un socio: los socios no entran al sistema, así que nadie la conoce.
      */
     public String alAzar() {
         return temporalNueva();
     }
 
-    /** Si se puede ofrecer "¿Olvidaste tu contraseña?": hay correo saliente y se sabe la dirección de la app. */
+    /** Si se puede ofrecer "¿Olvidaste tu contraseña?": hay correo saliente y se sabe la dirección del panel. */
     public boolean recuperacionDisponible() {
         return enviador() != null;
     }
@@ -166,10 +165,10 @@ public class PasswordService {
         if (email == null || email.isBlank()) {
             throw new IllegalArgumentException("Escribí tu email");
         }
-        // Con la app suspendida, los socios no entran: solo el personal recupera su contraseña
+        // Los socios no entran al sistema: solo el personal recupera su contraseña
         Optional<Usuario> cuenta = usuarioRepository.findByEmail(email.trim())
                 .filter(u -> u.getEstado() == EstadoUsuario.ACTIVO)
-                .filter(u -> u.getRol() != Rol.SOCIO || appSocios.habilitada());
+                .filter(u -> u.getRol() != Rol.SOCIO);
         if (cuenta.isEmpty()) {
             return;
         }
@@ -187,7 +186,7 @@ public class PasswordService {
         String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
         recuperacionRepository.save(RecuperacionPassword.builder()
                 .usuario(usuario)
-                .hashToken(SesionService.huella(token))
+                .hashToken(huella(token))
                 .creada(ahora)
                 .vence(ahora.plusMinutes(minutosRecuperacion))
                 .build());
@@ -219,7 +218,7 @@ public class PasswordService {
     public String restablecerConToken(String token, String nueva) {
         RecuperacionPassword pedido = token == null || token.isBlank()
                 ? null
-                : recuperacionRepository.findByHashToken(SesionService.huella(token)).orElse(null);
+                : recuperacionRepository.findByHashToken(huella(token)).orElse(null);
         if (pedido == null || pedido.getUsada() != null || pedido.getVence().isBefore(LocalDateTime.now())
                 || pedido.getUsuario().getEstado() != EstadoUsuario.ACTIVO) {
             throw new LinkInvalidoException();
@@ -240,7 +239,7 @@ public class PasswordService {
         }
     }
 
-    // Guarda la contraseña, cierra las sesiones abiertas y anula los links de recuperación pendientes
+    // Guarda la contraseña y anula los links de recuperación pendientes
     private void guardar(Usuario usuario, String password, boolean temporal) {
         // En segundos, como la fecha de emisión de los tokens: el token que se da enseguida no queda viejo
         LocalDateTime ahora = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
@@ -248,7 +247,6 @@ public class PasswordService {
         usuario.setDebeCambiarPassword(temporal);
         usuario.setPasswordCambiada(ahora);
         usuarioRepository.save(usuario);
-        sesionService.cerrarTodas(usuario.getIdUsuario());
         recuperacionRepository.anularPendientes(usuario.getIdUsuario(), ahora);
     }
 
@@ -267,7 +265,7 @@ public class PasswordService {
         }
     }
 
-    // null si falta configurar el correo (MAIL_HOST) o la dirección de la app (APP_URL). Spring arma el enviador
+    // null si falta configurar el correo (MAIL_HOST) o la dirección del panel (APP_URL). Spring arma el enviador
     // aunque MAIL_HOST esté vacío, así que no alcanza con que exista.
     private JavaMailSender enviador() {
         JavaMailSender enviador = correo.getIfAvailable();
@@ -314,6 +312,16 @@ public class PasswordService {
             return remitente.strip();
         }
         return usuarioCorreo.contains("@") ? usuarioCorreo.strip() : "no-responder@summit.local";
+    }
+
+    // SHA-256 en hexadecimal: lo único que se guarda del token del link
+    private static String huella(String token) {
+        try {
+            byte[] hash = MessageDigest.getInstance("SHA-256").digest(token.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("La JVM no tiene SHA-256", e);
+        }
     }
 
     private static String escapar(String texto) {

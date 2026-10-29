@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   UserPlus, ChevronRight, ChevronLeft, User, Mail, Phone, Wallet,
-  MapPin, Check, X, KeyRound, HeartPulse, Upload, CheckCircle2, XCircle, AlertTriangle, Camera, Trash2
+  MapPin, Check, X, HeartPulse, Upload, CheckCircle2, XCircle, AlertTriangle, Camera, Trash2
 } from 'lucide-react';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../components/Campo';
 import CapturaFoto from '../components/socios/CapturaFoto';
@@ -14,7 +14,6 @@ import { listarDescuentos, registrarCobro, textoValorDescuento, usePresupuesto }
 import { subirFotoSocio } from '../services/fotos';
 import { useEstadoIa, BotonIa, ResultadoAnalisis, AvisoIaNoDisponible } from '../components/ia/AsistenteIa';
 import { apiFetch } from '../services/api';
-import { useFunciones } from '../services/funciones';
 import { subirCertificado, validarArchivoApto } from '../services/certificados';
 import { analizarArchivo } from '../services/ia';
 import { formatFecha, formatMoneda, hoyIso, diasHasta } from '../utils/formato';
@@ -25,23 +24,15 @@ const STEPS = ['Datos Personales', 'Contacto y Acceso', 'Apto Médico', 'Cobro']
 
 const FORM_INICIAL = {
   nombre: '', apellido: '', dni: '', fechaNacimiento: '', genero: '', objetivo: '',
-  email: '', telefono: '', domicilio: '', ciudad: '', password: '',
+  email: '', telefono: '', domicilio: '', ciudad: '',
   // sinCobro: "todavía no paga" (se registra sin plan); si no, hay que elegir uno
   idPlan: '', sinCobro: false, idDescuento: '', bonificarMatricula: false, metodoPago: 'EFECTIVO', comprobante: '', aVerificar: false,
   archivoApto: null, fechaEmisionApto: '', patologias: '', resumenIa: '', observaciones: '',
   foto: null, // JPG cuadrado de CapturaFoto: se sube después de crear al socio
 };
 
-// Contraseña inicial para la app del socio (sin caracteres que se confunden: 0/O, 1/l)
-const generarPassword = () => {
-  const caracteres = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const valores = crypto.getRandomValues(new Uint32Array(8));
-  return Array.from(valores, v => caracteres[v % caracteres.length]).join('');
-};
-
-// Devuelve { campo: mensaje } con los errores del paso indicado. conApp: la app del socio está habilitada (si no,
-// no se pide contraseña)
-const validarPaso = (paso, form, conApp) => {
+// Devuelve { campo: mensaje } con los errores del paso indicado
+const validarPaso = (paso, form) => {
   const e = {};
   if (paso === 0) {
     if (!form.nombre.trim()) e.nombre = 'Ingresá el nombre';
@@ -51,7 +42,6 @@ const validarPaso = (paso, form, conApp) => {
   }
   if (paso === 1) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = 'Ingresá un email válido';
-    if (conApp && form.password.length < 6) e.password = 'Mínimo 6 caracteres';
   }
   if (paso === 2) {
     if (form.archivoApto) {
@@ -70,7 +60,6 @@ const validarPaso = (paso, form, conApp) => {
 
 const NuevoSocio = () => {
   const navigate = useNavigate();
-  const { appSocios } = useFunciones();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState(FORM_INICIAL);
   const [errores, setErrores] = useState({});
@@ -151,7 +140,7 @@ const NuevoSocio = () => {
   };
 
   const siguiente = () => {
-    const e = validarPaso(step, form, appSocios);
+    const e = validarPaso(step, form);
     setErrores(e);
     if (Object.keys(e).length === 0) setStep(s => Math.min(s + 1, STEPS.length - 1));
   };
@@ -167,7 +156,7 @@ const NuevoSocio = () => {
   const cobroListo = Boolean(form.idPlan && presupuesto && !calculando && !errorPresupuesto);
 
   const registrar = async () => {
-    const e = validarPaso(3, form, appSocios);
+    const e = validarPaso(3, form);
     // Con plan, se registra cuando el total del cobro ya está calculado (y sin errores)
     if (form.idPlan && !cobroListo) e.idPlan = errorPresupuesto || 'Esperá a que se calcule el total';
     setErrores(e);
@@ -182,8 +171,6 @@ const NuevoSocio = () => {
           dni: form.dni,
           nombreCompleto: `${form.nombre.trim()} ${form.apellido.trim()}`,
           email: form.email.trim(),
-          // Con la app suspendida no se pide: el backend genera una al azar
-          password: appSocios ? form.password : null,
           telefono: form.telefono,
           fechaNacimiento: form.fechaNacimiento || null,
           genero: form.genero,
@@ -288,7 +275,7 @@ const NuevoSocio = () => {
           <p className="text-slate-500">{resultado.socio.nombreCompleto} · DNI {resultado.socio.dni}</p>
         </div>
         <ul className="space-y-2">
-          <Item ok texto="Datos del socio guardados" detalle={appSocios ? `Usuario para la app: ${resultado.socio.email}` : resultado.socio.email} />
+          <Item ok texto="Datos del socio guardados" detalle={resultado.socio.email} />
           {cobro?.ok
             ? <Item ok={!aVerificar}
                     texto={`${aVerificar ? 'Cobro a verificar' : 'Cobro registrado'}: ${cobro.pago.plan}`}
@@ -461,23 +448,6 @@ const NuevoSocio = () => {
                 <input type="text" placeholder="Corrientes" value={form.ciudad}
                   onChange={e => update('ciudad', e.target.value)} className={inputClass} />
               </Campo>
-              {appSocios && (
-              <Campo label="Contraseña inicial (app del socio)" required error={errores.password}
-                     ayuda="Entregásela al socio: con su email y esta contraseña entra a la app, y ahí elige una propia."
-                     className="md:col-span-2">
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <KeyRound className="w-4 h-4 text-slate-300 absolute left-3 top-3" />
-                    <input type="text" value={form.password} placeholder="Mínimo 6 caracteres"
-                      onChange={e => update('password', e.target.value)} className={`${inputClass} pl-9 font-mono`} />
-                  </div>
-                  <button type="button" onClick={() => update('password', generarPassword())}
-                    className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 whitespace-nowrap">
-                    Generar
-                  </button>
-                </div>
-              </Campo>
-              )}
               <Campo label="Observaciones" className="md:col-span-2">
                 <textarea rows={3} placeholder="Notas para recepción (horarios, preferencias...)"
                   value={form.observaciones} onChange={e => update('observaciones', e.target.value)}

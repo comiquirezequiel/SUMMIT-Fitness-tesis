@@ -60,15 +60,12 @@ class PermisosTest extends PruebaIntegracion {
     }
 
     @Test
-    void conLaAppDelSocioEnPausaElSocioNoEntra() throws Exception {
+    void unSocioNoEntraAlSistema() throws Exception {
         Usuario socio = socio();
-        mvc.perform(get("/api/portal/estado").header("Authorization", token(socio)))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.codigo").value("APP_SOCIOS_SUSPENDIDA"));
         mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"" + socio.getEmail() + "\",\"password\":\"" + PASSWORD + "\"}"))
-                .andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.error", containsString("todavía no está disponible")));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error", containsString("Credenciales inválidas")));
     }
 
     @Test

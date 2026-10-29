@@ -31,10 +31,4 @@ public class ConfiguracionAccesoController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
-
-    /** Genera un código nuevo para el QR de ingreso (los QR impresos anteriores dejan de servir). */
-    @PostMapping("/codigo-qr")
-    public ResponseEntity<ConfiguracionAcceso> regenerarCodigoQr() {
-        return ResponseEntity.ok(configuracionAccesoService.regenerarCodigoQr());
-    }
 }

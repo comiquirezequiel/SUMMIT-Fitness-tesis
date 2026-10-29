@@ -23,10 +23,6 @@ public interface PagoHistorialRepository extends JpaRepository<PagoHistorial, Lo
     @EntityGraph(attributePaths = {"plan", "registradoPor", "verificadoPor"})
     List<PagoHistorial> findByUsuarioIdUsuarioOrderByFechaPagoDesc(Long idUsuario);
 
-    // Pagos de un socio con su plan en la misma consulta, del más nuevo al más viejo (portal del socio)
-    @EntityGraph(attributePaths = "plan")
-    List<PagoHistorial> findByUsuarioIdUsuarioOrderByFechaPagoDescIdPagoDesc(Long idUsuario);
-
     // Trae socio, plan y personal en la misma consulta para el listado de caja
     @Override
     @EntityGraph(attributePaths = {"usuario", "plan", "registradoPor", "verificadoPor"})

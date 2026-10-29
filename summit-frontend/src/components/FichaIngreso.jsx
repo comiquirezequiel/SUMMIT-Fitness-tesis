@@ -2,8 +2,7 @@ import React from 'react';
 import { XCircle, AlertTriangle, CalendarDays, Wallet, HeartPulse } from 'lucide-react';
 import { formatFecha, textoVencimiento } from '../utils/formato';
 
-// Partes de la ficha de un intento de ingreso (respuesta del control de acceso). Las usan el control por DNI y el
-// tablero, cuando alguien entra con el QR de la app: así recepción ve lo mismo en los dos casos.
+// Partes de la ficha de un intento de ingreso (respuesta del control de acceso por DNI).
 
 // Tarjeta chica con un dato de la ficha (días de la semana, cuota, apto)
 const DatoFicha = ({ icon: Icon, titulo, valor, detalle, alerta }) => (

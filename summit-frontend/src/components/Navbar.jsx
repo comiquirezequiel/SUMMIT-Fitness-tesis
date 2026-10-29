@@ -2,9 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Bell, LogOut, Menu, KeyRound, CheckCircle2 } from 'lucide-react';
 import Modal from './Modal';
-import { useSinLeerChat } from '../services/chat';
 import { useTareasPendientes } from '../services/seguimiento';
-import { useFunciones } from '../services/funciones';
 import FormCambiarPassword from '../cuenta/FormCambiarPassword';
 import { cambiarPassword } from '../services/cuenta';
 import { cerrarSesion } from '../services/auth';
@@ -34,11 +32,8 @@ const CambiarPasswordModal = ({ email, onClose }) => {
 
 const Navbar = ({ onMenuClick }) => {
   const usuario = usuarioActual();
-  const { appSocios } = useFunciones();
-  const atiendeChat = appSocios && ['ADMIN', 'RECEPCION'].includes(usuario?.rol);
-  const sinLeerChat = useSinLeerChat(atiendeChat);
-  // Sin chat (app del socio en pausa), la campanita avisa las tareas de seguimiento pendientes
-  const avisaTareas = !atiendeChat && ['ADMIN', 'RECEPCION'].includes(usuario?.rol);
+  // La campanita avisa las tareas de seguimiento pendientes
+  const avisaTareas = ['ADMIN', 'RECEPCION'].includes(usuario?.rol);
   const tareas = useTareasPendientes(avisaTareas);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [cambiandoPassword, setCambiandoPassword] = useState(false);
@@ -74,18 +69,6 @@ const Navbar = ({ onMenuClick }) => {
       </div>
 
       <div className="flex items-center gap-2 md:gap-4 text-slate-600">
-        {/* Campanita: conversaciones del chat con mensajes de socios sin leer (solo para quien atiende el chat) */}
-        {atiendeChat && (
-          <Link to="/socios/chat" className="relative p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors"
-            title={sinLeerChat > 0 ? `Chat: ${sinLeerChat} ${sinLeerChat === 1 ? 'conversación' : 'conversaciones'} sin leer` : 'Chat con los socios'}>
-            <Bell className="w-4 h-4" />
-            {sinLeerChat > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[9px] font-bold px-1.5 rounded-full border-2 border-white">
-                {sinLeerChat > 9 ? '9+' : sinLeerChat}
-              </span>
-            )}
-          </Link>
-        )}
         {avisaTareas && (
           <Link to="/socios/tareas" className="relative p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors"
             title={tareas.pendientes > 0

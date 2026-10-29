@@ -1,31 +1,22 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
-import AvisoActualizacion from './components/AvisoActualizacion';
 import { sesionVigente, limpiarSesion } from './services/auth';
 import { useFunciones } from './services/funciones';
 import { usuarioActual } from './utils/formato';
 
-// Portal del socio (pensado para el celular): se descarga aparte, el personal no lo necesita. Mientras la app del
-// socio está suspendida, el socio ve AppSuspendida
-const PortalSocio = lazy(() => import('./portal/PortalSocio'));
-const AppSuspendida = lazy(() => import('./cuenta/AppSuspendida'));
-
-// Contraseñas: elegir la propia al entrar con una temporal, "¿Olvidaste tu contraseña?" y el link del mail.
-// Las usan el socio y el personal (por eso están en cuenta/ y no en pages/)
+// Contraseñas: elegir la propia al entrar con una temporal, "¿Olvidaste tu contraseña?" y el link del mail
 const CambiarPassword = lazy(() => import('./cuenta/CambiarPassword'));
 const OlvidePassword = lazy(() => import('./cuenta/OlvidePassword'));
 const RestablecerPassword = lazy(() => import('./cuenta/RestablecerPassword'));
 
-// Panel del personal: cada pantalla se descarga recién cuando se abre, así el socio no baja ninguna
-// (en el build llevan el prefijo panel-: ver vite.config.js)
+// Cada pantalla se descarga recién cuando se abre
 const Layout = lazy(() => import('./components/Layout'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Socios = lazy(() => import('./pages/Socios'));
 const NuevoSocio = lazy(() => import('./pages/NuevoSocio'));
 const ImportarSocios = lazy(() => import('./pages/ImportarSocios'));
 const MetricasGenerales = lazy(() => import('./pages/MetricasGenerales'));
-const Chat = lazy(() => import('./pages/Chat'));
 const TareasCRM = lazy(() => import('./pages/TareasCRM'));
 const Inactividad = lazy(() => import('./pages/Inactividad'));
 const Caja = lazy(() => import('./pages/Caja'));
@@ -41,7 +32,6 @@ const EntrenamientoPlanes = lazy(() => import('./pages/EntrenamientoPlanes'));
 const Entrenamiento = lazy(() => import('./pages/Entrenamiento'));
 const Clases = lazy(() => import('./pages/Clases'));
 const DatosGimnasio = lazy(() => import('./pages/DatosGimnasio'));
-const Novedades = lazy(() => import('./pages/Novedades'));
 const ConfiguracionAcceso = lazy(() => import('./pages/ConfiguracionAcceso'));
 const AjustesEquipo = lazy(() => import('./pages/AjustesEquipo'));
 const AjustesAsistencia = lazy(() => import('./pages/AjustesAsistencia'));
@@ -57,7 +47,6 @@ const DeLaCuenta = ({ children }) => (
 
 // Rutas protegidas: sin token, o con el token vencido, vuelve al login
 const ProtectedRoute = ({ children }) => {
-  const { appSocios } = useFunciones();
   if (!sesionVigente()) {
     const habiaSesion = !!localStorage.getItem('token');
     limpiarSesion();
@@ -67,23 +56,8 @@ const ProtectedRoute = ({ children }) => {
   if (usuarioActual()?.debeCambiarPassword) {
     return <Navigate to="/cambiar-password" replace />;
   }
-  // El socio usa su portal (pensado para el celular); el panel es para el personal. Con la app del socio suspendida,
-  // una sesión de socio que quedó abierta ve el aviso
-  if (usuarioActual()?.rol === 'SOCIO') {
-    if (!appSocios) {
-      return <DeLaCuenta><AppSuspendida /></DeLaCuenta>;
-    }
-    return (
-      <Suspense fallback={<div className="min-h-screen bg-slate-50" />}>
-        <PortalSocio />
-      </Suspense>
-    );
-  }
   return children;
 };
-
-// Pantallas que existen solo para la app del socio (chat, novedades): suspendida, vuelven al inicio
-const SoloConAppSocios = ({ children }) => (useFunciones().appSocios ? children : <Navigate to="/" replace />);
 
 // Pantallas de la factura electrónica: con la facturación apagada, vuelven al inicio
 const SoloConFacturacion = ({ children }) => (useFunciones().facturacion ? children : <Navigate to="/" replace />);
@@ -99,7 +73,6 @@ const Inicio = () => (usuarioActual()?.rol === 'PROFESOR'
 function App() {
   return (
     <Router>
-      <AvisoActualizacion />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/cambiar-password" element={<DeLaCuenta><CambiarPassword /></DeLaCuenta>} />
@@ -120,8 +93,6 @@ function App() {
           <Route path="socios/metricas" element={<Diferida><MetricasGenerales /></Diferida>} />
           <Route path="socios/nuevo" element={<Diferida><NuevoSocio /></Diferida>} />
           <Route path="socios/importar" element={<Diferida><ImportarSocios /></Diferida>} />
-          <Route path="socios/novedades" element={<SoloConAppSocios><Diferida><Novedades /></Diferida></SoloConAppSocios>} />
-          <Route path="socios/chat" element={<SoloConAppSocios><Diferida><Chat /></Diferida></SoloConAppSocios>} />
           <Route path="socios/tareas" element={<Diferida><TareasCRM /></Diferida>} />
           <Route path="socios/inactividad" element={<Diferida><Inactividad /></Diferida>} />
 

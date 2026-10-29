@@ -17,11 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Servicio de clases grupales.
@@ -107,36 +103,9 @@ public class ClaseService {
                 .toList();
     }
 
-    /**
-     * Agenda de varios días seguidos (ej. la semana del portal del socio), ordenada por fecha y hora.
-     * Son dos consultas en total: los horarios de las clases activas y los cupos ocupados de todo el rango.
-     */
-    @Transactional(readOnly = true)
-    public Map<LocalDate, List<AgendaClaseDTO>> agendaEntre(LocalDate desde, LocalDate hasta) {
-        Map<DiaSemana, List<ClaseHorario>> horariosPorDia = claseHorarioRepository
-                .findByClaseActivaTrueOrderByHoraInicioAscIdHorarioAsc().stream()
-                .collect(Collectors.groupingBy(ClaseHorario::getDiaSemana));
-
-        Map<HorarioFecha, Long> reservados = new HashMap<>();
-        for (Object[] fila : reservaClaseRepository.contarPorHorarioYFecha(desde, hasta, EstadoReserva.CANCELADA)) {
-            reservados.put(new HorarioFecha((Long) fila[0], (LocalDate) fila[1]), (Long) fila[2]);
-        }
-
-        Map<LocalDate, List<AgendaClaseDTO>> agenda = new LinkedHashMap<>();
-        for (LocalDate fecha = desde; !fecha.isAfter(hasta); fecha = fecha.plusDays(1)) {
-            LocalDate dia = fecha;
-            agenda.put(dia, horariosPorDia.getOrDefault(diaSemana(dia), List.of()).stream()
-                    .map(h -> agendaDTO(h, reservados.getOrDefault(new HorarioFecha(h.getIdHorario(), dia), 0L)))
-                    .toList());
-        }
-        return agenda;
-    }
-
     public static DiaSemana diaSemana(LocalDate fecha) {
         return DiaSemana.values()[fecha.getDayOfWeek().getValue() - 1];
     }
-
-    private record HorarioFecha(Long idHorario, LocalDate fecha) {}
 
     private static AgendaClaseDTO agendaDTO(ClaseHorario h, long reservados) {
         Clase clase = h.getClase();

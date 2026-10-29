@@ -65,12 +65,6 @@ public class SocioController {
         return ResponseEntity.ok(Map.of("mensaje", "Socio cancelado correctamente (baja lógica)"));
     }
 
-    /** Contraseña temporal para el socio que se olvidó la suya: {passwordTemporal}, para dársela en persona. */
-    @PostMapping("/{id}/restablecer-password")
-    public ResponseEntity<Map<String, String>> restablecerPassword(@PathVariable Long id) {
-        return ResponseEntity.ok(Map.of("passwordTemporal", socioService.restablecerPassword(id)));
-    }
-
     @PatchMapping("/{id}/reactivar")
     public ResponseEntity<SocioResponseDTO> reactivarSocio(@PathVariable Long id) {
         return ResponseEntity.ok(socioService.reactivarSocio(id));

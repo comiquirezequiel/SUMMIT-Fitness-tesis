@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 /**
  * Débito automático mensual (opcional para el socio) con Mercado Pago Suscripciones.
  *
- * <p><b>Alta:</b> recepción (mostrando un QR) o el socio desde su portal eligen el plan; se crea la suscripción en
+ * <p><b>Alta:</b> recepción elige el plan (y muestra un QR con el link); se crea la suscripción en
  * Mercado Pago y el socio la autoriza en el link eligiendo con qué pagar: dinero en cuenta de Mercado Pago o
  * cualquier tarjeta de débito, crédito o prepaga (las de Ualá, Naranja X, Banco Nación, etc.).</p>
  *
@@ -41,8 +41,8 @@ import java.util.regex.Pattern;
  * (no hace falta que el sistema esté publicado en internet) y cada cobro aprobado se registra como pago y
  * extiende la membresía. Si un cobro se rechaza, la membresía vence como siempre y recepción ve la alerta.</p>
  *
- * <p><b>Baja:</b> con un clic desde el portal o desde recepción (Defensa del Consumidor: la baja tiene que poder
- * hacerse por el mismo medio que el alta). Solo se marca la baja si Mercado Pago la confirma: si no, seguiría
+ * <p><b>Baja:</b> con un clic desde recepción (Defensa del Consumidor: la baja tiene que poder hacerse por el
+ * mismo medio que el alta). Solo se marca la baja si Mercado Pago la confirma: si no, seguiría
  * cobrando.</p>
  */
 @Service
@@ -66,7 +66,7 @@ public class DebitoAutomaticoService {
     // Una sincronización a la vez: la programada y la del botón "Actualizar" no se pisan
     private final Semaphore sincronizando = new Semaphore(1);
 
-    /** Estado del débito de un socio para su ficha o su portal (debito = null si nunca se adhirió). */
+    /** Estado del débito de un socio para su ficha (debito = null si nunca se adhirió). */
     public record EstadoDebitoSocio(boolean habilitado, DebitoAutomaticoDTO debito) {
     }
 
@@ -90,11 +90,6 @@ public class DebitoAutomaticoService {
     public EstadoDebitoSocio delSocio(Long idSocio) {
         return new EstadoDebitoSocio(mercadoPago.habilitado(),
                 debitoRepository.findFirstByUsuarioIdUsuarioOrderByFechaAltaDesc(idSocio).map(this::aDto).orElse(null));
-    }
-
-    @Transactional(readOnly = true)
-    public EstadoDebitoSocio delSocioPorEmail(String emailSocio) {
-        return delSocio(socioPorEmail(emailSocio).getIdUsuario());
     }
 
     /**
@@ -163,26 +158,11 @@ public class DebitoAutomaticoService {
         return aDto(debitoRepository.save(debito));
     }
 
-    /** Alta desde el portal: el socio es siempre el del token. */
-    @Transactional
-    public DebitoAutomaticoDTO adherirPropio(String emailSocio, Long idPlan, String emailPagador) {
-        return adherir(socioPorEmail(emailSocio).getIdUsuario(), idPlan, emailPagador, emailSocio);
-    }
-
     @Transactional
     public DebitoAutomaticoDTO darDeBaja(Long idDebito, String emailQuien) {
         DebitoAutomatico debito = debitoRepository.findById(idDebito)
                 .orElseThrow(() -> new NoSuchElementException("No existe el débito automático " + idDebito));
         return aDto(baja(debito, emailQuien));
-    }
-
-    @Transactional
-    public DebitoAutomaticoDTO darDeBajaPropio(String emailSocio) {
-        Usuario socio = socioPorEmail(emailSocio);
-        DebitoAutomatico debito = debitoRepository
-                .findFirstByUsuarioIdUsuarioAndEstadoInOrderByFechaAltaDesc(socio.getIdUsuario(), VIGENTES)
-                .orElseThrow(() -> new NoSuchElementException("No tenés un débito automático para dar de baja"));
-        return aDto(baja(debito, emailSocio));
     }
 
     /**
@@ -251,21 +231,11 @@ public class DebitoAutomaticoService {
         }
     }
 
-    /** "Actualizar" de una sola adhesión (ficha del socio o portal, después de autorizar en Mercado Pago). */
+    /** "Actualizar" de una sola adhesión (ficha del socio, después de autorizar en Mercado Pago). */
     public DebitoAutomaticoDTO sincronizar(Long idDebito) {
         sincronizarUno(idDebito);
         return transaccion.execute(estado -> debitoRepository.findById(idDebito).map(this::aDto)
                 .orElseThrow(() -> new NoSuchElementException("No existe el débito automático " + idDebito)));
-    }
-
-    public EstadoDebitoSocio sincronizarPropio(String emailSocio) {
-        Long idSocio = socioPorEmail(emailSocio).getIdUsuario();
-        Long idDebito = transaccion.execute(estado -> debitoRepository
-                .findFirstByUsuarioIdUsuarioOrderByFechaAltaDesc(idSocio)
-                .map(DebitoAutomatico::getIdDebito)
-                .orElseThrow(() -> new NoSuchElementException("No tenés un débito automático")));
-        sincronizarUno(idDebito);
-        return transaccion.execute(estado -> delSocio(idSocio));
     }
 
     /**
@@ -415,11 +385,6 @@ public class DebitoAutomaticoService {
         if (detalle.contains("high_risk") || detalle.contains("blacklist")) return "Rechazado por seguridad";
         if (detalle.contains("max_attempts")) return "Demasiados intentos";
         return "Rechazado por el banco o la billetera";
-    }
-
-    private Usuario socioPorEmail(String email) {
-        return usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new NoSuchElementException("No se encontró el socio"));
     }
 
     private Usuario usuarioPorEmail(String email) {

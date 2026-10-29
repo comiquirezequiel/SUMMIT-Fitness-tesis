@@ -523,21 +523,14 @@ Chrome y Edge usan el almacén de Windows; Firefox también, en Windows, mientra
 esté activo. La raíz dura 10 años; los certificados que firma los renueva Caddy solo. Probado con OpenSSL: con la raíz
 de Caddy instalada, la cadena verifica sin advertencias.
 
-### I. Publicar la app del socio (más adelante)
-
-El plan está en [PLAN-APP-SOCIOS.md](PLAN-APP-SOCIOS.md#publicación): un túnel de Cloudflare (`cloudflared` como
-servicio) hacia `http://localhost:80`, con un dominio propio y reglas para que desde internet solo se llegue a la parte
-del socio. Cuando se haga: agregar la dirección pública a `summit.cors.origins` y a `APP_URL` en
-`app\config\application.properties`. Caddy ya confía en la IP real que informa un programa de la misma PC.
-
-### J. Compilar en otra PC
+### I. Compilar en otra PC
 
 Se puede compilar en la PC de desarrollo (`compilar.ps1 -Salida <carpeta>`) y llevar `app\summit-backend.jar` y `web\`
 a `C:\SUMMIT`. Ojo: si esa PC tiene `summit-backend\src\main\resources\application-local.properties`, Maven lo mete
 adentro del `.jar` con sus contraseñas. `compilar.ps1` lo detecta y se niega a seguir; la solución de fondo es que el
 `pom.xml` lo excluya del `.jar` (`maven-jar-plugin`, `<excludes>`), que no cambia nada en desarrollo.
 
-### K. Desinstalar
+### J. Desinstalar
 
 Hacé antes una última copia y guardala. Después, como administrador: `.\programar-copia.ps1 -Quitar`,
 `.\instalar-servicios.ps1 -Quitar`, borrar la regla del firewall (`Remove-NetFirewallRule -DisplayName 'SUMMIT - app

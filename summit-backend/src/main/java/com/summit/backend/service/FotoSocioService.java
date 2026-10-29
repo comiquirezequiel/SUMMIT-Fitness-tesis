@@ -16,8 +16,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * Foto del socio, para que recepción vea quién entra (PLAN-APP-SOCIOS.md, A4). La saca recepción con la cámara
- * de la PC o del celular; el socio la ve en su credencial, pero no la puede cambiar.
+ * Foto del socio, para que recepción vea quién entra. La saca recepción con la cámara de la PC o del celular.
  *
  * <p>La imagen se revisa y se vuelve a codificar (ver Fotos) y queda en la carpeta summit.uploads.dir/fotos de la
  * PC del gimnasio, como los certificados.</p>

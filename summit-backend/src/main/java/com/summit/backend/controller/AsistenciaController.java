@@ -1,6 +1,5 @@
 package com.summit.backend.controller;
 
-import com.summit.backend.dto.CheckInRequest;
 import com.summit.backend.dto.CheckInResponse;
 import com.summit.backend.service.AsistenciaPersonalService;
 import com.summit.backend.service.AsistenciaService;
@@ -9,13 +8,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
 /**
- * Controller de asistencia y check-in.
- * Endpoint protegido contra spam por RateLimitingFilter + cooldown interno.
+ * Controller del control de acceso en recepción (ingreso por DNI) y del historial de asistencia.
  */
 @RestController
 @RequestMapping("/api/asistencia")
@@ -25,17 +22,6 @@ public class AsistenciaController {
     private final AsistenciaService asistenciaService;
     private final AsistenciaPersonalService asistenciaPersonalService;
 
-    @PostMapping("/checkin")
-    public ResponseEntity<?> checkIn(@Valid @RequestBody CheckInRequest request) {
-        try {
-            CheckInResponse response = asistenciaService.procesarCheckIn(request);
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", e.getMessage()));
-        }
-    }
-    
     @PostMapping("/molinete/verificar")
     public ResponseEntity<?> verificarMolinete(@RequestBody Map<String, String> request) {
         try {

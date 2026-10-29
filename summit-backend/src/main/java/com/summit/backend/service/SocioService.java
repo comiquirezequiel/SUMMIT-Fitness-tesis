@@ -44,7 +44,6 @@ public class SocioService {
     private final SuscripcionRepository suscripcionRepository;
     private final ConfiguracionAccesoService configService;
     private final PasswordEncoder passwordEncoder;
-    private final SesionService sesionService;
     private final PasswordService passwordService;
     private final DescuentoService descuentoService;
     private final CongelamientoService congelamientoService;
@@ -77,15 +76,11 @@ public class SocioService {
                 .dni(request.getDni())
                 .nombreCompleto(request.getNombreCompleto().trim())
                 .email(request.getEmail().trim())
-                // Sin contraseña (la app del socio está suspendida), una al azar: si la app vuelve, recepción le da una
-                // temporal con "Restablecer contraseña"
-                .password(passwordEncoder.encode(request.getPassword() == null || request.getPassword().isBlank()
-                        ? passwordService.alAzar() : request.getPassword()))
+                // Los socios no entran al sistema: la columna es obligatoria, así que lleva una al azar que nadie conoce
+                .password(passwordEncoder.encode(passwordService.alAzar()))
                 .telefono(textoOpcional(request.getTelefono()))
                 .rol(Rol.SOCIO)
                 .estado(EstadoUsuario.ACTIVO)
-                // La contraseña inicial se la da recepción: al entrar por primera vez a la app tiene que cambiarla
-                .debeCambiarPassword(true)
                 .build();
         nuevoSocio = usuarioRepository.save(nuevoSocio);
 
@@ -145,25 +140,13 @@ public class SocioService {
     }
 
     /**
-     * Baja lógica del socio (pasa a CANCELADO). También cierra su sesión en la app en todos sus celulares:
-     * si se lo reactiva, tiene que volver a entrar.
+     * Baja lógica del socio (pasa a CANCELADO).
      */
     @Transactional
     public void cancelarSocio(Long id) {
         Usuario socio = buscarSocio(id);
         socio.setEstado(EstadoUsuario.CANCELADO);
         usuarioRepository.save(socio);
-        sesionService.cerrarTodas(id);
-    }
-
-    /**
-     * Le pone al socio una contraseña temporal, que recepción le da en persona y que tiene que cambiar al entrar
-     * a la app. Cierra su sesión en todos sus celulares.
-     *
-     * @return la contraseña temporal (no se guarda en ningún lado salvo su hash)
-     */
-    public String restablecerPassword(Long id) {
-        return passwordService.restablecerConTemporal(buscarSocio(id));
     }
 
     /**
@@ -223,7 +206,6 @@ public class SocioService {
                 .telefono(usuario.getTelefono())
                 .estado(usuario.getEstado())
                 .fechaCreacion(usuario.getFechaCreacion())
-                .debeCambiarPassword(usuario.isDebeCambiarPassword())
                 .aptoMedicoVigente(certificadoMedicoService.esVigente(certificado, config))
                 .vencimientoApto(certificado.map(CertificadoMedico::getFechaVencimiento).orElse(null))
                 .planActual(sub != null ? sub.getPlan().getNombrePlan() : "Sin Plan")

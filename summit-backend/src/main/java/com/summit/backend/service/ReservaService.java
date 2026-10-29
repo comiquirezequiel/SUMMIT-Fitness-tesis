@@ -6,7 +6,6 @@ import com.summit.backend.repository.ClaseHorarioRepository;
 import com.summit.backend.repository.ReservaClaseRepository;
 import com.summit.backend.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +24,6 @@ public class ReservaService {
     private final ClaseHorarioRepository claseHorarioRepository;
     private final UsuarioRepository usuarioRepository;
     private final CertificadoMedicoService certificadoMedicoService;
-    private final ApplicationEventPublisher eventos;
 
     /**
      * Reserva una plaza en una clase grupal.
@@ -85,8 +83,7 @@ public class ReservaService {
 
     /**
      * Cancela una reserva confirmada (soft cancel). Las ya marcadas como presente o ausente no se
-     * cancelan, así una cancelación no borra el registro de inasistencias. El lugar que queda libre pasa al
-     * primero de la lista de espera (ListaEsperaService, cuando se confirma la cancelación).
+     * cancelan, así una cancelación no borra el registro de inasistencias.
      */
     public void cancelar(Long idReserva) {
         ReservaClase reserva = buscar(idReserva);
@@ -95,16 +92,6 @@ public class ReservaService {
         }
         reserva.setEstado(EstadoReserva.CANCELADA);
         reservaClaseRepository.save(reserva);
-        eventos.publishEvent(new LugarLiberadoEvent(reserva.getHorario().getIdHorario(), reserva.getFechaClase()));
-    }
-
-    /**
-     * Indica si el usuario logueado (identificado por su email) es ese socio.
-     */
-    public boolean esElSocio(String email, Long idSocio) {
-        return usuarioRepository.findByEmail(email)
-                .map(u -> u.getIdUsuario().equals(idSocio))
-                .orElse(false);
     }
 
     /**

@@ -10,12 +10,12 @@ const REGLAS = [
   { texto: 'Letras y números', cumple: (c) => /\p{L}/u.test(c) && /\d/.test(c) },
 ];
 
-// "app": pantallas de la cuenta y portal del socio (campos de 16 px: con menos, el iPhone agranda la pantalla).
+// "app": pantallas de la cuenta (campos de 16 px: con menos, el iPhone agranda la pantalla).
 // "panel": ventanas del panel del personal.
 const ESTILOS = {
   app: {
     etiqueta: 'block text-sm font-semibold text-slate-700 mb-1.5',
-    campo: 'block w-full min-h-[48px] px-3 text-base text-slate-900 bg-superficie border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-bordo-200 focus:border-bordo-400',
+    campo: 'block w-full min-h-[48px] px-3 text-base text-slate-900 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-bordo-200 focus:border-bordo-400',
     boton: 'w-full min-h-[48px] rounded-xl bg-bordo-700 text-white text-base font-bold active:bg-bordo-800 hover:bg-bordo-800 disabled:opacity-50',
   },
   panel: {

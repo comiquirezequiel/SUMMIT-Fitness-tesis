@@ -1,15 +1,8 @@
 package com.summit.backend.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-
-import java.time.LocalTime;
-import java.util.List;
-
 /**
- * Datos del gimnasio para el panel (para ver y guardar) y para la app del socio.
- * latitud y longitud salen de Reglas de acceso (la ubicación del ingreso con QR): sirven para el botón del mapa.
- * logoUrl es la dirección del logo con su versión (null si no hay): el logo se sube aparte. Los tres se ignoran al
- * guardar.
+ * Datos del gimnasio para el panel (para ver y guardar) y para los PDF.
+ * logoUrl es la dirección del logo con su versión (null si no hay): el logo se sube aparte y se ignora al guardar.
  */
 public record DatosGimnasioDTO(
         String nombre,
@@ -19,16 +12,5 @@ public record DatosGimnasioDTO(
         String whatsapp,
         String email,
         String instagram,
-        String reglamento,
-        Integer capacidad,
-        List<Horario> horarios,
-        Double latitud,
-        Double longitud,
         String logoUrl) {
-
-    /** dia: LUNES a DOMINGO. Sin "abre", ese día está cerrado. Las horas van como "07:00". */
-    public record Horario(String dia,
-                          @JsonFormat(pattern = "HH:mm") LocalTime abre,
-                          @JsonFormat(pattern = "HH:mm") LocalTime cierra) {
-    }
 }

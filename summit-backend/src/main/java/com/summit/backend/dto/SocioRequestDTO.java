@@ -29,10 +29,6 @@ public class SocioRequestDTO {
     @Email(message = "Formato de email inválido")
     private String email;
 
-    // Contraseña inicial para la app del socio. Opcional: con la app suspendida no se pide y se genera una al azar
-    @Size(min = 6, max = 100, message = "La contraseña debe tener entre 6 y 100 caracteres")
-    private String password;
-
     @Size(max = 25, message = "El teléfono no puede exceder 25 caracteres")
     private String telefono;
 

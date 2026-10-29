@@ -19,7 +19,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * Límites configurados:
  * - Login: máximo 5 peticiones por minuto por IP
  * - Contraseñas (cambiarla, "¿Olvidaste tu contraseña?" y su link): máximo 5 peticiones por minuto por IP
- * - Check-in (y el ingreso con QR desde la app del socio): máximo 10 peticiones por minuto por IP
  * - Fotos de socios (GET .../foto): máximo 600 peticiones por minuto por IP
  * - General: máximo 120 peticiones por minuto por IP
  * Cada categoría cuenta por separado: navegar el panel no bloquea el login.
@@ -30,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Order(1)
 public class RateLimitingFilter implements Filter {
 
-    // Timestamps de peticiones por IP y categoría ("ip|login", "ip|password", "ip|checkin"...), del más viejo al más nuevo
+    // Timestamps de peticiones por IP y categoría ("ip|login", "ip|password", "ip|fotos"...), del más viejo al más nuevo
     private final ConcurrentHashMap<String, Deque<Long>> requestTimestamps = new ConcurrentHashMap<>();
 
     // Límites por minuto (cada categoría tiene su propio contador)
@@ -38,7 +37,6 @@ public class RateLimitingFilter implements Filter {
     private static final int LOGIN_MAX_REQUESTS_PER_MINUTE = 5;
     // Cambiar la contraseña (probar la actual), pedir el mail de recuperación o usar su link
     private static final int PASSWORD_MAX_REQUESTS_PER_MINUTE = 5;
-    private static final int CHECKIN_MAX_REQUESTS_PER_MINUTE = 10;
     // Fotos de socios: el tablero y la lista de socios pueden pedir muchas juntas (una por fila que se ve)
     private static final int FOTOS_MAX_REQUESTS_PER_MINUTE = 600;
 
@@ -71,9 +69,6 @@ public class RateLimitingFilter implements Filter {
                 || uri.endsWith("/api/auth/restablecer-password")) {
             maxRequests = PASSWORD_MAX_REQUESTS_PER_MINUTE;
             categoria = "password";
-        } else if (uri.contains("/api/asistencia/checkin") || uri.endsWith("/api/portal/ingreso")) {
-            maxRequests = CHECKIN_MAX_REQUESTS_PER_MINUTE;
-            categoria = "checkin";
         } else if ("GET".equalsIgnoreCase(request.getMethod()) && uri.endsWith("/foto")) {
             maxRequests = FOTOS_MAX_REQUESTS_PER_MINUTE;
             categoria = "fotos";

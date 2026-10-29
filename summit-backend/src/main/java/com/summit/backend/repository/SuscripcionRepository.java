@@ -28,7 +28,6 @@ public interface SuscripcionRepository extends JpaRepository<Suscripcion, Long> 
     // Hasta cuándo tuvo cuota (null si nunca tuvo una membresía): decide si corresponde cobrarle matrícula
     @Query("SELECT MAX(s.fechaVencimiento) FROM Suscripcion s WHERE s.usuario.idUsuario = :idUsuario")
     LocalDate ultimoVencimiento(@Param("idUsuario") Long idUsuario);
-    List<Suscripcion> findByFechaVencimientoBeforeAndActivaTrue(LocalDate fecha);
     long countByActivaTrueAndFechaVencimientoBetween(LocalDate desde, LocalDate hasta);
 
     // Métricas: cada membresía como fila [idUsuario, nombrePlan, fechaInicio, fechaVencimiento]

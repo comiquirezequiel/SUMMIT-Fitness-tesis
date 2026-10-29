@@ -15,8 +15,7 @@ no esté acá, sumalo.
 | Control de acceso | Recepción: límite semanal, ficha del socio y Dashboard con datos reales | `129985e` |
 | Paso 2 | Pantallas conectadas al backend: socios, certificados (con archivo), caja, clases y reservas | `107b608` |
 | Seguridad | Los tokens de cuentas desactivadas dejan de servir, CORS configurable, errores unificados y limitador de pedidos | `108c0a6`, `ac2acb9`, `462664d`, `c6872d8` |
-| Paso 3 | Rutinas por día, rutina de hoy, registro de entrenamientos e historial con gráficos | `9ddfcf5`, `d829904` |
-| Paso 4 | Portal del socio para el celular: estado, credencial con QR, rutina, clases y cuenta | `418903c`, `5175d96` |
+| Paso 3 | Rutinas organizadas por día | `9ddfcf5`, `d829904` |
 | Asistente de IA | Ollama local: lee certificados médicos y sugiere ejercicios a evitar | `2636880`, `cee3671` |
 
 ### Etapa 2: pagos y control (11 de octubre)
@@ -37,64 +36,49 @@ no esté acá, sumalo.
 
 ## Pendiente (propuesta, en este orden)
 
-### Etapa 3: app del socio (PWA), suspendida hasta después de la tesis
-
-El plan completo y las decisiones están en [PLAN-APP-SOCIOS.md](PLAN-APP-SOCIOS.md): A0 preparar las pruebas en
-el celular, A1 app instalable, A2 sesión larga, A3 entrenamiento sin conexión y catálogo, A4 ingreso con QR y
-ubicación, A5 planes, profesores e información del gimnasio (cubre la Fase 11), A6 progreso, A7 notificaciones y
-lista de espera, y A8 chat con recepción (cubre el Chat de la Fase 8). Están todas hechas (la última, el
-25/10/2026).
-
-El 25/10/2026 se decidió suspenderla hasta después de presentar la tesis, sin borrar nada:
-`summit.app-socios.habilitada=false` (application.properties). Así los socios no pueden entrar, el portal y el chat
-no responden, no salen notificaciones, y el panel oculta lo que existe solo para la app (Chat, Novedades, perfil
-público de los profesores, ingreso con QR, la contraseña del socio). Para volver a usarla se pone en true.
-
-### Etapa 4: terminar el gestor del gimnasio (en curso desde el 25/10/2026)
+### Etapa 3: terminar el gestor del gimnasio (desde el 25/10/2026)
 
 El foco es el panel, para que el dueño y recepción trabajen más rápido y prolijo. Decisiones del 25/10/2026: la
 agenda de clases queda en el panel; las rutinas y el catálogo interactivo quedan para los profesores, que tienen
 que poder usarlos desde una tablet o un celular; por ahora no se venden productos en recepción; la factura
 electrónica de ARCA (ex AFIP) va al final, después de explicar cómo hacerla.
 
-1. Suspender la app del socio (hecho el 25/10/2026).
-2. Cobro rápido desde el tablero y desde el control de acceso, y comprobante de pago imprimible o en PDF (hecho el
+1. Cobro rápido desde el tablero y desde el control de acceso, y comprobante de pago imprimible o en PDF (hecho el
    26/10/2026: después de cobrar se muestra el comprobante A5 con los datos del gimnasio, el detalle, el total y
    hasta cuándo quedó paga la membresía; se imprime, se descarga, se comparte o se le avisa al socio por WhatsApp, y
    desde la caja se vuelve a abrir el de cualquier cobro. Dice que no es una factura).
-3. Caja completa: gastos y cierre de caja diario por medio de pago (Fase 10, sin productos; hecho el 26/10/2026).
-4. Seguimiento de socios: inactividad con datos reales, tareas automáticas y contacto por WhatsApp (Fase 8, hecha el
+2. Caja completa: gastos y cierre de caja diario por medio de pago (Fase 10, sin productos; hecho el 26/10/2026).
+3. Seguimiento de socios: inactividad con datos reales, tareas automáticas y contacto por WhatsApp (Fase 8, hecha el
    26/10/2026).
-5. Membresías flexibles: congelar una membresía, descuentos y matrícula de inscripción (hecho el 26/10/2026, ver
+4. Membresías flexibles: congelar una membresía, descuentos y matrícula de inscripción (hecho el 26/10/2026, ver
    abajo).
-6. Asistencia del personal (Fase 9, hecha el 26/10/2026).
-7. Rutinas desde tablet o celular, e impresas o en PDF bien diseñado (hecho el 26/10/2026: las pantallas del profesor
+5. Asistencia del personal (Fase 9, hecha el 26/10/2026).
+6. Rutinas desde tablet o celular, e impresas o en PDF bien diseñado (hecho el 26/10/2026: las pantallas del profesor
    tienen botones y campos para el dedo en tablet y celular, el constructor busca ejercicios por palabra, por grupo o
    tocando el cuerpo, y la rutina se imprime, se descarga o se comparte por WhatsApp como un PDF A4 con los datos del
    gimnasio. La base de PDF, en `summit-frontend/src/components/pdf/`, queda para los comprobantes).
-8. Terminaciones: logo del gimnasio (Fase 11), importar socios desde Excel, los botones decorativos de arriba y
+7. Terminaciones: logo del gimnasio (Fase 11), importar socios desde Excel, los botones decorativos de arriba y
    las limpiezas chicas (hecho el 26/10/2026). La importación (botón *Importar* de la lista de socios, solo admin) lee
    un .xlsx o el CSV que guarda Excel, reconoce las columnas por su título, muestra una vista previa con lo que está
    mal y después el resultado de cada fila; un DNI que ya estaba no se toca, y con Plan y Vence el socio queda con su
    membresía hasta esa fecha.
-9. Dejarlo listo para el gimnasio: instalación, copias de seguridad cifradas (Fase 12) y tests automáticos
+8. Dejarlo listo para el gimnasio: instalación, copias de seguridad cifradas (Fase 12) y tests automáticos
    (Fase 7). Hecho el 26/10/2026; falta solo lo que se hace en la PC del gimnasio (ver Fase 12).
-10. Factura electrónica de ARCA (hecha el 28/10/2026 contra el simulador, ver abajo y [FACTURACION.md](FACTURACION.md)).
+9. Factura electrónica de ARCA (hecha el 28/10/2026 contra el simulador, ver abajo y [FACTURACION.md](FACTURACION.md)).
     Falta probarla en homologación con un certificado de prueba y, para usarla de verdad, los trámites del dueño con su
     contador.
-11. Cobro más simple (hecho el 28/10/2026, pedido después de probar el panel): en la lista de socios el botón de cobro
+10. Cobro más simple (hecho el 28/10/2026, pedido después de probar el panel): en la lista de socios el botón de cobro
     aparece solo si el socio tiene algo para pagar (*Cobrar* sin membresía o vencida, *Renovar* si vence en 7 días o
     menos; un cobro a verificar queda marcado y no se ofrece cobrarle de nuevo). El cobro propone el plan que ya tiene, y
     el plan y el medio de pago se eligen con un toque. En el alta de socio el cobro es el último paso: un solo botón
     registra y cobra, y al terminar queda el comprobante (o la factura) para imprimir o mandar por WhatsApp.
-12. Caja sin efectivo negativo (hecho el 28/10/2026, pedido después de probar el cierre): un gasto en efectivo no puede
+11. Caja sin efectivo negativo (hecho el 28/10/2026, pedido después de probar el cierre): un gasto en efectivo no puede
     superar lo que hay en la caja (el formulario muestra cuánto hay); si lo pagó el dueño con su plata se marca "No salió
     de la caja" y cuenta como gasto del mes pero no en el arqueo. En el cierre, un contado negativo o un retiro mayor a lo
     contado se avisan en el momento, y una caja que ya venía en negativo explica por qué y lleva a revisar los gastos.
-13. Entrenamiento sin seguimiento (hecho el 28/10/2026, decisión del dueño): el gimnasio no sigue lo que entrena cada
+12. Entrenamiento sin seguimiento (hecho el 28/10/2026, decisión del dueño): el gimnasio no sigue lo que entrena cada
     socio, la rutina le llega impresa o digital. Se sacaron del panel *Rutina de hoy*, *Historial* y, en *Rutinas*, lo
-    que dependía de los entrenamientos anotados (último entrenamiento, entrenaron esta semana, sin entrenar). El backend
-    de los registros queda para la app del socio, que está suspendida.
+    que dependía de los entrenamientos anotados (último entrenamiento, entrenaron esta semana, sin entrenar).
 
 #### Factura electrónica (hecha el 28/10/2026)
 
@@ -133,21 +117,21 @@ La numeración de las fases siguientes sigue la de la etapa 2.
 
 ### Fase 6: contraseñas (hecha el 24/10/2026, con lo opcional)
 
-- Cada uno cambia la suya pidiendo la actual: en el panel, desde el menú de su nombre (arriba a la derecha); en la
-  app del socio, desde *Perfil*. Al cambiarla se cierran sus sesiones en los otros dispositivos.
-- Recepción (a los socios, desde la ficha) y el admin (también al personal, desde *Ajustes > Equipo*) restablecen
-  una contraseña con una temporal de 10 caracteres, para darla en persona.
+- Cada uno cambia la suya pidiendo la actual, desde el menú de su nombre (arriba a la derecha). Al cambiarla se
+  cierran sus sesiones en los otros dispositivos.
+- El admin restablece la contraseña de otro miembro del equipo (*Ajustes > Equipo*) con una temporal de 10
+  caracteres, para darla en persona. Los socios no entran al sistema: no tienen contraseña.
 - Con una contraseña temporal no se puede usar nada hasta elegir una propia: al entrar aparece la pantalla para
   hacerlo. Lo mismo pasa con la contraseña inicial de una cuenta nueva y con la de `ADMIN_PASSWORD`.
 - "¿Olvidaste tu contraseña?" por email, con un link de un solo uso que vence a los 30 minutos. Se activa
-  configurando un correo saliente (`MAIL_HOST` y compañía) y la dirección pública de la app (`APP_URL`); sin eso,
-  el login dice que la contraseña la restablece el gimnasio.
+  configurando un correo saliente (`MAIL_HOST` y compañía) y la dirección del panel (`APP_URL`); sin eso, el login
+  dice que la contraseña la restablece el admin.
 - Reglas: 8 caracteres o más, con letras y números. Cambiarla, pedir el mail y usar el link: hasta 5 intentos por
   minuto.
 
 ### Fase 7: tests automáticos (hecha el 26/10/2026)
 
-58 tests del backend que se corren con `.\mvnw.cmd test`, en una base aparte (`summit_test`, se crea y se vacía
+Tests del backend que se corren con `.\mvnw.cmd test`, en una base aparte (`summit_test`, se crea y se vacía
 sola) y cada uno deshace lo que hizo:
 
 - Control de acceso: límite semanal (volver el mismo día no cuenta otro), cuota vencida con y sin días de gracia,
@@ -157,7 +141,7 @@ sola) y cada uno deshace lo que hizo:
 - Congelamiento (mínimo, máximo por año, sin superponerse, terminarlo antes), caja (efectivo esperado, gastos
   anulados, diferencia con observación, fondo para el turno siguiente), seguimiento (tareas automáticas que no se
   repiten y se resuelven solas), certificados (365 días, rechazo) e importación de socios.
-- Permisos por rol y por estado de la cuenta (contraseña temporal, cuenta dada de baja, app del socio en pausa).
+- Permisos por rol y por estado de la cuenta (contraseña temporal, cuenta dada de baja; un socio no puede entrar).
 - Las reglas exactas del asistente de IA (`advertencias`).
 
 Los tests encontraron un error real, ya corregido: un cobro o un gasto hecho en el mismo segundo que el cierre de
@@ -177,7 +161,6 @@ caja podía quedar afuera de los dos turnos. Ahora los horarios se guardan con l
 - Contacto por WhatsApp con un enlace que abre el mensaje ya escrito para cada caso (sin servicios pagos), y registro
   de cada contacto.
 - El "débito rechazado" no se hizo: Mercado Pago no informa los cobros rechazados de una suscripción como un estado.
-- **Chat**: hecho en la A8 de la app (bandeja de recepción en el panel y pestaña Mensajes en la app).
 
 ### Fase 9: asistencia del personal (hecha el 26/10/2026)
 
@@ -208,8 +191,8 @@ caja podía quedar afuera de los dos turnos. Ahora los horarios se guardan con l
 ### Fase 11: datos del gimnasio (hecha)
 
 "Ajustes > General" ofrecía formatos de fecha, moneda y zona horaria de varios países, pero el sistema es para
-Argentina. El 20/10/2026 se reemplazó por *Ajustes > Datos del gimnasio* (nombre, dirección, contacto, horarios,
-capacidad y reglamento), que ya usa la app del socio. Desde el 26/10/2026 también van en el encabezado de los PDF
+Argentina. El 20/10/2026 se reemplazó por *Ajustes > Datos del gimnasio* (nombre, dirección y contacto). Desde el
+26/10/2026 van en el encabezado de los PDF
 (rutinas y comprobantes de pago), con el logo del gimnasio: se sube ahí mismo (PNG o JPG; queda como PNG de hasta
 512 px, con transparencia).
 
@@ -220,9 +203,9 @@ capacidad y reglamento), que ya usa la app del socio. Desde el 26/10/2026 tambi�
 - Copias de seguridad automáticas de la base y de `uploads/` (certificados: datos de salud, Ley 25.326).
 - Tener en cuenta la RAM para la IA: `gemma4:12b` ocupa unos 10 GB.
 - Hecho el 26/10/2026: [INSTALACION.md](INSTALACION.md) e `instalacion/` (servicios: backend y Caddy adelante; copias
-  diarias cifradas con restauración probada; usuarios de MySQL con permisos mínimos; chequeo). Falta el dominio y el
-  HTTPS público (túnel), y poner esa dirección en `summit.cors.origins` y `APP_URL`. La primera corrida de lo que pide
-  administrador (servicios, tarea como SYSTEM, firewall) se hace en la PC del gimnasio.
+  diarias cifradas con restauración probada; usuarios de MySQL con permisos mínimos; chequeo). El sistema se usa solo
+  dentro de la red del gimnasio: no hace falta publicarlo en internet. La primera corrida de lo que pide administrador
+  (servicios, tarea como SYSTEM, firewall) se hace en la PC del gimnasio.
 
 ## Limpiezas chicas (hechas el 26/10/2026)
 
