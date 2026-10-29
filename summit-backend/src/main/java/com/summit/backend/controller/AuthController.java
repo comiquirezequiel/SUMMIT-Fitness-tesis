@@ -7,8 +7,6 @@ import com.summit.backend.mercadopago.PasarelaTarjeta;
 import com.summit.backend.service.AuthService;
 import com.summit.backend.service.PasswordService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,13 +29,8 @@ public class AuthController {
     private final PasarelaTarjeta pasarelaTarjeta;
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
-        try {
-            return ResponseEntity.ok(authService.login(request));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", e.getMessage()));
-        }
+    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
+        return authService.login(request);
     }
 
     /**
@@ -45,13 +38,8 @@ public class AuthController {
      * Pide token (SecurityConfig). Responde como el login, con un token nuevo: los anteriores dejan de servir.
      */
     @PutMapping("/password")
-    public ResponseEntity<?> cambiarPassword(@RequestBody Map<String, String> datos, Authentication auth) {
-        try {
-            AuthResponse respuesta = authService.cambiarPassword(auth.getName(), datos.get("actual"), datos.get("nueva"));
-            return ResponseEntity.ok(respuesta);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+    public AuthResponse cambiarPassword(@RequestBody Map<String, String> datos, Authentication auth) {
+        return authService.cambiarPassword(auth.getName(), datos.get("actual"), datos.get("nueva"));
     }
 
     /**
@@ -70,27 +58,15 @@ public class AuthController {
      * Responde siempre lo mismo, para no revelar qué emails están registrados.
      */
     @PostMapping("/olvide-password")
-    public ResponseEntity<?> olvidePassword(@RequestBody Map<String, String> datos) {
-        try {
-            passwordService.solicitarRecuperacion(datos.get("email"));
-            return ResponseEntity.ok(Map.of("mensaje",
-                    "Si el email es de una cuenta del gimnasio, te llega un link para elegir una contraseña nueva. Mirá también en spam."));
-        } catch (PasswordService.RecuperacionNoDisponibleException e) {
-            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of("error", e.getMessage()));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+    public Map<String, String> olvidePassword(@RequestBody Map<String, String> datos) {
+        passwordService.solicitarRecuperacion(datos.get("email"));
+        return Map.of("mensaje",
+                "Si el email es de una cuenta del gimnasio, te llega un link para elegir una contraseña nueva. Mirá también en spam.");
     }
 
     /** Elige una contraseña nueva con el link del mail. Devuelve el email, para entrar. */
     @PostMapping("/restablecer-password")
-    public ResponseEntity<?> restablecerPassword(@RequestBody Map<String, String> datos) {
-        try {
-            return ResponseEntity.ok(Map.of("email", passwordService.restablecerConToken(datos.get("token"), datos.get("password"))));
-        } catch (PasswordService.LinkInvalidoException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage(), "codigo", "LINK_INVALIDO"));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+    public Map<String, String> restablecerPassword(@RequestBody Map<String, String> datos) {
+        return Map.of("email", passwordService.restablecerConToken(datos.get("token"), datos.get("password")));
     }
 }

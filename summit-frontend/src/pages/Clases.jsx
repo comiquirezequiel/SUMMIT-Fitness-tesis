@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock, Users, Plus, ChevronLeft, ChevronRight, User, Trash2, Save, CheckCircle2, XCircle, Ban } from 'lucide-react';
 import Modal from '../components/Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../components/Campo';
-import { apiFetch } from '../services/api';
+import { apiFetch, pedirJson } from '../services/api';
+import { useCarga } from '../hooks/useCarga';
 import { formatFecha, hoyIso, usuarioActual } from '../utils/formato';
 import { DIAS_SEMANA as DIAS } from '../utils/constantes';
 const COLORES = ['border-l-rose-500', 'border-l-indigo-500', 'border-l-pink-500', 'border-l-orange-500', 'border-l-blue-500', 'border-l-emerald-500'];
@@ -283,26 +284,9 @@ const Clases = () => {
   const esAdmin = usuarioActual()?.rol === 'ADMIN';
   const [lunes, setLunes] = useState(() => lunesDe(new Date()));
   const [fecha, setFecha] = useState(hoyIso());
-  const [agenda, setAgenda] = useState([]);
-  const [cargando, setCargando] = useState(false);
-  const [error, setError] = useState('');
   const [modal, setModal] = useState(null); // { tipo: 'nueva' } | { tipo: 'reservas', clase }
-
-  const cargarAgenda = useCallback(async () => {
-    setCargando(true);
-    try {
-      const res = await apiFetch(`/clases/agenda?fecha=${fecha}`);
-      if (!res.ok) throw new Error();
-      setAgenda(await res.json());
-      setError('');
-    } catch {
-      setError('No se pudo cargar la agenda.');
-    } finally {
-      setCargando(false);
-    }
-  }, [fecha]);
-
-  useEffect(() => { cargarAgenda(); }, [cargarAgenda]);
+  const { datos: agenda, cargando, error, cargar: cargarAgenda } =
+    useCarga(() => pedirJson(`/clases/agenda?fecha=${fecha}`, {}, 'No se pudo cargar la agenda.'), [fecha], []);
 
   const dias = DIAS.map((d, i) => {
     const f = new Date(lunes);

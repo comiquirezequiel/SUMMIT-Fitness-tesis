@@ -7,7 +7,6 @@ import com.summit.backend.dto.PagoListadoDTO;
 import com.summit.backend.mercadopago.PasarelaTarjeta;
 import com.summit.backend.model.EstadoPago;
 import com.summit.backend.service.CobroConTarjetaService;
-import com.summit.backend.service.MercadoPagoClient.MercadoPagoNoDisponibleException;
 import com.summit.backend.service.PagoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,7 +19,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 /**
  * Controller de pagos y caja (cobros de recepción: en persona y con tarjeta por Mercado Pago).
@@ -41,14 +39,8 @@ public class PagoController {
      */
     @PostMapping
     public ResponseEntity<?> registrar(@RequestBody CobroRequestDTO pedido, Authentication auth) {
-        try {
-            PagoListadoDTO pago = pagoService.registrarPago(pedido, auth.getName());
-            return ResponseEntity.status(HttpStatus.CREATED).body(pago);
-        } catch (PagoService.TotalCambiadoException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", String.valueOf(e.getMessage())));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", String.valueOf(e.getMessage())));
-        }
+        PagoListadoDTO pago = pagoService.registrarPago(pedido, auth.getName());
+        return ResponseEntity.status(HttpStatus.CREATED).body(pago);
     }
 
     /**
@@ -58,18 +50,7 @@ public class PagoController {
      */
     @PostMapping("/tarjeta")
     public ResponseEntity<?> cobrarConTarjeta(@RequestBody CobroConTarjetaDTO pedido, Authentication auth) {
-        try {
-            return ResponseEntity.status(HttpStatus.CREATED).body(cobroConTarjetaService.cobrar(pedido, auth.getName()));
-        } catch (PagoService.TotalCambiadoException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", String.valueOf(e.getMessage())));
-        } catch (CobroConTarjetaService.TarjetaRechazadaException e) {
-            return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
-                    .body(Map.of("error", String.valueOf(e.getMessage()), "codigo", "TARJETA_RECHAZADA"));
-        } catch (MercadoPagoNoDisponibleException e) {
-            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of("error", String.valueOf(e.getMessage())));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", String.valueOf(e.getMessage())));
-        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(cobroConTarjetaService.cobrar(pedido, auth.getName()));
     }
 
     /** Para el formulario de tarjeta: el modo (SIMULADOR o MERCADO_PAGO) y la clave pública de Mercado Pago. */
@@ -84,11 +65,7 @@ public class PagoController {
      */
     @PostMapping("/presupuesto")
     public ResponseEntity<?> presupuesto(@RequestBody CobroRequestDTO pedido) {
-        try {
-            return ResponseEntity.ok(pagoService.presupuesto(pedido));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", String.valueOf(e.getMessage())));
-        }
+        return ResponseEntity.ok(pagoService.presupuesto(pedido));
     }
 
     /**
@@ -102,13 +79,7 @@ public class PagoController {
         if (!(aprobado instanceof Boolean decision)) {
             return ResponseEntity.badRequest().body(Map.of("error", "Indicá si el pago se aprueba o se rechaza"));
         }
-        try {
-            return ResponseEntity.ok(pagoService.verificarPago(idPago, decision, auth.getName()));
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", String.valueOf(e.getMessage())));
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", String.valueOf(e.getMessage())));
-        }
+        return ResponseEntity.ok(pagoService.verificarPago(idPago, decision, auth.getName()));
     }
 
     /**

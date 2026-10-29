@@ -8,6 +8,7 @@ import com.summit.backend.model.Usuario;
 import com.summit.backend.repository.UsuarioRepository;
 import com.summit.backend.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -27,19 +28,19 @@ public class AuthService {
 
     /**
      * Autentica a un usuario del personal por email y contraseña.
-     * @throws RuntimeException si las credenciales son inválidas, la cuenta no está activa o es de un socio
+     * @throws BadCredentialsException si las credenciales son inválidas, la cuenta no está activa o es de un socio
      */
     public AuthResponse login(LoginRequest request) {
-        Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
+        Usuario usuario = usuarioRepository.findByEmail(request.email())
                 .filter(u -> u.getRol() != Rol.SOCIO && u.getPassword() != null)
-                .orElseThrow(() -> new RuntimeException("Credenciales inválidas"));
+                .orElseThrow(() -> new BadCredentialsException("Credenciales inválidas"));
 
-        if (!passwordEncoder.matches(request.getPassword(), usuario.getPassword())) {
-            throw new RuntimeException("Credenciales inválidas");
+        if (!passwordEncoder.matches(request.password(), usuario.getPassword())) {
+            throw new BadCredentialsException("Credenciales inválidas");
         }
 
         if (usuario.getEstado() != EstadoUsuario.ACTIVO) {
-            throw new RuntimeException("La cuenta está " + textoEstado(usuario.getEstado()) + ": comunicate con el administrador");
+            throw new BadCredentialsException("La cuenta está " + textoEstado(usuario.getEstado()) + ": comunicate con el administrador");
         }
 
         return respuesta(usuario);

@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * Controller de rutinas de entrenamiento.
  * Las arman ADMIN y PROFESOR (SecurityConfig); recepción las consulta.
- * Los errores (404 / 400 con {"error"}) los arma EntrenamientoExceptionHandler.
+ * Los errores (404 / 400 con {"error"}) los arma GlobalExceptionHandler.
  */
 @RestController
 @RequestMapping("/api/rutinas")

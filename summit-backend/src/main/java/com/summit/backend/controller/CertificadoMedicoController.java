@@ -42,13 +42,9 @@ public class CertificadoMedicoController {
             @RequestParam(value = "observacionesPatologias", required = false) String observacionesPatologias,
             // Opcional: resumen de la IA que el usuario revisó en el alta o en "Cargar nuevo certificado".
             @RequestParam(value = "resumenIa", required = false) String resumenIa) {
-        try {
-            CertificadoMedico certificado = certificadoMedicoService.registrarCertificado(
-                    idSocio, archivo, fechaEmision, observacionesPatologias, resumenIa);
-            return ResponseEntity.status(HttpStatus.CREATED).body(certificado);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+        CertificadoMedico certificado = certificadoMedicoService.registrarCertificado(
+                idSocio, archivo, fechaEmision, observacionesPatologias, resumenIa);
+        return ResponseEntity.status(HttpStatus.CREATED).body(certificado);
     }
 
     /**
@@ -61,12 +57,8 @@ public class CertificadoMedicoController {
     @PatchMapping("/{idCertificado}")
     public ResponseEntity<?> actualizar(@PathVariable Long idSocio, @PathVariable Long idCertificado,
                                         @RequestBody Map<String, String> datos) {
-        try {
-            return ResponseEntity.ok(certificadoMedicoService.actualizarObservaciones(
-                    idSocio, idCertificado, datos.get("observacionesPatologias"), datos.get("resumenIa")));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", String.valueOf(e.getMessage())));
-        }
+        return ResponseEntity.ok(certificadoMedicoService.actualizarObservaciones(
+                idSocio, idCertificado, datos.get("observacionesPatologias"), datos.get("resumenIa")));
     }
 
     /**
@@ -76,18 +68,9 @@ public class CertificadoMedicoController {
     @PatchMapping("/{idCertificado}/estado")
     public ResponseEntity<?> cambiarEstado(@PathVariable Long idSocio, @PathVariable Long idCertificado,
                                            @RequestBody Map<String, String> datos, Authentication auth) {
-        try {
-            EstadoLegalCertificado estado = EstadoLegalCertificado.valueOf(String.valueOf(datos.get("estado")).toUpperCase());
-            return ResponseEntity.ok(certificadoMedicoService.cambiarEstado(
-                    idSocio, idCertificado, estado, datos.get("motivo"), auth.getName()));
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", String.valueOf(e.getMessage())));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() != null && e.getMessage().startsWith("No enum")
-                    ? "El estado solo puede ser RECHAZADO o VIGENTE" : String.valueOf(e.getMessage())));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", String.valueOf(e.getMessage())));
-        }
+        EstadoLegalCertificado estado = EstadoLegalCertificado.valueOf(String.valueOf(datos.get("estado")).toUpperCase());
+        return ResponseEntity.ok(certificadoMedicoService.cambiarEstado(
+                idSocio, idCertificado, estado, datos.get("motivo"), auth.getName()));
     }
 
     @GetMapping
@@ -116,15 +99,11 @@ public class CertificadoMedicoController {
      */
     @GetMapping("/{idCertificado}/archivo")
     public ResponseEntity<?> descargarArchivo(@PathVariable Long idSocio, @PathVariable Long idCertificado) {
-        try {
-            CertificadoMedico certificado = certificadoMedicoService.buscarDelSocio(idSocio, idCertificado);
-            ArchivoService.Archivo archivo = archivoService.cargar(certificado.getArchivoUrl());
-            return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(archivo.tipo()))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + archivo.nombre() + "\"")
-                    .body(archivo.recurso());
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
+        CertificadoMedico certificado = certificadoMedicoService.buscarDelSocio(idSocio, idCertificado);
+        ArchivoService.Archivo archivo = archivoService.cargar(certificado.getArchivoUrl());
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(archivo.tipo()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + archivo.nombre() + "\"")
+                .body(archivo.recurso());
     }
 }

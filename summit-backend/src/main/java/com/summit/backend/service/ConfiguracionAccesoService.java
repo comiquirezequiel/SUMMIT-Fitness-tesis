@@ -6,6 +6,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +36,7 @@ public class ConfiguracionAccesoService {
 
     public ConfiguracionAcceso obtenerConfiguracionGlobal() {
         return repository.findById(CONFIG_GLOBAL_ID)
-                .orElseThrow(() -> new RuntimeException("Configuración global no encontrada"));
+                .orElseThrow(() -> new NoSuchElementException("Configuración global no encontrada"));
     }
 
     /**

@@ -39,9 +39,9 @@ class CobroConTarjetaTest extends PruebaIntegracion {
     void unaTarjetaAprobadaRegistraElCobroYExtiendeLaMembresia() {
         Usuario socio = socio();
         PagoListadoDTO pago = tarjetas.cobrar(conTarjeta(socio, plan(12000, null), 12000, "APRO", UUID.randomUUID().toString()), null);
-        assertThat(pago.getEstado()).isEqualTo("APROBADO");
-        assertThat(pago.getMetodoPago()).isEqualTo("TARJETA_CREDITO");
-        assertThat(pago.getComprobante()).startsWith("MP ");
+        assertThat(pago.estado()).isEqualTo("APROBADO");
+        assertThat(pago.metodoPago()).isEqualTo("TARJETA_CREDITO");
+        assertThat(pago.comprobante()).startsWith("MP ");
         assertThat(suscripcionRepository.ultimoVencimiento(socio.getIdUsuario())).isEqualTo(hoy().plusDays(30));
     }
 
@@ -59,11 +59,11 @@ class CobroConTarjetaTest extends PruebaIntegracion {
     void unPagoEnProcesoQuedaAVerificarYSeConfirmaSoloCuandoSeAcredita() {
         Usuario socio = socio();
         PagoListadoDTO pago = tarjetas.cobrar(conTarjeta(socio, plan(12000, null), 12000, "CONT", UUID.randomUUID().toString()), null);
-        assertThat(pago.getEstado()).isEqualTo("PENDIENTE");
+        assertThat(pago.estado()).isEqualTo("PENDIENTE");
         assertThat(suscripcionRepository.ultimoVencimiento(socio.getIdUsuario())).isNull();
 
         tarjetas.revisarEnProceso();
-        assertThat(pagoHistorialRepository.findById(pago.getIdPago()).orElseThrow().getEstadoPago().name()).isEqualTo("APROBADO");
+        assertThat(pagoHistorialRepository.findById(pago.idPago()).orElseThrow().getEstadoPago().name()).isEqualTo("APROBADO");
         assertThat(suscripcionRepository.ultimoVencimiento(socio.getIdUsuario())).isEqualTo(hoy().plusDays(30));
     }
 
@@ -74,7 +74,7 @@ class CobroConTarjetaTest extends PruebaIntegracion {
         String clave = UUID.randomUUID().toString();
         PagoListadoDTO primero = tarjetas.cobrar(conTarjeta(socio, plan, 12000, "APRO", clave), null);
         PagoListadoDTO repetido = tarjetas.cobrar(conTarjeta(socio, plan, 12000, "APRO", clave), null);
-        assertThat(repetido.getIdPago()).isEqualTo(primero.getIdPago());
+        assertThat(repetido.idPago()).isEqualTo(primero.idPago());
         assertThat(pagosDe(socio)).isEqualTo(1);
         assertThat(suscripcionRepository.ultimoVencimiento(socio.getIdUsuario())).isEqualTo(hoy().plusDays(30));
     }

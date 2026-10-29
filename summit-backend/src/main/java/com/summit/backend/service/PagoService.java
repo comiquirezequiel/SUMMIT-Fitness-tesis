@@ -77,8 +77,8 @@ public class PagoService {
      */
     @Transactional(readOnly = true)
     public PresupuestoDTO presupuesto(CobroRequestDTO pedido) {
-        Usuario socio = pedido.getIdUsuario() == null ? null : buscarUsuario(pedido.getIdUsuario());
-        return calcular(socio, buscarPlan(pedido.getIdPlan()), pedido);
+        Usuario socio = pedido.idUsuario() == null ? null : buscarUsuario(pedido.idUsuario());
+        return calcular(socio, buscarPlan(pedido.idPlan()), pedido);
     }
 
     /**
@@ -92,20 +92,20 @@ public class PagoService {
      */
     @Transactional
     public PagoListadoDTO registrarPago(CobroRequestDTO pedido, String emailRegistrador) {
-        MetodoPago metodoPago = metodoPago(pedido.getMetodoPago());
+        MetodoPago metodoPago = metodoPago(pedido.metodoPago());
         if (metodoPago == MetodoPago.DEBITO_AUTOMATICO) {
             throw new IllegalArgumentException("Los débitos automáticos se registran solos cuando Mercado Pago confirma el cobro");
         }
-        boolean aVerificar = pedido.isAVerificar();
+        boolean aVerificar = pedido.aVerificar();
         if (aVerificar && !VERIFICABLES.contains(metodoPago)) {
             throw new IllegalArgumentException("Solo una transferencia o un pago con QR pueden quedar a verificar");
         }
-        String comprobante = pedido.getComprobante() == null ? "" : pedido.getComprobante().trim();
+        String comprobante = pedido.comprobante() == null ? "" : pedido.comprobante().trim();
         if (comprobante.length() > 50) {
             throw new IllegalArgumentException("El número de comprobante no puede superar los 50 caracteres");
         }
         PresupuestoDTO detalle = prepararCobro(pedido);
-        if (aVerificar && detalle.getTotal().signum() == 0) {
+        if (aVerificar && detalle.total().signum() == 0) {
             throw new IllegalArgumentException("Un cobro sin monto no puede quedar a verificar");
         }
         return guardar(pedido, detalle, metodoPago, comprobante, aVerificar ? EstadoPago.PENDIENTE : EstadoPago.APROBADO,
@@ -121,15 +121,15 @@ public class PagoService {
      */
     @Transactional(readOnly = true)
     public PresupuestoDTO prepararCobro(CobroRequestDTO pedido) {
-        if (pedido.getIdUsuario() == null) {
+        if (pedido.idUsuario() == null) {
             throw new IllegalArgumentException("Falta el socio");
         }
-        PresupuestoDTO detalle = calcular(buscarUsuario(pedido.getIdUsuario()), buscarPlan(pedido.getIdPlan()), pedido);
-        if (pedido.getTotalMostrado() == null) {
+        PresupuestoDTO detalle = calcular(buscarUsuario(pedido.idUsuario()), buscarPlan(pedido.idPlan()), pedido);
+        if (pedido.totalMostrado() == null) {
             throw new IllegalArgumentException("Falta el total que se le mostró a recepción: volvé a calcular el cobro");
         }
-        if (pedido.getTotalMostrado().compareTo(detalle.getTotal()) != 0) {
-            throw new TotalCambiadoException("El total cambió: ahora es " + pesos(detalle.getTotal())
+        if (pedido.totalMostrado().compareTo(detalle.total()) != 0) {
+            throw new TotalCambiadoException("El total cambió: ahora es " + pesos(detalle.total())
                     + ". Revisá el detalle y confirmá de nuevo");
         }
         return detalle;
@@ -152,22 +152,22 @@ public class PagoService {
     // Guarda el cobro con su detalle; si entró aprobado, extiende la membresía. Siempre deja su factura en la cola
     private PagoListadoDTO guardar(CobroRequestDTO pedido, PresupuestoDTO detalle, MetodoPago metodoPago, String comprobante,
                                    EstadoPago estado, String mpPaymentId, String emailRegistrador) {
-        Usuario usuario = buscarUsuario(pedido.getIdUsuario());
-        Plan plan = buscarPlan(pedido.getIdPlan());
+        Usuario usuario = buscarUsuario(pedido.idUsuario());
+        Plan plan = buscarPlan(pedido.idPlan());
         PagoHistorial pago = PagoHistorial.builder()
                 .usuario(usuario)
                 .plan(plan)
-                .montoAbonado(detalle.getTotal())
+                .montoAbonado(detalle.total())
                 .metodoPago(metodoPago)
                 .comprobanteNro(comprobante)
                 .estadoPago(estado)
                 .mpPaymentId(mpPaymentId)
                 .registradoPor(usuarioPorEmail(emailRegistrador))
-                .precioLista(detalle.getPrecioLista())
-                .descuentoNombre(detalle.getDescuentoNombre())
-                .descuentoMonto(detalle.getDescuentoNombre() != null ? detalle.getDescuentoMonto() : null)
-                .matriculaMonto(!detalle.isMatriculaCorresponde() ? null
-                        : detalle.isMatriculaBonificada() ? BigDecimal.ZERO : detalle.getMatriculaMonto())
+                .precioLista(detalle.precioLista())
+                .descuentoNombre(detalle.descuentoNombre())
+                .descuentoMonto(detalle.descuentoNombre() != null ? detalle.descuentoMonto() : null)
+                .matriculaMonto(!detalle.matriculaCorresponde() ? null
+                        : detalle.matriculaBonificada() ? BigDecimal.ZERO : detalle.matriculaMonto())
                 .build();
         if (pago.getEstadoPago() == EstadoPago.APROBADO) {
             pago.setVenceMembresia(suscripcionService.extenderOcrearSuscripcion(usuario, plan).getFechaVencimiento());
@@ -245,16 +245,14 @@ public class PagoService {
         Page<PagoHistorial> pagos = estado == null
                 ? pagoHistorialRepository.findAll(pageable)
                 : pagoHistorialRepository.findByEstadoPago(estado, pageable);
-        Page<PagoListadoDTO> pagina = pagos.map(this::aDto);
-        conFacturas(pagina.getContent());
-        return pagina;
+        Map<Long, FacturaResumenDTO> facturas = facturacionService.resumenes(pagos.map(PagoHistorial::getIdPago).getContent());
+        return pagos.map(p -> aDto(p).toBuilder().factura(facturas.get(p.getIdPago())).build());
     }
 
     // Le agrega a cada cobro su factura electrónica (una sola consulta para toda la lista)
     private List<PagoListadoDTO> conFacturas(List<PagoListadoDTO> lista) {
-        Map<Long, FacturaResumenDTO> facturas = facturacionService.resumenes(lista.stream().map(PagoListadoDTO::getIdPago).toList());
-        lista.forEach(p -> p.setFactura(facturas.get(p.getIdPago())));
-        return lista;
+        Map<Long, FacturaResumenDTO> facturas = facturacionService.resumenes(lista.stream().map(PagoListadoDTO::idPago).toList());
+        return lista.stream().map(p -> p.toBuilder().factura(facturas.get(p.idPago())).build()).toList();
     }
 
     private PagoListadoDTO aDtoConFactura(PagoHistorial p) {
@@ -312,27 +310,27 @@ public class PagoService {
     // Precio del plan - descuento (uno del catálogo o uno especial con motivo) + matrícula si corresponde
     private PresupuestoDTO calcular(Usuario socio, Plan plan, CobroRequestDTO pedido) {
         BigDecimal precio = plan.getPrecioBase().setScale(2, RoundingMode.HALF_UP);
-        CobroRequestDTO.DescuentoEspecial especial = pedido.getDescuentoEspecial();
-        if (pedido.getIdDescuento() != null && especial != null) {
+        CobroRequestDTO.DescuentoEspecial especial = pedido.descuentoEspecial();
+        if (pedido.idDescuento() != null && especial != null) {
             throw new IllegalArgumentException("Elegí un descuento del listado o uno especial, no los dos");
         }
         Long idDescuento = null;
         String descuentoNombre = null;
         BigDecimal descuentoMonto = BigDecimal.ZERO.setScale(2);
-        if (pedido.getIdDescuento() != null) {
-            Descuento descuento = descuentoService.activo(pedido.getIdDescuento());
+        if (pedido.idDescuento() != null) {
+            Descuento descuento = descuentoService.activo(pedido.idDescuento());
             idDescuento = descuento.getIdDescuento();
             descuentoNombre = descuento.getNombre();
             descuentoMonto = DescuentoService.montoSobre(descuento, precio);
         } else if (especial != null) {
-            String motivo = especial.getMotivo() == null ? "" : especial.getMotivo().trim();
+            String motivo = especial.motivo() == null ? "" : especial.motivo().trim();
             if (motivo.length() < 3) {
                 throw new IllegalArgumentException("Escribí el motivo del descuento especial (queda registrado)");
             }
             if (motivo.length() > 100) {
                 throw new IllegalArgumentException("El motivo del descuento no puede superar los 100 caracteres");
             }
-            BigDecimal monto = especial.getMonto();
+            BigDecimal monto = especial.monto();
             if (monto == null || monto.signum() <= 0) {
                 throw new IllegalArgumentException("El descuento especial tiene que ser mayor a cero");
             }
@@ -344,7 +342,7 @@ public class PagoService {
         }
 
         Matricula matricula = matricula(socio);
-        boolean bonificada = matricula.corresponde() && pedido.isBonificarMatricula();
+        boolean bonificada = matricula.corresponde() && pedido.bonificarMatricula();
         BigDecimal matriculaCobrada = matricula.corresponde() && !bonificada ? matricula.monto() : BigDecimal.ZERO;
         return PresupuestoDTO.builder()
                 .idPlan(plan.getIdPlan())
@@ -397,7 +395,7 @@ public class PagoService {
 
     private Usuario buscarUsuario(Long idUsuario) {
         return usuarioRepository.findById(idUsuario)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new NoSuchElementException("Usuario no encontrado"));
     }
 
     private Plan buscarPlan(Long idPlan) {
@@ -405,7 +403,7 @@ public class PagoService {
             throw new IllegalArgumentException("Elegí un plan");
         }
         return planRepository.findById(idPlan)
-                .orElseThrow(() -> new RuntimeException("Plan no encontrado"));
+                .orElseThrow(() -> new NoSuchElementException("Plan no encontrado"));
     }
 
     private static MetodoPago metodoPago(String valor) {

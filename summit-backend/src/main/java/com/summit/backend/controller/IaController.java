@@ -3,15 +3,10 @@ package com.summit.backend.controller;
 import com.summit.backend.service.AsistenteIaService;
 import com.summit.backend.service.OllamaClient;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.function.Supplier;
 
 /**
  * Asistente de IA local (Ollama) para el personal: lee certificados médicos y sugiere ejercicios a evitar.
@@ -19,8 +14,8 @@ import java.util.function.Supplier;
  * Si Ollama no está corriendo responde 503 y el resto del sistema sigue funcionando.
  *
  * <p><b>Rol en la arquitectura:</b> es la "puerta de entrada" HTTP (capa Controller). Recibe los pedidos del
- * frontend, delega todo el trabajo en {@link AsistenteIaService} y traduce los resultados y errores a
- * respuestas HTTP. No contiene lógica de negocio.</p>
+ * frontend y delega todo el trabajo en {@link AsistenteIaService}. Los errores los traduce GlobalExceptionHandler
+ * (503 si la IA no está, 404 si el socio o el certificado no existen, 400 si los datos no sirven).</p>
  *
  * <p><b>Seguridad:</b> SecurityConfig restringe /api/ia/** a ADMIN, RECEPCION y PROFESOR: un socio recibe 403.
  * Además el pedido debe traer un token JWT válido (si no, 401).</p>
@@ -54,7 +49,7 @@ public class IaController {
     @PostMapping(value = "/certificados/analizar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> analizarArchivo(@RequestParam(value = "archivo", required = false) MultipartFile archivo,
                                              @RequestParam(value = "dni", required = false) String dni) {
-        return responder(() -> asistente.analizarArchivo(archivo, dni));
+        return ResponseEntity.ok(asistente.analizarArchivo(archivo, dni));
     }
 
     /**
@@ -64,7 +59,7 @@ public class IaController {
      */
     @PostMapping("/socios/{idSocio}/certificados/{idCertificado}/analizar")
     public ResponseEntity<?> analizarGuardado(@PathVariable Long idSocio, @PathVariable Long idCertificado) {
-        return responder(() -> asistente.analizarGuardado(idSocio, idCertificado));
+        return ResponseEntity.ok(asistente.analizarGuardado(idSocio, idCertificado));
     }
 
     /**
@@ -73,29 +68,6 @@ public class IaController {
      */
     @PostMapping("/socios/{idSocio}/ejercicios-a-evitar")
     public ResponseEntity<?> ejerciciosAEvitar(@PathVariable Long idSocio) {
-        return responder(() -> asistente.ejerciciosAEvitar(idSocio));
-    }
-
-    /**
-     * Ejecuta la acción y traduce los errores a respuestas HTTP con el formato {"error": "..."}
-     * que ya usa todo el frontend. Se centraliza acá para no repetir el mismo try/catch en cada endpoint.
-     *
-     * <p>Supplier = una función sin parámetros que devuelve un resultado: se le pasa "qué hacer"
-     * (por ejemplo () -> asistente.ejerciciosAEvitar(idSocio)) y este método lo ejecuta.</p>
-     */
-    private static ResponseEntity<?> responder(Supplier<Object> accion) {
-        try {
-            return ResponseEntity.ok(accion.get());   // 200 con el resultado en JSON
-        } catch (OllamaClient.IaNoDisponibleException e) {
-            // 503 Service Unavailable: la IA no está (Ollama apagado, ocupado o demorado). No es culpa del usuario.
-            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of("error", String.valueOf(e.getMessage())));
-        } catch (NoSuchElementException e) {
-            // 404 Not Found: el socio o el certificado no existen.
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", String.valueOf(e.getMessage())));
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            // 400 Bad Request: datos inválidos (archivo que no es PDF/imagen, socio sin patologías, etc.).
-            return ResponseEntity.badRequest().body(Map.of("error", String.valueOf(e.getMessage())));
-        }
-        // Cualquier otro error inesperado sigue de largo y lo atiende GlobalExceptionHandler.
+        return ResponseEntity.ok(asistente.ejerciciosAEvitar(idSocio));
     }
 }

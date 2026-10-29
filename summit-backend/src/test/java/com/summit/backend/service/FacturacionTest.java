@@ -72,100 +72,96 @@ class FacturacionTest extends PruebaIntegracion {
     }
 
     private ComprobanteFiscalDTO facturarYProcesar(PagoListadoDTO pago) {
-        return procesar(pago.getFactura().idComprobante());
+        return procesar(pago.factura().idComprobante());
     }
 
     @Test
     void unCobroSaleConFacturaCYElQrDeArca() {
         datosFiscales(CondicionIva.MONOTRIBUTO, false);
         PagoListadoDTO pago = cobrar(socio(), 45000);
-        assertThat(pago.getFactura().estado()).isEqualTo("PENDIENTE");
+        assertThat(pago.factura().estado()).isEqualTo("PENDIENTE");
         // No se factura dos veces el mismo cobro
-        assertThatThrownBy(() -> facturacion.facturar(pago.getIdPago(), false, null))
+        assertThatThrownBy(() -> facturacion.facturar(pago.idPago(), false, null))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("pendiente");
 
         ComprobanteFiscalDTO factura = facturarYProcesar(pago);
-        assertThat(factura.getEstado()).isEqualTo("AUTORIZADO");
-        assertThat(factura.getTipo()).isEqualTo("FACTURA_C");
-        assertThat(factura.getNumeroCompleto()).isEqualTo("00003-00000001");
-        assertThat(factura.getCae()).matches("\\d{14}");
-        assertThat(factura.getCaeVencimiento()).isEqualTo(factura.getFecha().plusDays(10));
-        assertThat(factura.getNeto()).isEqualByComparingTo("45000");
-        assertThat(factura.getIva()).isEqualByComparingTo("0");
-        assertThat(factura.getDocTipo()).isEqualTo(99);
-        assertThat(factura.getDocNro()).isZero();
-        assertThat(factura.getEmisorCondicionIva()).isEqualTo("Responsable Monotributo");
+        assertThat(factura.estado()).isEqualTo("AUTORIZADO");
+        assertThat(factura.tipo()).isEqualTo("FACTURA_C");
+        assertThat(factura.numeroCompleto()).isEqualTo("00003-00000001");
+        assertThat(factura.cae()).matches("\\d{14}");
+        assertThat(factura.caeVencimiento()).isEqualTo(factura.fecha().plusDays(10));
+        assertThat(factura.neto()).isEqualByComparingTo("45000");
+        assertThat(factura.iva()).isEqualByComparingTo("0");
+        assertThat(factura.docTipo()).isEqualTo(99);
+        assertThat(factura.docNro()).isZero();
+        assertThat(factura.emisorCondicionIva()).isEqualTo("Responsable Monotributo");
         // El período facturado es la membresía que se pagó
-        assertThat(factura.getServicioHasta()).isEqualTo(pago.getVenceMembresia());
-        assertThat(factura.getServicioDesde()).isEqualTo(pago.getVenceMembresia().minusDays(30));
-        assertThat(factura.isDeVerdad()).isFalse();
+        assertThat(factura.servicioHasta()).isEqualTo(pago.venceMembresia());
+        assertThat(factura.servicioDesde()).isEqualTo(pago.venceMembresia().minusDays(30));
+        assertThat(factura.deVerdad()).isFalse();
 
-        assertThat(factura.getQrUrl()).startsWith("https://www.arca.gob.ar/fe/qr/?p=");
-        String qr = new String(Base64.getDecoder().decode(factura.getQrUrl().substring(factura.getQrUrl().indexOf("?p=") + 3)),
+        assertThat(factura.qrUrl()).startsWith("https://www.arca.gob.ar/fe/qr/?p=");
+        String qr = new String(Base64.getDecoder().decode(factura.qrUrl().substring(factura.qrUrl().indexOf("?p=") + 3)),
                 StandardCharsets.UTF_8);
         assertThat(qr).contains("\"cuit\":" + CUIT, "\"ptoVta\":3", "\"tipoCmp\":11", "\"nroCmp\":1",
-                "\"importe\":45000.00", "\"tipoDocRec\":99", "\"codAut\":" + factura.getCae());
+                "\"importe\":45000.00", "\"tipoDocRec\":99", "\"codAut\":" + factura.cae());
 
-        assertThat(facturarYProcesar(cobrar(socio(), 20000)).getNumero()).isEqualTo(2);
+        assertThat(facturarYProcesar(cobrar(socio(), 20000)).numero()).isEqualTo(2);
     }
 
     @Test
     void conResponsableInscriptoSaleFacturaBConElIvaContenido() {
         datosFiscales(CondicionIva.RESPONSABLE_INSCRIPTO, false);
         ComprobanteFiscalDTO factura = facturarYProcesar(cobrar(socio(), 45000));
-        assertThat(factura.getEstado()).isEqualTo("AUTORIZADO");
-        assertThat(factura.getTipo()).isEqualTo("FACTURA_B");
-        assertThat(factura.getNumero()).isEqualTo(1);
-        assertThat(factura.getNeto()).isEqualByComparingTo("37190.08");
-        assertThat(factura.getIva()).isEqualByComparingTo("7809.92");
-        assertThat(factura.getEmisorCondicionIva()).isEqualTo("IVA Responsable Inscripto");
+        assertThat(factura.estado()).isEqualTo("AUTORIZADO");
+        assertThat(factura.tipo()).isEqualTo("FACTURA_B");
+        assertThat(factura.numero()).isEqualTo(1);
+        assertThat(factura.neto()).isEqualByComparingTo("37190.08");
+        assertThat(factura.iva()).isEqualByComparingTo("7809.92");
+        assertThat(factura.emisorCondicionIva()).isEqualTo("IVA Responsable Inscripto");
 
         // El simulador valida que el IVA sea el 21% del neto: con cualquier total tiene que cerrar
         for (int total : new int[]{1, 99, 1001, 33333, 123457}) {
             ComprobanteFiscalDTO otra = facturarYProcesar(cobrar(socio(), total));
-            assertThat(otra.getEstado()).as("total %d", total).isEqualTo("AUTORIZADO");
-            assertThat(otra.getNeto().add(otra.getIva())).isEqualByComparingTo(BigDecimal.valueOf(total));
+            assertThat(otra.estado()).as("total %d", total).isEqualTo("AUTORIZADO");
+            assertThat(otra.neto().add(otra.iva())).isEqualByComparingTo(BigDecimal.valueOf(total));
         }
     }
 
     @Test
     void unCobroAVerificarSeFacturaRecienCuandoSeAprueba() {
         datosFiscales(CondicionIva.MONOTRIBUTO, false);
-        CobroRequestDTO pedido = cobro(socio(), plan(10000, null), 10000);
-        pedido.setMetodoPago("TRANSFERENCIA");
-        pedido.setAVerificar(true);
+        CobroRequestDTO pedido = cobro(socio(), plan(10000, null), 10000).toBuilder().metodoPago("TRANSFERENCIA").aVerificar(true).build();
         PagoListadoDTO pago = pagos.registrarPago(pedido, null);
-        assertThat(pago.getFactura()).isNull();
-        assertThat(facturarYProcesar(pagos.verificarPago(pago.getIdPago(), true, null)).getEstado()).isEqualTo("AUTORIZADO");
+        assertThat(pago.factura()).isNull();
+        assertThat(facturarYProcesar(pagos.verificarPago(pago.idPago(), true, null)).estado()).isEqualTo("AUTORIZADO");
 
-        CobroRequestDTO otro = cobro(socio(), plan(10000, null), 10000);
-        otro.setMetodoPago("TRANSFERENCIA");
-        otro.setAVerificar(true);
-        PagoListadoDTO rechazado = pagos.verificarPago(pagos.registrarPago(otro, null).getIdPago(), false, null);
-        assertThat(rechazado.getFactura()).isNull();
-        assertThat(facturacion.dePago(rechazado.getIdPago())).isEmpty();
+        CobroRequestDTO otro = cobro(socio(), plan(10000, null), 10000).toBuilder().metodoPago("TRANSFERENCIA").aVerificar(true).build();
+        PagoListadoDTO rechazado = pagos.verificarPago(pagos.registrarPago(otro, null).idPago(), false, null);
+        assertThat(rechazado.factura()).isNull();
+        assertThat(facturacion.dePago(rechazado.idPago())).isEmpty();
     }
 
     @Test
     void unCobroSinMontoNoSeFactura() {
         datosFiscales(CondicionIva.MONOTRIBUTO, false);
         PagoListadoDTO pago = cobrar(socio(), 0);
-        assertThat(pago.getFactura()).isNull();
-        assertThatThrownBy(() -> facturacion.facturar(pago.getIdPago(), false, null)).isInstanceOf(IllegalStateException.class);
+        assertThat(pago.factura()).isNull();
+        assertThatThrownBy(() -> facturacion.facturar(pago.idPago(), false, null)).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
     void sinDatosFiscalesLaFacturaEsperaYSaleAlCompletarlos() {
         PagoListadoDTO pago = cobrar(socio(), 10000);
         ComprobanteFiscalDTO esperando = facturarYProcesar(pago);
-        assertThat(esperando.getEstado()).isEqualTo("PENDIENTE");
-        assertThat(esperando.getUltimoError()).contains("Faltan datos fiscales", "CUIT");
-        assertThat(esperando.getProximoIntento()).isAfter(LocalDateTime.now());
+        assertThat(esperando.estado()).isEqualTo("PENDIENTE");
+        assertThat(esperando.ultimoError()).contains("Faltan datos fiscales", "CUIT");
+        assertThat(esperando.proximoIntento()).isAfter(LocalDateTime.now());
         assertThat(facturacion.estado().pendientes()).isEqualTo(1);
 
         datosFiscales(CondicionIva.MONOTRIBUTO, false);
         facturacion.procesarAhora();
-        assertThat(facturarYProcesar(pago).getEstado()).isEqualTo("AUTORIZADO");
+        assertThat(facturarYProcesar(pago).estado()).isEqualTo("AUTORIZADO");
     }
 
     @Test
@@ -174,20 +170,20 @@ class FacturacionTest extends PruebaIntegracion {
         PagoListadoDTO pago = cobrar(socio(), 10000);
         simulador.fallar("FECAESolicitar", SimuladorArca.Falla.CORTE_DESPUES_DE_PROCESAR);
         ComprobanteFiscalDTO enElAire = facturarYProcesar(pago);
-        assertThat(enElAire.getEstado()).isEqualTo("INCIERTO");
-        assertThat(enElAire.getNumero()).isEqualTo(1);
+        assertThat(enElAire.estado()).isEqualTo("INCIERTO");
+        assertThat(enElAire.numero()).isEqualTo(1);
 
         // Mientras no se sepa qué pasó, no se usa otro número
         PagoListadoDTO otro = cobrar(socio(), 20000);
-        assertThat(facturarYProcesar(otro).getEstado()).isEqualTo("PENDIENTE");
+        assertThat(facturarYProcesar(otro).estado()).isEqualTo("PENDIENTE");
 
         facturacion.procesarAhora();
         facturacion.procesarPendientes();
-        ComprobanteFiscalDTO recuperada = facturacion.detalle(enElAire.getIdComprobante());
-        assertThat(recuperada.getEstado()).isEqualTo("AUTORIZADO");
-        assertThat(recuperada.getNumero()).isEqualTo(1);
-        assertThat(recuperada.getCae()).matches("\\d{14}");
-        assertThat(facturacion.detalle(otro.getFactura().idComprobante()).getNumero()).isEqualTo(2);
+        ComprobanteFiscalDTO recuperada = facturacion.detalle(enElAire.idComprobante());
+        assertThat(recuperada.estado()).isEqualTo("AUTORIZADO");
+        assertThat(recuperada.numero()).isEqualTo(1);
+        assertThat(recuperada.cae()).matches("\\d{14}");
+        assertThat(facturacion.detalle(otro.factura().idComprobante()).numero()).isEqualTo(2);
     }
 
     @Test
@@ -195,12 +191,12 @@ class FacturacionTest extends PruebaIntegracion {
         datosFiscales(CondicionIva.MONOTRIBUTO, false);
         PagoListadoDTO pago = cobrar(socio(), 10000);
         simulador.fallar("FECAESolicitar", SimuladorArca.Falla.SIN_CONEXION);
-        assertThat(facturarYProcesar(pago).getEstado()).isEqualTo("INCIERTO");
+        assertThat(facturarYProcesar(pago).estado()).isEqualTo("INCIERTO");
 
         facturacion.procesarAhora();
         ComprobanteFiscalDTO factura = facturarYProcesar(pago);
-        assertThat(factura.getEstado()).isEqualTo("AUTORIZADO");
-        assertThat(factura.getNumero()).isEqualTo(1);
+        assertThat(factura.estado()).isEqualTo("AUTORIZADO");
+        assertThat(factura.numero()).isEqualTo(1);
     }
 
     @Test
@@ -209,23 +205,23 @@ class FacturacionTest extends PruebaIntegracion {
         PagoListadoDTO pago = cobrar(socio(), 10000);
         simulador.fallar("FECompUltimoAutorizado", SimuladorArca.Falla.SIN_CONEXION);
         ComprobanteFiscalDTO esperando = facturarYProcesar(pago);
-        assertThat(esperando.getEstado()).isEqualTo("PENDIENTE");
-        assertThat(esperando.getNumero()).isNull();
-        assertThat(esperando.getUltimoError()).contains("ARCA no responde");
-        assertThat(esperando.getProximoIntento()).isAfter(LocalDateTime.now());
+        assertThat(esperando.estado()).isEqualTo("PENDIENTE");
+        assertThat(esperando.numero()).isNull();
+        assertThat(esperando.ultimoError()).contains("ARCA no responde");
+        assertThat(esperando.proximoIntento()).isAfter(LocalDateTime.now());
 
         // Un error interno de ARCA tampoco es un rechazo
         facturacion.procesarAhora();
         simulador.fallar("FECAESolicitar", SimuladorArca.Falla.ERROR_INTERNO);
         ComprobanteFiscalDTO otraVez = facturarYProcesar(pago);
-        assertThat(otraVez.getEstado()).isEqualTo("PENDIENTE");
-        assertThat(otraVez.getNumero()).isNull();
-        assertThat(otraVez.getUltimoError()).contains("501");
+        assertThat(otraVez.estado()).isEqualTo("PENDIENTE");
+        assertThat(otraVez.numero()).isNull();
+        assertThat(otraVez.ultimoError()).contains("501");
 
         facturacion.procesarAhora();
         ComprobanteFiscalDTO factura = facturarYProcesar(pago);
-        assertThat(factura.getEstado()).isEqualTo("AUTORIZADO");
-        assertThat(factura.getNumero()).isEqualTo(1);
+        assertThat(factura.estado()).isEqualTo("AUTORIZADO");
+        assertThat(factura.numero()).isEqualTo(1);
     }
 
     @Test
@@ -234,19 +230,19 @@ class FacturacionTest extends PruebaIntegracion {
         PagoListadoDTO primero = cobrar(socio(), 10000);
         simulador.fallar("FECAESolicitar", SimuladorArca.Falla.RECHAZO);
         ComprobanteFiscalDTO rechazada = facturarYProcesar(primero);
-        assertThat(rechazada.getEstado()).isEqualTo("RECHAZADO");
-        assertThat(rechazada.getNumero()).isNull();
-        assertThat(rechazada.getObservaciones()).contains("10000");
-        assertThat(rechazada.getUltimoError()).contains("Rechazo de prueba");
+        assertThat(rechazada.estado()).isEqualTo("RECHAZADO");
+        assertThat(rechazada.numero()).isNull();
+        assertThat(rechazada.observaciones()).contains("10000");
+        assertThat(rechazada.ultimoError()).contains("Rechazo de prueba");
         assertThat(facturacion.estado().rechazados()).isEqualTo(1);
 
-        assertThat(facturarYProcesar(cobrar(socio(), 20000)).getNumero()).isEqualTo(1);
+        assertThat(facturarYProcesar(cobrar(socio(), 20000)).numero()).isEqualTo(1);
 
-        facturacion.reintentar(rechazada.getIdComprobante());
-        ComprobanteFiscalDTO reintentada = procesar(rechazada.getIdComprobante());
-        assertThat(reintentada.getEstado()).isEqualTo("AUTORIZADO");
-        assertThat(reintentada.getNumero()).isEqualTo(2);
-        assertThatThrownBy(() -> facturacion.reintentar(rechazada.getIdComprobante())).isInstanceOf(IllegalStateException.class);
+        facturacion.reintentar(rechazada.idComprobante());
+        ComprobanteFiscalDTO reintentada = procesar(rechazada.idComprobante());
+        assertThat(reintentada.estado()).isEqualTo("AUTORIZADO");
+        assertThat(reintentada.numero()).isEqualTo(2);
+        assertThatThrownBy(() -> facturacion.reintentar(rechazada.idComprobante())).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -256,27 +252,27 @@ class FacturacionTest extends PruebaIntegracion {
         ComprobanteFiscalDTO factura = facturarYProcesar(cobrar(socio, 10000));
         Usuario admin = usuario(Rol.ADMIN);
 
-        assertThatThrownBy(() -> facturacion.anular(factura.getIdComprobante(), " ", admin.getEmail()))
+        assertThatThrownBy(() -> facturacion.anular(factura.idComprobante(), " ", admin.getEmail()))
                 .isInstanceOf(IllegalArgumentException.class);
-        ComprobanteFiscalDTO pedida = facturacion.anular(factura.getIdComprobante(), "Se cobró dos veces", admin.getEmail());
-        assertThat(pedida.isNotaCredito()).isTrue();
-        assertThat(pedida.getEstado()).isEqualTo("PENDIENTE");
+        ComprobanteFiscalDTO pedida = facturacion.anular(factura.idComprobante(), "Se cobró dos veces", admin.getEmail());
+        assertThat(pedida.notaCredito()).isTrue();
+        assertThat(pedida.estado()).isEqualTo("PENDIENTE");
 
-        ComprobanteFiscalDTO nota = procesar(pedida.getIdComprobante());
-        assertThat(nota.getEstado()).isEqualTo("AUTORIZADO");
-        assertThat(nota.getTipo()).isEqualTo("NOTA_CREDITO_C");
-        assertThat(nota.getNumero()).isEqualTo(1);
-        assertThat(nota.getTotal()).isEqualByComparingTo("10000");
-        assertThat(nota.getIdAsociado()).isEqualTo(factura.getIdComprobante());
-        assertThat(nota.getAsociado()).isEqualTo("factura C 00003-00000001");
-        assertThat(nota.getMotivo()).isEqualTo("Se cobró dos veces");
-        assertThat(nota.getSolicitadoPor()).isEqualTo(admin.getNombreCompleto());
+        ComprobanteFiscalDTO nota = procesar(pedida.idComprobante());
+        assertThat(nota.estado()).isEqualTo("AUTORIZADO");
+        assertThat(nota.tipo()).isEqualTo("NOTA_CREDITO_C");
+        assertThat(nota.numero()).isEqualTo(1);
+        assertThat(nota.total()).isEqualByComparingTo("10000");
+        assertThat(nota.idAsociado()).isEqualTo(factura.idComprobante());
+        assertThat(nota.asociado()).isEqualTo("factura C 00003-00000001");
+        assertThat(nota.motivo()).isEqualTo("Se cobró dos veces");
+        assertThat(nota.solicitadoPor()).isEqualTo(admin.getNombreCompleto());
 
-        assertThat(facturacion.detalle(factura.getIdComprobante()).isAnulada()).isTrue();
-        assertThat(pagos.historialPorSocio(socio.getIdUsuario()).get(0).getFactura().anulada()).isTrue();
-        assertThatThrownBy(() -> facturacion.anular(factura.getIdComprobante(), "Otra vez", null))
+        assertThat(facturacion.detalle(factura.idComprobante()).anulada()).isTrue();
+        assertThat(pagos.historialPorSocio(socio.getIdUsuario()).get(0).factura().anulada()).isTrue();
+        assertThatThrownBy(() -> facturacion.anular(factura.idComprobante(), "Otra vez", null))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("nota de crédito C 00003-00000001");
-        assertThatThrownBy(() -> facturacion.anular(nota.getIdComprobante(), "No se puede", null))
+        assertThatThrownBy(() -> facturacion.anular(nota.idComprobante(), "No se puede", null))
                 .isInstanceOf(IllegalStateException.class);
     }
 
@@ -286,17 +282,17 @@ class FacturacionTest extends PruebaIntegracion {
         Usuario socio = socio();
         PagoListadoDTO pago = cobrar(socio, 10000);
         ComprobanteFiscalDTO factura = facturarYProcesar(pago);
-        assertThatThrownBy(() -> facturacion.facturar(pago.getIdPago(), true, null))
+        assertThatThrownBy(() -> facturacion.facturar(pago.idPago(), true, null))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("00003-00000001");
 
-        procesar(facturacion.anular(factura.getIdComprobante(), "La quería con su DNI", null).getIdComprobante());
-        ComprobanteFiscalDTO nueva = procesar(facturacion.facturar(pago.getIdPago(), true, null).getIdComprobante());
-        assertThat(nueva.getEstado()).isEqualTo("AUTORIZADO");
-        assertThat(nueva.getNumero()).isEqualTo(2);
-        assertThat(nueva.getDocTipo()).isEqualTo(96);
-        assertThat(nueva.getDocNro()).isEqualTo(Long.parseLong(socio.getDni()));
-        assertThat(nueva.getReceptorNombre()).isEqualTo(socio.getNombreCompleto());
-        assertThat(pagos.historialPorSocio(socio.getIdUsuario()).get(0).getFactura().numero()).isEqualTo("00003-00000002");
+        procesar(facturacion.anular(factura.idComprobante(), "La quería con su DNI", null).idComprobante());
+        ComprobanteFiscalDTO nueva = procesar(facturacion.facturar(pago.idPago(), true, null).idComprobante());
+        assertThat(nueva.estado()).isEqualTo("AUTORIZADO");
+        assertThat(nueva.numero()).isEqualTo(2);
+        assertThat(nueva.docTipo()).isEqualTo(96);
+        assertThat(nueva.docNro()).isEqualTo(Long.parseLong(socio.getDni()));
+        assertThat(nueva.receptorNombre()).isEqualTo(socio.getNombreCompleto());
+        assertThat(pagos.historialPorSocio(socio.getIdUsuario()).get(0).factura().numero()).isEqualTo("00003-00000002");
     }
 
     @Test
@@ -304,16 +300,16 @@ class FacturacionTest extends PruebaIntegracion {
         datosFiscales(CondicionIva.MONOTRIBUTO, true);
         Usuario socio = socio();
         ComprobanteFiscalDTO conDni = facturarYProcesar(cobrar(socio, 10000));
-        assertThat(conDni.getDocTipo()).isEqualTo(96);
-        assertThat(conDni.getDocNro()).isEqualTo(Long.parseLong(socio.getDni()));
+        assertThat(conDni.docTipo()).isEqualTo(96);
+        assertThat(conDni.docNro()).isEqualTo(Long.parseLong(socio.getDni()));
 
         Usuario sinDni = socio();
         sinDni.setDni("PAS-1234");
         usuarioRepository.save(sinDni);
         ComprobanteFiscalDTO anonima = facturarYProcesar(cobrar(sinDni, 10000));
-        assertThat(anonima.getEstado()).isEqualTo("AUTORIZADO");
-        assertThat(anonima.getDocTipo()).isEqualTo(99);
-        assertThat(anonima.getReceptorNombre()).isNull();
+        assertThat(anonima.estado()).isEqualTo("AUTORIZADO");
+        assertThat(anonima.docTipo()).isEqualTo(99);
+        assertThat(anonima.receptorNombre()).isNull();
     }
 
     @Test
@@ -326,13 +322,13 @@ class FacturacionTest extends PruebaIntegracion {
         simulador.reiniciar();
         PagoListadoDTO otro = cobrar(socio(), 20000);
         ComprobanteFiscalDTO esperando = facturarYProcesar(otro);
-        assertThat(esperando.getEstado()).isEqualTo("PENDIENTE");
-        assertThat(esperando.getUltimoError()).contains("600");
+        assertThat(esperando.estado()).isEqualTo("PENDIENTE");
+        assertThat(esperando.ultimoError()).contains("600");
 
         facturacion.procesarAhora();
         ComprobanteFiscalDTO factura = facturarYProcesar(otro);
-        assertThat(factura.getEstado()).isEqualTo("AUTORIZADO");
-        assertThat(factura.getNumero()).isEqualTo(2);
+        assertThat(factura.estado()).isEqualTo("AUTORIZADO");
+        assertThat(factura.numero()).isEqualTo(2);
     }
 
     @Test

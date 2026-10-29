@@ -9,7 +9,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 /**
  * Controller del control de acceso en recepción (ingreso por DNI) y del historial de asistencia.
@@ -24,18 +23,8 @@ public class AsistenciaController {
 
     @PostMapping("/molinete/verificar")
     public ResponseEntity<?> verificarMolinete(@RequestBody Map<String, String> request) {
-        try {
-            String dni = request.get("dni");
-            CheckInResponse response = asistenciaService.verificarAccesoMolinete(dni);
-            if (response.isPermitido()) {
-                return ResponseEntity.ok(response);
-            } else {
-                return ResponseEntity.status(403).body(response);
-            }
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", e.getMessage()));
-        }
+        CheckInResponse response = asistenciaService.verificarAccesoMolinete(request.get("dni"));
+        return ResponseEntity.status(response.isPermitido() ? 200 : 403).body(response);
     }
 
     /**
@@ -44,14 +33,8 @@ public class AsistenciaController {
      */
     @PostMapping("/molinete/excepcion")
     public ResponseEntity<?> ingresoPorExcepcion(@RequestBody Map<String, String> request, Authentication auth) {
-        try {
-            return ResponseEntity.ok(asistenciaService.registrarIngresoExcepcion(
-                    request.get("dni"), request.get("motivo"), auth.getName()));
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+        return ResponseEntity.ok(asistenciaService.registrarIngresoExcepcion(
+                request.get("dni"), request.get("motivo"), auth.getName()));
     }
 
     /**
@@ -60,26 +43,13 @@ public class AsistenciaController {
      */
     @PostMapping("/molinete/invertir-fichada")
     public ResponseEntity<?> invertirFichada(@RequestBody InvertirFichadaRequest request, Authentication auth) {
-        try {
-            return ResponseEntity.ok(asistenciaPersonalService.invertirFichada(request.idTurno(), request.fichada(), auth.getName()));
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+        return ResponseEntity.ok(asistenciaPersonalService.invertirFichada(request.idTurno(), request.fichada(), auth.getName()));
     }
 
     public record InvertirFichadaRequest(Long idTurno, String fichada) {}
 
     @GetMapping("/historial/{idUsuario}")
     public ResponseEntity<?> historial(@PathVariable Long idUsuario) {
-        try {
-            return ResponseEntity.ok(asistenciaService.historial(idUsuario));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", e.getMessage()));
-        }
+        return ResponseEntity.ok(asistenciaService.historial(idUsuario));
     }
 }

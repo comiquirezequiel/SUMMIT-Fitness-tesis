@@ -1,4 +1,5 @@
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
+import { useCarga } from '../hooks/useCarga';
 import { AlertTriangle, RefreshCw, Download, Search, MessageCircle, Clock, Users, CheckCircle2, Phone } from 'lucide-react';
 import { CANALES, mensajeInactivo, obtenerInactividad, registrarContacto, textoCanal } from '../services/seguimiento';
 import { datosDelGimnasio } from '../components/pdf';
@@ -28,29 +29,14 @@ const Tarjeta = ({ titulo, valor, detalle, icono: Icono, color, onClick, activa 
  * escribirles antes de que no renueven. Cada contacto queda registrado.
  */
 const Inactividad = () => {
-  const [datos, setDatos] = useState(null);
   const [minDias, setMinDias] = useState(7);
   const [nivel, setNivel] = useState(null);
   const [busqueda, setBusqueda] = useState('');
-  const [error, setError] = useState('');
-  const [cargando, setCargando] = useState(false);
   const [gimnasio, setGimnasio] = useState(null);
   const [contacto, setContacto] = useState(null); // { idSocio, canal, nota, enviando, error }
   const [aviso, setAviso] = useState('');
+  const { datos, error, cargando, cargar } = useCarga(() => obtenerInactividad(minDias), [minDias]);
 
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    try {
-      setDatos(await obtenerInactividad(minDias));
-      setError('');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setCargando(false);
-    }
-  }, [minDias]);
-
-  useEffect(() => { cargar(); }, [cargar]);
   useEffect(() => { datosDelGimnasio().then(g => setGimnasio(g?.nombre || null)); }, []);
 
   const guardarContacto = async () => {

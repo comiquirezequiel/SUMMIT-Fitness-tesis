@@ -43,7 +43,7 @@ class CobrosTest extends PruebaIntegracion {
 
     private SocioResponseDTO enLaLista(Usuario socio) {
         return socios.listarTodos().stream()
-                .filter(s -> s.getIdSocio().equals(socio.getIdUsuario()))
+                .filter(s -> s.idSocio().equals(socio.getIdUsuario()))
                 .findFirst()
                 .orElseThrow();
     }
@@ -62,9 +62,9 @@ class CobrosTest extends PruebaIntegracion {
         Usuario socio = socio();
         Plan plan = plan(10000, null);
         PagoListadoDTO primero = pagos.registrarPago(cobro(socio, plan, 10000), null);
-        assertThat(primero.getEstado()).isEqualTo("APROBADO");
+        assertThat(primero.estado()).isEqualTo("APROBADO");
         assertThat(vencimiento(socio)).isEqualTo(hoy().plusDays(30));
-        assertThat(primero.getVenceMembresia()).isEqualTo(hoy().plusDays(30));
+        assertThat(primero.venceMembresia()).isEqualTo(hoy().plusDays(30));
 
         pagos.registrarPago(cobro(socio, plan, 10000), null);
         assertThat(vencimiento(socio)).isEqualTo(hoy().plusDays(60));
@@ -74,34 +74,29 @@ class CobrosTest extends PruebaIntegracion {
     void unCobroAVerificarNoExtiendeHastaQueElAdminLoAprueba() {
         Usuario socio = socio();
         Plan plan = plan(10000, null);
-        CobroRequestDTO pedido = cobro(socio, plan, 10000);
-        pedido.setMetodoPago("TRANSFERENCIA");
-        pedido.setAVerificar(true);
+        CobroRequestDTO pedido = cobro(socio, plan, 10000).toBuilder().metodoPago("TRANSFERENCIA").aVerificar(true).build();
         PagoListadoDTO pago = pagos.registrarPago(pedido, null);
-        assertThat(pago.getEstado()).isEqualTo("PENDIENTE");
+        assertThat(pago.estado()).isEqualTo("PENDIENTE");
         assertThat(vencimiento(socio)).isNull();
 
-        PagoListadoDTO aprobado = pagos.verificarPago(pago.getIdPago(), true, null);
-        assertThat(aprobado.getEstado()).isEqualTo("APROBADO");
+        PagoListadoDTO aprobado = pagos.verificarPago(pago.idPago(), true, null);
+        assertThat(aprobado.estado()).isEqualTo("APROBADO");
         assertThat(vencimiento(socio)).isEqualTo(hoy().plusDays(30));
-        assertThatThrownBy(() -> pagos.verificarPago(pago.getIdPago(), true, null)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> pagos.verificarPago(pago.idPago(), true, null)).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
     void unCobroRechazadoNoExtiende() {
         Usuario socio = socio();
-        CobroRequestDTO pedido = cobro(socio, plan(10000, null), 10000);
-        pedido.setMetodoPago("MERCADO_PAGO");
-        pedido.setAVerificar(true);
+        CobroRequestDTO pedido = cobro(socio, plan(10000, null), 10000).toBuilder().metodoPago("MERCADO_PAGO").aVerificar(true).build();
         PagoListadoDTO pago = pagos.registrarPago(pedido, null);
-        assertThat(pagos.verificarPago(pago.getIdPago(), false, null).getEstado()).isEqualTo("RECHAZADO");
+        assertThat(pagos.verificarPago(pago.idPago(), false, null).estado()).isEqualTo("RECHAZADO");
         assertThat(vencimiento(socio)).isNull();
     }
 
     @Test
     void elEfectivoNoPuedeQuedarAVerificar() {
-        CobroRequestDTO pedido = cobro(socio(), plan(10000, null), 10000);
-        pedido.setAVerificar(true);
+        CobroRequestDTO pedido = cobro(socio(), plan(10000, null), 10000).toBuilder().aVerificar(true).build();
         assertThatThrownBy(() -> pagos.registrarPago(pedido, null)).isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -110,31 +105,29 @@ class CobrosTest extends PruebaIntegracion {
         matricula(5000, 30);
         DescuentoDTO familiar = descuentos.crear(new DescuentoRequestDTO("Familiar prueba", TipoDescuento.PORCENTAJE, BigDecimal.TEN, true));
         Usuario socio = socio();
-        CobroRequestDTO pedido = cobro(socio, plan(10000, null), 14000);
-        pedido.setIdDescuento(familiar.getIdDescuento());
+        CobroRequestDTO pedido = cobro(socio, plan(10000, null), 14000).toBuilder().idDescuento(familiar.idDescuento()).build();
 
         PresupuestoDTO presupuesto = pagos.presupuesto(pedido);
-        assertThat(presupuesto.getDescuentoMonto()).isEqualByComparingTo("1000");
-        assertThat(presupuesto.isMatriculaCorresponde()).isTrue();
-        assertThat(presupuesto.getTotal()).isEqualByComparingTo("14000");
+        assertThat(presupuesto.descuentoMonto()).isEqualByComparingTo("1000");
+        assertThat(presupuesto.matriculaCorresponde()).isTrue();
+        assertThat(presupuesto.total()).isEqualByComparingTo("14000");
 
         PagoListadoDTO pago = pagos.registrarPago(pedido, null);
-        assertThat(pago.getMonto()).isEqualByComparingTo("14000");
-        assertThat(pago.getPrecioLista()).isEqualByComparingTo("10000");
-        assertThat(pago.getMatriculaMonto()).isEqualByComparingTo("5000");
-        assertThat(pago.getDescuentoNombre()).isEqualTo("Familiar prueba");
+        assertThat(pago.monto()).isEqualByComparingTo("14000");
+        assertThat(pago.precioLista()).isEqualByComparingTo("10000");
+        assertThat(pago.matriculaMonto()).isEqualByComparingTo("5000");
+        assertThat(pago.descuentoNombre()).isEqualTo("Familiar prueba");
         // Ya tiene membresía: el próximo cobro no lleva matrícula
-        assertThat(pagos.presupuesto(cobro(socio, plan(10000, null), 10000)).isMatriculaCorresponde()).isFalse();
+        assertThat(pagos.presupuesto(cobro(socio, plan(10000, null), 10000)).matriculaCorresponde()).isFalse();
     }
 
     @Test
     void laMatriculaSePuedeBonificar() {
         matricula(5000, 30);
-        CobroRequestDTO pedido = cobro(socio(), plan(10000, null), 10000);
-        pedido.setBonificarMatricula(true);
+        CobroRequestDTO pedido = cobro(socio(), plan(10000, null), 10000).toBuilder().bonificarMatricula(true).build();
         PagoListadoDTO pago = pagos.registrarPago(pedido, null);
-        assertThat(pago.getMonto()).isEqualByComparingTo("10000");
-        assertThat(pago.getMatriculaMonto()).isEqualByComparingTo("0");
+        assertThat(pago.monto()).isEqualByComparingTo("10000");
+        assertThat(pago.matriculaMonto()).isEqualByComparingTo("0");
     }
 
     @Test
@@ -148,8 +141,7 @@ class CobrosTest extends PruebaIntegracion {
 
     @Test
     void sinElTotalQueVioRecepcionNoSeCobra() {
-        CobroRequestDTO pedido = cobro(socio(), plan(10000, null), 10000);
-        pedido.setTotalMostrado(null);
+        CobroRequestDTO pedido = cobro(socio(), plan(10000, null), 10000).toBuilder().totalMostrado(null).build();
         assertThatThrownBy(() -> pagos.registrarPago(pedido, null)).isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -160,30 +152,28 @@ class CobrosTest extends PruebaIntegracion {
         Usuario volvio = socio();
         membresia(volvio, plan, hoy().minusDays(45));
         PresupuestoDTO conMatricula = pagos.presupuesto(cobro(volvio, plan, 15000));
-        assertThat(conMatricula.isMatriculaCorresponde()).isTrue();
-        assertThat(conMatricula.getMatriculaMotivo()).contains("Reinscripción");
+        assertThat(conMatricula.matriculaCorresponde()).isTrue();
+        assertThat(conMatricula.matriculaMotivo()).contains("Reinscripción");
 
         Usuario reciente = socio();
         membresia(reciente, plan, hoy().minusDays(20));
-        assertThat(pagos.presupuesto(cobro(reciente, plan, 10000)).isMatriculaCorresponde()).isFalse();
+        assertThat(pagos.presupuesto(cobro(reciente, plan, 10000)).matriculaCorresponde()).isFalse();
     }
 
     @Test
     void laListaDeSociosMarcaElCobroAVerificarHastaQueSeConfirma() {
         Usuario socio = socio();
         Plan plan = plan(10000, null);
-        CobroRequestDTO pedido = cobro(socio, plan, 10000);
-        pedido.setMetodoPago("TRANSFERENCIA");
-        pedido.setAVerificar(true);
+        CobroRequestDTO pedido = cobro(socio, plan, 10000).toBuilder().metodoPago("TRANSFERENCIA").aVerificar(true).build();
         PagoListadoDTO pago = pagos.registrarPago(pedido, null);
-        assertThat(enLaLista(socio).isCobroAVerificar()).isTrue();
-        assertThat(socios.buscarPorId(socio.getIdUsuario()).isCobroAVerificar()).isTrue();
+        assertThat(enLaLista(socio).cobroAVerificar()).isTrue();
+        assertThat(socios.buscarPorId(socio.getIdUsuario()).cobroAVerificar()).isTrue();
 
-        pagos.verificarPago(pago.getIdPago(), true, null);
+        pagos.verificarPago(pago.idPago(), true, null);
         SocioResponseDTO alDia = enLaLista(socio);
-        assertThat(alDia.isCobroAVerificar()).isFalse();
-        assertThat(alDia.getIdPlanActual()).isEqualTo(plan.getIdPlan());
-        assertThat(socios.buscarPorId(socio.getIdUsuario()).isCobroAVerificar()).isFalse();
+        assertThat(alDia.cobroAVerificar()).isFalse();
+        assertThat(alDia.idPlanActual()).isEqualTo(plan.getIdPlan());
+        assertThat(socios.buscarPorId(socio.getIdUsuario()).cobroAVerificar()).isFalse();
     }
 
     @Test
@@ -197,14 +187,13 @@ class CobrosTest extends PruebaIntegracion {
                 .estadoPago(EstadoPago.PENDIENTE)
                 .fechaPago(LocalDateTime.now().minusDays(PagoService.DIAS_COBRO_A_VERIFICAR + 1))
                 .build());
-        assertThat(enLaLista(socio).isCobroAVerificar()).isFalse();
-        assertThat(socios.buscarPorId(socio.getIdUsuario()).isCobroAVerificar()).isFalse();
+        assertThat(enLaLista(socio).cobroAVerificar()).isFalse();
+        assertThat(socios.buscarPorId(socio.getIdUsuario()).cobroAVerificar()).isFalse();
     }
 
     @Test
     void unDebitoAutomaticoNoSeCargaAMano() {
-        CobroRequestDTO pedido = cobro(socio(), plan(10000, null), 10000);
-        pedido.setMetodoPago("DEBITO_AUTOMATICO");
+        CobroRequestDTO pedido = cobro(socio(), plan(10000, null), 10000).toBuilder().metodoPago("DEBITO_AUTOMATICO").build();
         assertThatThrownBy(() -> pagos.registrarPago(pedido, null)).isInstanceOf(IllegalArgumentException.class);
     }
 }

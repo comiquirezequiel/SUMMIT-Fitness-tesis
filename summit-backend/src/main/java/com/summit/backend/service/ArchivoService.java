@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 /**
@@ -77,7 +78,7 @@ public class ArchivoService {
     public Archivo cargar(String rutaRelativa) {
         Path ruta = resolver(rutaRelativa);
         if (!Files.isRegularFile(ruta)) {
-            throw new IllegalStateException("El archivo no está disponible");
+            throw new NoSuchElementException("El archivo no está disponible");
         }
         String nombre = ruta.getFileName().toString();
         String tipo = EXTENSIONES.entrySet().stream()
@@ -115,7 +116,7 @@ public class ArchivoService {
     public byte[] leer(String rutaRelativa) {
         Path ruta = resolver(rutaRelativa);
         if (!Files.isRegularFile(ruta)) {
-            throw new IllegalStateException("El archivo no está disponible");
+            throw new NoSuchElementException("El archivo no está disponible");
         }
         try {
             return Files.readAllBytes(ruta);

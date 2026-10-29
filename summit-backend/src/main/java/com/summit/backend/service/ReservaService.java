@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * Servicio de reservas de clases grupales.
@@ -33,29 +34,29 @@ public class ReservaService {
     public ReservaClase reservar(Long idUsuario, Long idHorario, LocalDate fechaClase) {
         Usuario socio = usuarioRepository.findById(idUsuario)
                 .filter(u -> u.getRol() == Rol.SOCIO)
-                .orElseThrow(() -> new RuntimeException("Socio no encontrado"));
+                .orElseThrow(() -> new NoSuchElementException("Socio no encontrado"));
         if (socio.getEstado() != EstadoUsuario.ACTIVO) {
-            throw new RuntimeException("El socio no está activo");
+            throw new IllegalArgumentException("El socio no está activo");
         }
 
         ClaseHorario horario = claseHorarioRepository.findById(idHorario)
-                .orElseThrow(() -> new RuntimeException("Horario no encontrado"));
+                .orElseThrow(() -> new NoSuchElementException("Horario no encontrado"));
         if (!Boolean.TRUE.equals(horario.getClase().getActiva())) {
-            throw new RuntimeException("La clase no está activa");
+            throw new IllegalArgumentException("La clase no está activa");
         }
         if (fechaClase.isBefore(LocalDate.now())) {
-            throw new RuntimeException("No se puede reservar una clase de una fecha pasada");
+            throw new IllegalArgumentException("No se puede reservar una clase de una fecha pasada");
         }
         if (ClaseService.diaSemana(fechaClase) != horario.getDiaSemana()) {
-            throw new RuntimeException("La clase es los " + horario.getDiaSemana().name().toLowerCase()
+            throw new IllegalArgumentException("La clase es los " + horario.getDiaSemana().name().toLowerCase()
                     + " y la fecha elegida no coincide");
         }
         if (reservaClaseRepository.existsBySocioIdUsuarioAndHorarioIdHorarioAndFechaClaseAndEstadoNot(
                 idUsuario, idHorario, fechaClase, EstadoReserva.CANCELADA)) {
-            throw new RuntimeException("El socio ya tiene una reserva para esta clase");
+            throw new IllegalArgumentException("El socio ya tiene una reserva para esta clase");
         }
         if (!certificadoMedicoService.isAptoMedicoVigente(idUsuario)) {
-            throw new RuntimeException("El socio no tiene el apto médico vigente (Ley 5397)");
+            throw new IllegalArgumentException("El socio no tiene el apto médico vigente (Ley 5397)");
         }
 
         // Verificar cupo disponible (excluir canceladas)
@@ -63,7 +64,7 @@ public class ReservaService {
                 .countByHorarioIdHorarioAndFechaClaseAndEstadoNot(idHorario, fechaClase, EstadoReserva.CANCELADA);
 
         if (reservasActuales >= horario.getClase().getCapacidadMaxima()) {
-            throw new RuntimeException("La clase está completa. No hay cupos disponibles.");
+            throw new IllegalArgumentException("La clase está completa. No hay cupos disponibles.");
         }
 
         ReservaClase reserva = ReservaClase.builder()
@@ -78,7 +79,7 @@ public class ReservaService {
 
     public ReservaClase buscar(Long idReserva) {
         return reservaClaseRepository.findById(idReserva)
-                .orElseThrow(() -> new RuntimeException("Reserva no encontrada"));
+                .orElseThrow(() -> new NoSuchElementException("Reserva no encontrada"));
     }
 
     /**

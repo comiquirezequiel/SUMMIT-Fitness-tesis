@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -135,12 +136,12 @@ public class AsistenciaService {
      */
     public CheckInResponse verificarAccesoMolinete(String dni) {
         if (dni == null || dni.isBlank()) {
-            throw new RuntimeException("Debe proporcionar un DNI");
+            throw new IllegalArgumentException("Debe proporcionar un DNI");
         }
         String dniLimpio = dni.trim();
 
         Usuario usuario = usuarioRepository.findByDni(dniLimpio)
-                .orElseThrow(() -> new RuntimeException("No se encontró ningún socio con DNI " + dniLimpio));
+                .orElseThrow(() -> new NoSuchElementException("No se encontró ningún socio con DNI " + dniLimpio));
 
         if (usuario.getRol() != Rol.SOCIO) {
             // Personal del gimnasio: cada paso por recepción es su entrada o su salida
@@ -392,7 +393,7 @@ public class AsistenciaService {
             throw new IllegalArgumentException("El motivo no puede superar los 200 caracteres");
         }
         Usuario socio = usuarioRepository.findByDni(dni.trim())
-                .orElseThrow(() -> new RuntimeException("No se encontró ningún socio con DNI " + dni.trim()));
+                .orElseThrow(() -> new NoSuchElementException("No se encontró ningún socio con DNI " + dni.trim()));
 
         EvaluacionAcceso evaluacion = evaluarAcceso(socio);
         if (evaluacion.permitido()) {

@@ -37,11 +37,7 @@ public class ClaseController {
 
     @GetMapping("/{id}")
     public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(claseService.buscarPorId(id));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(claseService.buscarPorId(id));
     }
 
     @PostMapping
@@ -51,11 +47,7 @@ public class ClaseController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> actualizar(@PathVariable Long id, @RequestBody Clase data) {
-        try {
-            return ResponseEntity.ok(claseService.actualizar(id, data));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+        return ResponseEntity.ok(claseService.actualizar(id, data));
     }
 
     @GetMapping("/{id}/horarios")
@@ -66,21 +58,13 @@ public class ClaseController {
     @PostMapping("/{id}/horarios")
     public ResponseEntity<?> agregarHorario(@PathVariable Long id,
                                              @RequestBody ClaseHorario horario) {
-        try {
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(claseService.agregarHorario(id, horario));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(claseService.agregarHorario(id, horario));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> desactivar(@PathVariable Long id) {
-        try {
-            claseService.desactivar(id);
-            return ResponseEntity.ok(Map.of("mensaje", "Clase desactivada"));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        claseService.desactivar(id);
+        return ResponseEntity.ok(Map.of("mensaje", "Clase desactivada"));
     }
 }

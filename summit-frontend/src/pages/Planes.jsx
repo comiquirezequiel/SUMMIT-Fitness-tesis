@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useCarga } from '../hooks/useCarga';
 import { CreditCard, Tag, CalendarDays, Users, Plus, Search, Edit, Filter, Download, RefreshCw, Power, Save } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import Modal from '../components/Modal';
@@ -90,31 +91,17 @@ const PlanModal = ({ plan, onClose, onGuardado }) => {
 
 const Planes = () => {
   const esAdmin = usuarioActual()?.rol === 'ADMIN';
-  const [planes, setPlanes] = useState([]);
-  const [socios, setSocios] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [tipo, setTipo] = useState('TODOS');
   const [showInactive, setShowInactive] = useState(false);
   const [modal, setModal] = useState(null); // { plan } (plan null = nuevo)
 
-  const cargar = async () => {
-    setCargando(true);
-    try {
-      const [resPlanes, resSocios] = await Promise.all([apiFetch('/planes'), apiFetch('/socios')]);
-      if (!resPlanes.ok) throw new Error('No se pudieron cargar los planes');
-      setPlanes(await resPlanes.json());
-      setSocios(resSocios.ok ? await resSocios.json() : []);
-      setError('');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setCargando(false);
-    }
-  };
-
-  useEffect(() => { cargar(); }, []);
+  const { datos, cargando, error, setError, cargar } = useCarga(async () => {
+    const [resPlanes, resSocios] = await Promise.all([apiFetch('/planes'), apiFetch('/socios')]);
+    if (!resPlanes.ok) throw new Error('No se pudieron cargar los planes');
+    return { planes: await resPlanes.json(), socios: resSocios.ok ? await resSocios.json() : [] };
+  }, [], { planes: [], socios: [] });
+  const { planes, socios } = datos;
 
   const membresiasAlDia = (plan) => socios.filter(s => s.planActual === plan.nombrePlan && s.membresiaAlDia).length;
 

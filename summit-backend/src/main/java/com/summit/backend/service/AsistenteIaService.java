@@ -300,7 +300,7 @@ public class AsistenteIaService {
         }
         // Primero lo que marca la regla firme, después lo que agrega la IA
         // (Boolean.compare: false < true, entonces los que NO son "IA" quedan primero).
-        aEvitar.sort((a, b) -> Boolean.compare("IA".equals(a.getOrigen()), "IA".equals(b.getOrigen())));
+        aEvitar.sort((a, b) -> Boolean.compare("IA".equals(a.origen()), "IA".equals(b.origen())));
 
         return SugerenciaEjerciciosDTO.builder()
                 .patologias(patologias)

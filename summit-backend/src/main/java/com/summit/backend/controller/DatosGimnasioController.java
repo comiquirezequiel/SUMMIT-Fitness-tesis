@@ -31,36 +31,24 @@ public class DatosGimnasioController {
 
     @PutMapping
     public ResponseEntity<?> actualizar(@RequestBody(required = false) DatosGimnasioDTO pedido) {
-        try {
-            return ResponseEntity.ok(datosGimnasioService.actualizar(pedido));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", String.valueOf(e.getMessage())));
-        }
+        return ResponseEntity.ok(datosGimnasioService.actualizar(pedido));
     }
 
     /** Sube el logo (PNG o JPG, máximo 5 MB) y reemplaza el anterior. Devuelve los datos con el logoUrl nuevo. */
     @PostMapping("/logo")
     public ResponseEntity<?> subirLogo(@RequestParam(value = "logo", required = false) MultipartFile logo) {
-        try {
-            return ResponseEntity.ok(datosGimnasioService.guardarLogo(logo));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", String.valueOf(e.getMessage())));
-        }
+        return ResponseEntity.ok(datosGimnasioService.guardarLogo(logo));
     }
 
     /** El logo en PNG (404 si no hay). El panel lo pide con ?v=versión, así un logo nuevo cambia la dirección. */
     @GetMapping("/logo")
     public ResponseEntity<?> logo() {
-        try {
-            return datosGimnasioService.cargarLogo()
-                    .<ResponseEntity<?>>map(logo -> ResponseEntity.ok()
-                            .contentType(MediaType.IMAGE_PNG)
-                            .cacheControl(CacheControl.maxAge(Duration.ofDays(1)).cachePrivate())
-                            .body(logo.recurso()))
-                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "El gimnasio no tiene logo")));
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", String.valueOf(e.getMessage())));
-        }
+        return datosGimnasioService.cargarLogo()
+                .<ResponseEntity<?>>map(logo -> ResponseEntity.ok()
+                        .contentType(MediaType.IMAGE_PNG)
+                        .cacheControl(CacheControl.maxAge(Duration.ofDays(1)).cachePrivate())
+                        .body(logo.recurso()))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "El gimnasio no tiene logo")));
     }
 
     @DeleteMapping("/logo")

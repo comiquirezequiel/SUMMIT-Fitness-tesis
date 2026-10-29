@@ -1,7 +1,11 @@
 package com.summit.backend.config;
 
+import com.summit.backend.controller.AsistenciaController;
+import com.summit.backend.controller.AsistenciaPersonalController;
 import com.summit.backend.controller.CajaController;
+import com.summit.backend.controller.CertificadoMedicoController;
 import com.summit.backend.controller.CongelamientoController;
+import com.summit.backend.controller.DebitoAutomaticoController;
 import com.summit.backend.controller.FacturacionController;
 import com.summit.backend.controller.MembresiaConfigController;
 import com.summit.backend.controller.SeguimientoController;
@@ -13,29 +17,20 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 /**
- * Errores de descuentos, reglas de membresía, congelamientos y caja: lo que no existe es 404 y lo que choca con el
- * estado actual (ej. un congelamiento que se superpone, o una caja que otra persona acaba de cerrar) es 409. Los datos
- * inválidos siguen en GlobalExceptionHandler (400).
+ * En estos controllers, lo que choca con el estado actual (ej. un congelamiento que se superpone, una caja que otra
+ * persona acaba de cerrar o un turno ya anulado) es 409 en lugar de 400. El resto de los errores los resuelve
+ * GlobalExceptionHandler.
  */
 @RestControllerAdvice(assignableTypes = {MembresiaConfigController.class, CongelamientoController.class, CajaController.class,
-        SeguimientoController.class, FacturacionController.class})
+        SeguimientoController.class, FacturacionController.class, AsistenciaController.class,
+        AsistenciaPersonalController.class, CertificadoMedicoController.class, DebitoAutomaticoController.class})
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class ConflictosExceptionHandler {
 
-    @ExceptionHandler(NoSuchElementException.class)
-    public ResponseEntity<Map<String, String>> noEncontrado(NoSuchElementException e) {
-        return error(HttpStatus.NOT_FOUND, e.getMessage());
-    }
-
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<Map<String, String>> conflicto(IllegalStateException e) {
-        return error(HttpStatus.CONFLICT, e.getMessage());
-    }
-
-    private static ResponseEntity<Map<String, String>> error(HttpStatus estado, String mensaje) {
-        return ResponseEntity.status(estado).body(Map.of("error", String.valueOf(mensaje)));
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", String.valueOf(e.getMessage())));
     }
 }

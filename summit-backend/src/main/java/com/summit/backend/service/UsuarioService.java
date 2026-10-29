@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.NoSuchElementException;
 
 /**
  * Servicio de gestión de usuarios/socios.
@@ -31,26 +32,26 @@ public class UsuarioService {
     public Usuario crearStaff(StaffRequestDTO request) {
         Rol rol;
         try {
-            rol = Rol.valueOf(request.getRol().toUpperCase());
+            rol = Rol.valueOf(request.rol().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Rol inválido: " + request.getRol());
+            throw new IllegalArgumentException("Rol inválido: " + request.rol());
         }
         if (rol == Rol.SOCIO) {
-            throw new RuntimeException("Los socios se dan de alta desde /api/socios");
+            throw new IllegalArgumentException("Los socios se dan de alta desde /api/socios");
         }
-        if (usuarioRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("El email ya se encuentra registrado");
+        if (usuarioRepository.existsByEmail(request.email())) {
+            throw new IllegalArgumentException("El email ya se encuentra registrado");
         }
-        if (usuarioRepository.existsByDni(request.getDni())) {
-            throw new RuntimeException("El DNI ya se encuentra registrado");
+        if (usuarioRepository.existsByDni(request.dni())) {
+            throw new IllegalArgumentException("El DNI ya se encuentra registrado");
         }
 
         Usuario usuario = Usuario.builder()
-                .dni(request.getDni())
-                .nombreCompleto(request.getNombreCompleto())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .telefono(request.getTelefono())
+                .dni(request.dni())
+                .nombreCompleto(request.nombreCompleto())
+                .email(request.email())
+                .password(passwordEncoder.encode(request.password()))
+                .telefono(request.telefono())
                 .rol(rol)
                 .estado(EstadoUsuario.ACTIVO)
                 // La contraseña inicial la eligió el admin: al entrar por primera vez tiene que cambiarla
@@ -69,7 +70,7 @@ public class UsuarioService {
     public String restablecerPassword(Long id, String emailAdmin) {
         Usuario usuario = buscarPorId(id);
         if (usuario.getEmail().equalsIgnoreCase(emailAdmin)) {
-            throw new RuntimeException("Tu propia contraseña la cambiás desde tu perfil, con la actual");
+            throw new IllegalArgumentException("Tu propia contraseña la cambiás desde tu perfil, con la actual");
         }
         return passwordService.restablecerConTemporal(usuario);
     }
@@ -90,12 +91,12 @@ public class UsuarioService {
 
     public Usuario buscarPorId(Long id) {
         return usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
+                .orElseThrow(() -> new NoSuchElementException("Usuario no encontrado con ID: " + id));
     }
 
     public Usuario buscarPorDni(String dni) {
         return usuarioRepository.findByDni(dni)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con DNI: " + dni));
+                .orElseThrow(() -> new NoSuchElementException("Usuario no encontrado con DNI: " + dni));
     }
 
     /**

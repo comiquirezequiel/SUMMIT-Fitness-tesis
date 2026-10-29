@@ -26,11 +26,7 @@ public class PlanController {
 
     @GetMapping("/{id}")
     public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(planService.buscarPorId(id));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(planService.buscarPorId(id));
     }
 
     @PostMapping
@@ -40,20 +36,12 @@ public class PlanController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> actualizar(@PathVariable Long id, @RequestBody Plan plan) {
-        try {
-            return ResponseEntity.ok(planService.actualizar(id, plan));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+        return ResponseEntity.ok(planService.actualizar(id, plan));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> desactivar(@PathVariable Long id) {
-        try {
-            planService.desactivar(id);
-            return ResponseEntity.ok(Map.of("mensaje", "Plan desactivado"));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        planService.desactivar(id);
+        return ResponseEntity.ok(Map.of("mensaje", "Plan desactivado"));
     }
 }

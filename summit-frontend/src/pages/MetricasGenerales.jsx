@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useCarga } from '../hooks/useCarga';
 import { LogIn, Users, Repeat, UserCheck, UserPlus, UserMinus, Sparkles } from 'lucide-react';
 import { apiFetch } from '../services/api';
 import {
@@ -21,22 +22,11 @@ const decimal = (n) => Number(n || 0).toLocaleString('es-AR', { minimumFractionD
  */
 const MetricasGenerales = () => {
   const [periodo, setPeriodo] = useState(periodoInicial);
-  const [datos, setDatos] = useState(null);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    let vigente = true;
-    setCargando(true);
-    apiFetch(`/metricas/socios?desde=${periodo.desde}&hasta=${periodo.hasta}`)
-      .then(async (res) => {
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(json.error || 'No se pudieron cargar las métricas');
-        if (vigente) { setDatos(json); setError(''); }
-      })
-      .catch(err => vigente && setError(err.message))
-      .finally(() => vigente && setCargando(false));
-    return () => { vigente = false; };
+  const { datos, cargando, error } = useCarga(async () => {
+    const res = await apiFetch(`/metricas/socios?desde=${periodo.desde}&hasta=${periodo.hasta}`);
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.error || 'No se pudieron cargar las métricas');
+    return json;
   }, [periodo.desde, periodo.hasta]);
 
   const ind = datos?.indicadores || {};

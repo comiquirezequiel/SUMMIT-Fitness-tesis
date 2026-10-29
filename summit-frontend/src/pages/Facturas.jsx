@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useCarga } from '../hooks/useCarga';
 import { FileText, RefreshCw, Send, AlertTriangle, Settings, FlaskConical } from 'lucide-react';
 import { Link } from 'react-router';
 import Paginador from '../components/caja/Paginador';
@@ -23,31 +24,21 @@ const FILTROS = [
  */
 const Facturas = () => {
   const esAdmin = usuarioActual()?.rol === 'ADMIN';
-  const [estado, setEstado] = useState(null);
   const [filtro, setFiltro] = useState(null);
   const [numeroPagina, setNumeroPagina] = useState(0);
-  const [pagina, setPagina] = useState(null);
-  const [error, setError] = useState('');
   const [aviso, setAviso] = useState('');
-  const [cargando, setCargando] = useState(false);
   const [detalle, setDetalle] = useState(null); // id del comprobante abierto
 
-  const cargar = useCallback(async () => {
-    setCargando(true);
+  const { datos, cargando, error, setError, cargar } = useCarga(async () => {
     try {
-      const [nuevoEstado, nuevaPagina] = await Promise.all([obtenerEstadoFacturacion(), listarComprobantes(filtro, numeroPagina)]);
-      setEstado(nuevoEstado);
-      setPagina(nuevaPagina);
-      setError('');
-    } catch (e) {
-      setError(e.message);
+      const [estado, pagina] = await Promise.all([obtenerEstadoFacturacion(), listarComprobantes(filtro, numeroPagina)]);
+      return { estado, pagina };
     } finally {
-      setCargando(false);
+      actualizarAvisoFacturacion();
     }
-    actualizarAvisoFacturacion();
   }, [filtro, numeroPagina]);
-
-  useEffect(() => { cargar(); }, [cargar]);
+  const estado = datos?.estado ?? null;
+  const pagina = datos?.pagina ?? null;
 
   const mandarAhora = async () => {
     try {

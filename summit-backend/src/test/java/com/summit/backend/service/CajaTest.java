@@ -73,17 +73,17 @@ class CajaTest extends PruebaIntegracion {
     @Test
     void unGastoQuePagoElDuenoNoSaleDeLaCaja() {
         TurnoCajaDTO antes = caja.turnoActual();
-        BigDecimal egresosHoy = pagos.resumen().getEgresosHoy();
+        BigDecimal egresosHoy = pagos.resumen().egresosHoy();
         GastoDTO g = gasto(pesos(1000000), MetodoPago.EFECTIVO, true);
-        assertThat(g.isFueraDeCaja()).isTrue();
+        assertThat(g.fueraDeCaja()).isTrue();
 
         TurnoCajaDTO despues = caja.turnoActual();
         assertThat(despues.getEfectivoEsperado()).isEqualByComparingTo(antes.getEfectivoEsperado());
         assertThat(despues.getCantidadGastos()).isEqualTo(antes.getCantidadGastos());
         // Pero es un gasto del gimnasio: suma en los gastos de hoy
-        assertThat(pagos.resumen().getEgresosHoy()).isEqualByComparingTo(egresosHoy.add(pesos(1000000)));
+        assertThat(pagos.resumen().egresosHoy()).isEqualByComparingTo(egresosHoy.add(pesos(1000000)));
         // Con otro medio no tiene sentido: se ignora
-        assertThat(gasto(pesos(500), MetodoPago.TRANSFERENCIA, true).isFueraDeCaja()).isFalse();
+        assertThat(gasto(pesos(500), MetodoPago.TRANSFERENCIA, true).fueraDeCaja()).isFalse();
     }
 
     @Test
@@ -91,8 +91,8 @@ class CajaTest extends PruebaIntegracion {
         pagos.registrarPago(cobro(socio(), plan(10000, null), 10000), null);
         TurnoCajaDTO antes = caja.turnoActual();
         GastoDTO g = gasto(2000, MetodoPago.EFECTIVO);
-        assertThatThrownBy(() -> caja.anularGasto(g.getIdGasto(), "no", null)).isInstanceOf(IllegalArgumentException.class);
-        assertThat(caja.anularGasto(g.getIdGasto(), "Se cargó dos veces", null).isAnulado()).isTrue();
+        assertThatThrownBy(() -> caja.anularGasto(g.idGasto(), "no", null)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(caja.anularGasto(g.idGasto(), "Se cargó dos veces", null).anulado()).isTrue();
         assertThat(caja.turnoActual().getEfectivoEsperado()).isEqualByComparingTo(antes.getEfectivoEsperado());
     }
 
@@ -104,8 +104,8 @@ class CajaTest extends PruebaIntegracion {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("faltante de $ 500");
         CierreCajaDTO cierre = caja.cerrar(new CierreRequestDTO(faltan500, null, "Vuelto de más a un socio"), null);
-        assertThat(cierre.getDiferencia()).isEqualByComparingTo("-500");
-        assertThat(cierre.getObservacion()).isEqualTo("Vuelto de más a un socio");
+        assertThat(cierre.diferencia()).isEqualByComparingTo("-500");
+        assertThat(cierre.observacion()).isEqualTo("Vuelto de más a un socio");
     }
 
     @Test
@@ -117,13 +117,13 @@ class CajaTest extends PruebaIntegracion {
         BigDecimal contado = turno.getEfectivoEsperado();
 
         CierreCajaDTO cierre = caja.cerrar(new CierreRequestDTO(contado, pesos(4000), null), null);
-        assertThat(cierre.getDiferencia()).isEqualByComparingTo(BigDecimal.ZERO);
-        assertThat(cierre.getFondoSiguiente()).isEqualByComparingTo(contado.subtract(pesos(4000)));
+        assertThat(cierre.diferencia()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(cierre.fondoSiguiente()).isEqualByComparingTo(contado.subtract(pesos(4000)));
 
         TurnoCajaDTO siguiente = caja.turnoActual();
-        assertThat(siguiente.getFondoInicial()).isEqualByComparingTo(cierre.getFondoSiguiente());
+        assertThat(siguiente.getFondoInicial()).isEqualByComparingTo(cierre.fondoSiguiente());
         assertThat(siguiente.getCantidadCobros()).isZero();
-        assertThatThrownBy(() -> caja.anularGasto(anterior.getIdGasto(), "Ya estaba cerrado", null))
+        assertThatThrownBy(() -> caja.anularGasto(anterior.idGasto(), "Ya estaba cerrado", null))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("cierre de caja");
     }

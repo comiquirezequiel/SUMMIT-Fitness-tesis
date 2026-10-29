@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useCarga } from '../hooks/useCarga';
 import { useNavigate } from 'react-router';
 import {
   ClipboardList, Search, Plus, Eye, Pencil, Ban, RefreshCw, UserX, Download,
@@ -25,34 +26,20 @@ const EntrenamientoPlanes = () => {
   const usuario = usuarioActual();
   const puedeEditar = puedeEditarEntrenamiento(usuario);
 
-  const [rutinas, setRutinas] = useState([]);
-  const [socios, setSocios] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
   const [busqueda, setBusqueda] = useState('');
   const [filtro, setFiltro] = useState('TODOS');
   const [aviso, setAviso] = useState(null);
   const [detalle, setDetalle] = useState(null); // { fila, rutina, cargando, error }
   const [desactivando, setDesactivando] = useState(null);
 
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    setError('');
-    try {
-      const [listaRutinas, listaSocios] = await Promise.all([
-        obtenerJson('/rutinas', 'No se pudieron cargar las rutinas.'),
-        obtenerJson('/socios', 'No se pudo cargar la lista de socios.'),
-      ]);
-      setRutinas(listaRutinas);
-      setSocios(listaSocios);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setCargando(false);
-    }
-  }, []);
-
-  useEffect(() => { cargar(); }, [cargar]);
+  const { datos, cargando, error, cargar } = useCarga(async () => {
+    const [rutinas, socios] = await Promise.all([
+      obtenerJson('/rutinas', 'No se pudieron cargar las rutinas.'),
+      obtenerJson('/socios', 'No se pudo cargar la lista de socios.'),
+    ]);
+    return { rutinas, socios };
+  }, [], { rutinas: [], socios: [] });
+  const { rutinas, socios } = datos;
 
   // Una fila por socio: su rutina activa (la más reciente) o, si es un socio activo, "sin rutina"
   const filas = useMemo(() => {

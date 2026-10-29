@@ -44,16 +44,16 @@ public class DescuentoService {
 
     @Transactional
     public DescuentoDTO crear(DescuentoRequestDTO pedido) {
-        String nombre = pedido.getNombre().trim();
+        String nombre = pedido.nombre().trim();
         if (descuentoRepository.existsByNombreIgnoreCase(nombre)) {
             throw new IllegalArgumentException("Ya hay un descuento llamado \"" + nombre + "\"");
         }
-        validarValor(pedido.getTipo(), pedido.getValor());
+        validarValor(pedido.tipo(), pedido.valor());
         Descuento descuento = descuentoRepository.save(Descuento.builder()
                 .nombre(nombre)
-                .tipo(pedido.getTipo())
-                .valor(pedido.getValor().setScale(2, RoundingMode.HALF_UP))
-                .activo(pedido.getActivo() == null || pedido.getActivo())
+                .tipo(pedido.tipo())
+                .valor(pedido.valor().setScale(2, RoundingMode.HALF_UP))
+                .activo(pedido.activo() == null || pedido.activo())
                 .build());
         return aDto(descuento, 0);
     }
@@ -64,16 +64,16 @@ public class DescuentoService {
     @Transactional
     public DescuentoDTO actualizar(Long idDescuento, DescuentoRequestDTO pedido) {
         Descuento descuento = buscar(idDescuento);
-        String nombre = pedido.getNombre().trim();
+        String nombre = pedido.nombre().trim();
         if (descuentoRepository.existsByNombreIgnoreCaseAndIdDescuentoNot(nombre, idDescuento)) {
             throw new IllegalArgumentException("Ya hay otro descuento llamado \"" + nombre + "\"");
         }
-        validarValor(pedido.getTipo(), pedido.getValor());
+        validarValor(pedido.tipo(), pedido.valor());
         descuento.setNombre(nombre);
-        descuento.setTipo(pedido.getTipo());
-        descuento.setValor(pedido.getValor().setScale(2, RoundingMode.HALF_UP));
-        if (pedido.getActivo() != null) {
-            descuento.setActivo(pedido.getActivo());
+        descuento.setTipo(pedido.tipo());
+        descuento.setValor(pedido.valor().setScale(2, RoundingMode.HALF_UP));
+        if (pedido.activo() != null) {
+            descuento.setActivo(pedido.activo());
         }
         descuento = descuentoRepository.save(descuento);
         return aDto(descuento, perfilSocioRepository.countByDescuentoIdDescuento(idDescuento));

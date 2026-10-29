@@ -26,14 +26,10 @@ public class SuscripcionController {
 
     @PostMapping
     public ResponseEntity<?> crear(@RequestBody Map<String, Long> request) {
-        try {
-            Long idUsuario = request.get("idUsuario");
-            Long idPlan = request.get("idPlan");
-            Suscripcion suscripcion = suscripcionService.crearSuscripcion(idUsuario, idPlan);
-            return ResponseEntity.status(HttpStatus.CREATED).body(suscripcion);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+        Long idUsuario = request.get("idUsuario");
+        Long idPlan = request.get("idPlan");
+        Suscripcion suscripcion = suscripcionService.crearSuscripcion(idUsuario, idPlan);
+        return ResponseEntity.status(HttpStatus.CREATED).body(suscripcion);
     }
 
     @GetMapping("/verificar/{idUsuario}")

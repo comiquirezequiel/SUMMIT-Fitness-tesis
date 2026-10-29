@@ -6,8 +6,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 /**
  * Reglas de acceso del gimnasio. Ver ADMIN y RECEPCION; cambiar, solo ADMIN (SecurityConfig).
  */
@@ -25,10 +23,6 @@ public class ConfiguracionAccesoController {
 
     @PutMapping
     public ResponseEntity<?> actualizarConfiguracion(@RequestBody ConfiguracionAcceso config) {
-        try {
-            return ResponseEntity.ok(configuracionAccesoService.actualizarConfiguracion(config));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+        return ResponseEntity.ok(configuracionAccesoService.actualizarConfiguracion(config));
     }
 }

@@ -32,11 +32,7 @@ public class FotoSocioController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> guardar(@PathVariable Long idSocio,
                                      @RequestParam(value = "foto", required = false) MultipartFile foto) {
-        try {
-            return ResponseEntity.ok(Map.of("fotoVersion", fotoSocioService.guardar(idSocio, foto)));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", String.valueOf(e.getMessage())));
-        }
+        return ResponseEntity.ok(Map.of("fotoVersion", fotoSocioService.guardar(idSocio, foto)));
     }
 
     /**
@@ -50,12 +46,8 @@ public class FotoSocioController {
 
     @DeleteMapping
     public ResponseEntity<?> eliminar(@PathVariable Long idSocio) {
-        try {
-            fotoSocioService.eliminar(idSocio);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", String.valueOf(e.getMessage())));
-        }
+        fotoSocioService.eliminar(idSocio);
+        return ResponseEntity.noContent().build();
     }
 
     /**
@@ -63,15 +55,11 @@ public class FotoSocioController {
      * "private": la guarda solo el navegador de quien la pidió, nunca un intermediario (Cloudflare).
      */
     static ResponseEntity<?> respuestaFoto(Supplier<Optional<ArchivoService.Archivo>> buscar) {
-        try {
-            return buscar.get()
-                    .<ResponseEntity<?>>map(foto -> ResponseEntity.ok()
-                            .contentType(MediaType.IMAGE_JPEG)
-                            .cacheControl(CacheControl.maxAge(Duration.ofDays(1)).cachePrivate())
-                            .body(foto.recurso()))
-                    .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "No tiene foto")));
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", String.valueOf(e.getMessage())));
-        }
+        return buscar.get()
+                .<ResponseEntity<?>>map(foto -> ResponseEntity.ok()
+                        .contentType(MediaType.IMAGE_JPEG)
+                        .cacheControl(CacheControl.maxAge(Duration.ofDays(1)).cachePrivate())
+                        .body(foto.recurso()))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "No tiene foto")));
     }
 }

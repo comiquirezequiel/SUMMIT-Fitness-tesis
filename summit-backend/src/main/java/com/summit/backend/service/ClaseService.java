@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * Servicio de clases grupales.
@@ -40,7 +41,7 @@ public class ClaseService {
 
     public Clase buscarPorId(Long id) {
         return claseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Clase no encontrada con ID: " + id));
+                .orElseThrow(() -> new NoSuchElementException("Clase no encontrada con ID: " + id));
     }
 
     public Clase crear(Clase clase) {

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * Servicio de gestión de planes del gimnasio.
@@ -24,7 +25,7 @@ public class PlanService {
 
     public Plan buscarPorId(Long id) {
         return planRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Plan no encontrado con ID: " + id));
+                .orElseThrow(() -> new NoSuchElementException("Plan no encontrado con ID: " + id));
     }
 
     public Plan crear(Plan plan) {

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useCarga } from '../hooks/useCarga';
 import { ArrowUpRight, ArrowDownRight, Receipt, Ticket, UserCheck, Repeat, Hourglass } from 'lucide-react';
 import { apiFetch } from '../services/api';
 import { formatMoneda } from '../utils/formato';
@@ -20,23 +21,12 @@ const COLORES_METODO = Object.fromEntries(ORDEN_METODOS.map((m, i) => [textoMeto
  */
 const MetricasPlanes = () => {
   const [periodo, setPeriodo] = useState(periodoInicial);
-  const [datos, setDatos] = useState(null);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    let vigente = true;
-    setCargando(true);
-    apiFetch(`/metricas/ingresos?desde=${periodo.desde}&hasta=${periodo.hasta}`)
-      .then(async (res) => {
-        const json = await res.json().catch(() => ({}));
-        if (res.status === 403) throw new Error('Estas métricas son solo para administración.');
-        if (!res.ok) throw new Error(json.error || 'No se pudieron cargar las métricas');
-        if (vigente) { setDatos(json); setError(''); }
-      })
-      .catch(err => vigente && setError(err.message))
-      .finally(() => vigente && setCargando(false));
-    return () => { vigente = false; };
+  const { datos, cargando, error } = useCarga(async () => {
+    const res = await apiFetch(`/metricas/ingresos?desde=${periodo.desde}&hasta=${periodo.hasta}`);
+    const json = await res.json().catch(() => ({}));
+    if (res.status === 403) throw new Error('Estas métricas son solo para administración.');
+    if (!res.ok) throw new Error(json.error || 'No se pudieron cargar las métricas');
+    return json;
   }, [periodo.desde, periodo.hasta]);
 
   const ind = datos?.indicadores || {};

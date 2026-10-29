@@ -23,13 +23,13 @@ class SeguimientoTest extends PruebaIntegracion {
 
     private List<TareaDTO> tareasDe(Usuario socio, String tipo) {
         return seguimiento.pendientes().stream()
-                .filter(t -> t.getIdSocio().equals(socio.getIdUsuario()) && t.getTipo().equals(tipo))
+                .filter(t -> t.idSocio().equals(socio.getIdUsuario()) && t.tipo().equals(tipo))
                 .toList();
     }
 
     private TareaDTO resueltaDe(Usuario socio, String tipo) {
         return seguimiento.resueltas(50).stream()
-                .filter(t -> t.getIdSocio().equals(socio.getIdUsuario()) && t.getTipo().equals(tipo))
+                .filter(t -> t.idSocio().equals(socio.getIdUsuario()) && t.tipo().equals(tipo))
                 .findFirst().orElse(null);
     }
 
@@ -62,7 +62,7 @@ class SeguimientoTest extends PruebaIntegracion {
         ingreso(socio, hoy().atStartOfDay().plusMinutes(1));
         seguimiento.generarTareas();
         assertThat(tareasDe(socio, "INACTIVO")).isEmpty();
-        assertThat(resueltaDe(socio, "INACTIVO").getNota()).contains("Volvió al gimnasio");
+        assertThat(resueltaDe(socio, "INACTIVO").nota()).contains("Volvió al gimnasio");
     }
 
     @Test
@@ -77,6 +77,6 @@ class SeguimientoTest extends PruebaIntegracion {
         pagos.registrarPago(cobro(socio, plan, 10000), null);
         seguimiento.generarTareas();
         assertThat(tareasDe(socio, "CUOTA_POR_VENCER")).isEmpty();
-        assertThat(resueltaDe(socio, "CUOTA_POR_VENCER").getNota()).contains("Renovó la cuota");
+        assertThat(resueltaDe(socio, "CUOTA_POR_VENCER").nota()).contains("Renovó la cuota");
     }
 }

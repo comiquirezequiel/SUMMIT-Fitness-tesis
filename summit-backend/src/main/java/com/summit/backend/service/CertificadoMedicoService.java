@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 /**
@@ -70,7 +71,7 @@ public class CertificadoMedicoService {
     public CertificadoMedico buscarDelSocio(Long idSocio, Long idCertificado) {
         return certificadoRepository.findById(idCertificado)
                 .filter(c -> c.getUsuario().getIdUsuario().equals(idSocio))
-                .orElseThrow(() -> new RuntimeException("Certificado no encontrado"));
+                .orElseThrow(() -> new NoSuchElementException("Certificado no encontrado"));
     }
 
     /**
@@ -81,7 +82,7 @@ public class CertificadoMedicoService {
                                                   String observacionesPatologias, String resumenIa) {
         Usuario socio = usuarioRepository.findById(idUsuario)
                 .filter(u -> u.getRol() == Rol.SOCIO)
-                .orElseThrow(() -> new RuntimeException("Socio no encontrado"));
+                .orElseThrow(() -> new NoSuchElementException("Socio no encontrado"));
 
         // Primero se validan las fechas y los textos, así un certificado inválido no deja archivos guardados
         LocalDate fechaVencimiento = calcularVencimiento(fechaEmision);

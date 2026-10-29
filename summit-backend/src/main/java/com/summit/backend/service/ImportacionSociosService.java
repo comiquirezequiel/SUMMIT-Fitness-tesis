@@ -77,17 +77,9 @@ public class ImportacionSociosService {
             return new ImportacionSociosDTO.Resultado(numero, "EXISTE", "Ya estaba registrado: no se modificó", null, null);
         }
 
-        SocioRequestDTO pedido = new SocioRequestDTO();
-        pedido.setDni(dni);
-        pedido.setNombreCompleto(texto(fila.nombreCompleto()));
-        pedido.setEmail(email);
-        pedido.setTelefono(texto(fila.telefono()));
-        pedido.setFechaNacimiento(fila.fechaNacimiento());
-        pedido.setGenero(texto(fila.genero()));
-        pedido.setDomicilio(texto(fila.domicilio()));
-        pedido.setCiudad(texto(fila.ciudad()));
-        pedido.setObjetivo(texto(fila.objetivo()));
-        pedido.setObservaciones(texto(fila.observaciones()));
+        SocioRequestDTO pedido = new SocioRequestDTO(dni, texto(fila.nombreCompleto()), email, texto(fila.telefono()),
+                fila.fechaNacimiento(), texto(fila.genero()), texto(fila.domicilio()), texto(fila.ciudad()),
+                texto(fila.objetivo()), texto(fila.observaciones()), null);
         List<String> problemas = validator.validate(pedido).stream()
                 .map(ConstraintViolation::getMessage)
                 .sorted()
@@ -123,7 +115,7 @@ public class ImportacionSociosService {
             SocioResponseDTO creado = socioService.crearSocio(pedido);
             if (planElegido != null) {
                 suscripcionRepository.save(Suscripcion.builder()
-                        .usuario(usuarioRepository.getReferenceById(creado.getIdSocio()))
+                        .usuario(usuarioRepository.getReferenceById(creado.idSocio()))
                         .plan(planElegido)
                         .fechaInicio(fila.vence().minusDays(planElegido.getDuracionDias()))
                         .fechaVencimiento(fila.vence())
@@ -135,7 +127,7 @@ public class ImportacionSociosService {
         String mensaje = planElegido != null
                 ? "Importado con " + planElegido.getNombrePlan() + " hasta el " + TextoFechas.completa(fila.vence())
                 : "Importado";
-        return new ImportacionSociosDTO.Resultado(numero, "CREADO", mensaje, socio.getIdSocio(), aviso);
+        return new ImportacionSociosDTO.Resultado(numero, "CREADO", mensaje, socio.idSocio(), aviso);
     }
 
     private static ImportacionSociosDTO.Resultado error(Integer numero, String mensaje) {

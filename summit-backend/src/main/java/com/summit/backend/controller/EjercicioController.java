@@ -9,13 +9,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 /**
  * Controller de ejercicios.
  * Filtrado por grupo muscular para el modelo 2D interactivo.
  * Consulta cualquier usuario autenticado; alta y edición, ADMIN y PROFESOR (SecurityConfig).
- * Los errores (404 / 400 con {"error"}) los arma EntrenamientoExceptionHandler.
+ * Los errores (404 / 400 con {"error"}) los arma GlobalExceptionHandler.
  */
 @RestController
 @RequestMapping("/api/ejercicios")
@@ -31,13 +29,8 @@ public class EjercicioController {
 
     @GetMapping("/grupo/{grupo}")
     public ResponseEntity<?> buscarPorGrupo(@PathVariable String grupo) {
-        try {
-            GrupoMuscular grupoEnum = GrupoMuscular.valueOf(grupo.toUpperCase());
-            return ResponseEntity.ok(ejercicioService.buscarPorGrupoMuscular(grupoEnum));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Grupo muscular inválido: " + grupo));
-        }
+        GrupoMuscular grupoEnum = GrupoMuscular.valueOf(grupo.toUpperCase());
+        return ResponseEntity.ok(ejercicioService.buscarPorGrupoMuscular(grupoEnum));
     }
 
     @GetMapping("/{id}")

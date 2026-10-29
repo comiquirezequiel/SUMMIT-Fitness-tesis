@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -65,20 +66,20 @@ public class SocioService {
 
     @Transactional
     public SocioResponseDTO crearSocio(SocioRequestDTO request) {
-        if (usuarioRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("El email ya se encuentra registrado");
+        if (usuarioRepository.existsByEmail(request.email())) {
+            throw new IllegalArgumentException("El email ya se encuentra registrado");
         }
-        if (usuarioRepository.existsByDni(request.getDni())) {
-            throw new RuntimeException("El DNI ya se encuentra registrado");
+        if (usuarioRepository.existsByDni(request.dni())) {
+            throw new IllegalArgumentException("El DNI ya se encuentra registrado");
         }
 
         Usuario nuevoSocio = Usuario.builder()
-                .dni(request.getDni())
-                .nombreCompleto(request.getNombreCompleto().trim())
-                .email(request.getEmail().trim())
+                .dni(request.dni())
+                .nombreCompleto(request.nombreCompleto().trim())
+                .email(request.email().trim())
                 // Los socios no entran al sistema: la columna es obligatoria, así que lleva una al azar que nadie conoce
                 .password(passwordEncoder.encode(passwordService.alAzar()))
-                .telefono(textoOpcional(request.getTelefono()))
+                .telefono(textoOpcional(request.telefono()))
                 .rol(Rol.SOCIO)
                 .estado(EstadoUsuario.ACTIVO)
                 .build();
@@ -86,13 +87,13 @@ public class SocioService {
 
         perfilSocioRepository.save(PerfilSocio.builder()
                 .usuario(nuevoSocio)
-                .fechaNacimiento(request.getFechaNacimiento())
-                .genero(textoOpcional(request.getGenero()))
-                .domicilio(textoOpcional(request.getDomicilio()))
-                .ciudad(textoOpcional(request.getCiudad()))
-                .objetivo(textoOpcional(request.getObjetivo()))
-                .observaciones(textoOpcional(request.getObservaciones()))
-                .descuento(request.getIdDescuento() != null ? descuentoService.activo(request.getIdDescuento()) : null)
+                .fechaNacimiento(request.fechaNacimiento())
+                .genero(textoOpcional(request.genero()))
+                .domicilio(textoOpcional(request.domicilio()))
+                .ciudad(textoOpcional(request.ciudad()))
+                .objetivo(textoOpcional(request.objetivo()))
+                .observaciones(textoOpcional(request.observaciones()))
+                .descuento(request.idDescuento() != null ? descuentoService.activo(request.idDescuento()) : null)
                 .build());
 
         return mapToDTO(nuevoSocio, configService.obtenerConfiguracionGlobal());
@@ -103,26 +104,26 @@ public class SocioService {
         Usuario socio = buscarSocio(id);
 
         // Verificar si se cambia el email, que no exista ya
-        if (!socio.getEmail().equals(request.getEmail()) && usuarioRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("El nuevo email ya se encuentra registrado por otro usuario");
+        if (!socio.getEmail().equals(request.email()) && usuarioRepository.existsByEmail(request.email())) {
+            throw new IllegalArgumentException("El nuevo email ya se encuentra registrado por otro usuario");
         }
 
-        socio.setNombreCompleto(request.getNombreCompleto().trim());
-        socio.setEmail(request.getEmail().trim());
-        socio.setTelefono(textoOpcional(request.getTelefono()));
+        socio.setNombreCompleto(request.nombreCompleto().trim());
+        socio.setEmail(request.email().trim());
+        socio.setTelefono(textoOpcional(request.telefono()));
         socio = usuarioRepository.save(socio);
 
         // Los socios creados antes de existir el perfil no lo tienen: se crea al editar
         Usuario usuario = socio;
         PerfilSocio perfil = perfilSocioRepository.findByUsuarioIdUsuario(id)
                 .orElseGet(() -> PerfilSocio.builder().usuario(usuario).build());
-        perfil.setFechaNacimiento(request.getFechaNacimiento());
-        perfil.setGenero(textoOpcional(request.getGenero()));
-        perfil.setDomicilio(textoOpcional(request.getDomicilio()));
-        perfil.setCiudad(textoOpcional(request.getCiudad()));
-        perfil.setObjetivo(textoOpcional(request.getObjetivo()));
-        perfil.setObservaciones(textoOpcional(request.getObservaciones()));
-        perfil.setDescuento(descuentoElegido(request.getIdDescuento(), perfil.getDescuento()));
+        perfil.setFechaNacimiento(request.fechaNacimiento());
+        perfil.setGenero(textoOpcional(request.genero()));
+        perfil.setDomicilio(textoOpcional(request.domicilio()));
+        perfil.setCiudad(textoOpcional(request.ciudad()));
+        perfil.setObjetivo(textoOpcional(request.objetivo()));
+        perfil.setObservaciones(textoOpcional(request.observaciones()));
+        perfil.setDescuento(descuentoElegido(request.idDescuento(), perfil.getDescuento()));
         perfilSocioRepository.save(perfil);
 
         return mapToDTO(socio, configService.obtenerConfiguracionGlobal());
@@ -161,7 +162,7 @@ public class SocioService {
     private Usuario buscarSocio(Long id) {
         return usuarioRepository.findById(id)
                 .filter(u -> u.getRol() == Rol.SOCIO)
-                .orElseThrow(() -> new RuntimeException("Socio no encontrado con ID: " + id));
+                .orElseThrow(() -> new NoSuchElementException("Socio no encontrado con ID: " + id));
     }
 
     private static String textoOpcional(String valor) {

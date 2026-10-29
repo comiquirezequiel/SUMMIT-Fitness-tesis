@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * Servicio de suscripciones.
@@ -77,9 +78,9 @@ public class SuscripcionService {
     @Transactional
     public Suscripcion crearSuscripcion(Long idUsuario, Long idPlan) {
         Usuario usuario = usuarioRepository.findById(idUsuario)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new NoSuchElementException("Usuario no encontrado"));
         Plan plan = planRepository.findById(idPlan)
-                .orElseThrow(() -> new RuntimeException("Plan no encontrado"));
+                .orElseThrow(() -> new NoSuchElementException("Plan no encontrado"));
         return extenderOcrearSuscripcion(usuario, plan);
     }
 

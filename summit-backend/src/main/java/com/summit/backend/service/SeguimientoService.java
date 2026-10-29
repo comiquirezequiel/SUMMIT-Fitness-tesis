@@ -277,15 +277,15 @@ public class SeguimientoService {
 
     @Transactional
     public TareaDTO crear(TareaRequestDTO pedido, String email) {
-        Usuario socio = socio(pedido.getIdSocio());
-        LocalDate vence = pedido.getVence() != null ? pedido.getVence() : LocalDate.now();
+        Usuario socio = socio(pedido.idSocio());
+        LocalDate vence = pedido.vence() != null ? pedido.vence() : LocalDate.now();
         if (vence.isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("La fecha de la tarea no puede ser anterior a hoy");
         }
         return aDto(tareaRepository.save(TareaSeguimiento.builder()
                 .usuario(socio)
                 .tipo(TipoTarea.MANUAL)
-                .descripcion(pedido.getDescripcion().trim())
+                .descripcion(pedido.descripcion().trim())
                 .vence(vence)
                 .creadaPor(usuarioPorEmail(email))
                 .build()));
@@ -299,15 +299,15 @@ public class SeguimientoService {
         if (tarea.getEstado() != EstadoTarea.PENDIENTE) {
             throw new IllegalStateException("Esa tarea ya no está pendiente");
         }
-        if (pedido.getEstado() != EstadoTarea.HECHA && pedido.getEstado() != EstadoTarea.DESCARTADA) {
+        if (pedido.estado() != EstadoTarea.HECHA && pedido.estado() != EstadoTarea.DESCARTADA) {
             throw new IllegalArgumentException("Indicá si la tarea se hizo o se descarta");
         }
-        if (pedido.getEstado() == EstadoTarea.HECHA && pedido.getCanal() == null) {
+        if (pedido.estado() == EstadoTarea.HECHA && pedido.canal() == null) {
             throw new IllegalArgumentException("Indicá cómo se contactó al socio");
         }
-        tarea.setEstado(pedido.getEstado());
-        tarea.setCanal(pedido.getEstado() == EstadoTarea.HECHA ? pedido.getCanal() : null);
-        tarea.setNota(textoOpcional(pedido.getNota()));
+        tarea.setEstado(pedido.estado());
+        tarea.setCanal(pedido.estado() == EstadoTarea.HECHA ? pedido.canal() : null);
+        tarea.setNota(textoOpcional(pedido.nota()));
         tarea.setResueltaPor(usuarioPorEmail(email));
         tarea.setFechaResolucion(LocalDateTime.now());
         return aDto(tareaRepository.save(tarea));
@@ -319,11 +319,11 @@ public class SeguimientoService {
      */
     @Transactional
     public TareaDTO registrarContacto(ContactoRequestDTO pedido, String email) {
-        if (pedido.getIdSocio() == null) {
+        if (pedido.idSocio() == null) {
             throw new IllegalArgumentException("Falta el socio");
         }
-        CanalContacto canal = pedido.getCanal() != null ? pedido.getCanal() : CanalContacto.WHATSAPP;
-        Usuario socio = socio(pedido.getIdSocio());
+        CanalContacto canal = pedido.canal() != null ? pedido.canal() : CanalContacto.WHATSAPP;
+        Usuario socio = socio(pedido.idSocio());
         TareaSeguimiento tarea = tareaRepository
                 .findFirstByUsuarioIdUsuarioAndTipoAndEstadoOrderByIdTareaDesc(socio.getIdUsuario(), TipoTarea.INACTIVO, EstadoTarea.PENDIENTE)
                 .orElseGet(() -> TareaSeguimiento.builder()
@@ -335,7 +335,7 @@ public class SeguimientoService {
                         .build());
         tarea.setEstado(EstadoTarea.HECHA);
         tarea.setCanal(canal);
-        tarea.setNota(textoOpcional(pedido.getNota()));
+        tarea.setNota(textoOpcional(pedido.nota()));
         tarea.setResueltaPor(usuarioPorEmail(email));
         tarea.setFechaResolucion(LocalDateTime.now());
         return aDto(tareaRepository.save(tarea));

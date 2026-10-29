@@ -89,8 +89,8 @@ public class CongelamientoService {
         }
 
         LocalDate hoy = LocalDate.now();
-        LocalDate desde = pedido.getDesde();
-        LocalDate hasta = pedido.getHasta();
+        LocalDate desde = pedido.desde();
+        LocalDate hasta = pedido.hasta();
         if (desde.isBefore(hoy)) {
             throw new IllegalArgumentException("El congelamiento tiene que empezar hoy o más adelante");
         }
@@ -127,9 +127,9 @@ public class CongelamientoService {
                 .suscripcion(suscripcion)
                 .desde(desde)
                 .hasta(hasta)
-                .motivo(pedido.getMotivo())
-                .observacion(pedido.getObservacion() == null || pedido.getObservacion().isBlank()
-                        ? null : pedido.getObservacion().trim())
+                .motivo(pedido.motivo())
+                .observacion(pedido.observacion() == null || pedido.observacion().isBlank()
+                        ? null : pedido.observacion().trim())
                 .diasAplicados((int) dias)
                 .registradoPor(usuarioRepository.findByEmail(emailRegistrador).orElse(null))
                 .build());

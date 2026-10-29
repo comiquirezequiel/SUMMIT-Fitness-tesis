@@ -39,20 +39,20 @@ public class EjercicioService {
     }
 
     public EjercicioDTO crear(EjercicioDTO datos) {
-        String nombre = validarNombre(datos.getNombre());
+        String nombre = validarNombre(datos.nombre());
         if (ejercicioRepository.existsByNombreIgnoreCase(nombre)) {
             throw new IllegalArgumentException("Ya existe un ejercicio llamado " + nombre);
         }
         Ejercicio ejercicio = Ejercicio.builder()
                 .nombre(nombre)
-                .grupoMuscular(grupoMuscular(datos.getGrupoMuscular()))
-                .descripcion(RutinaService.textoOpcional(datos.getDescripcion(), 500,
+                .grupoMuscular(grupoMuscular(datos.grupoMuscular()))
+                .descripcion(RutinaService.textoOpcional(datos.descripcion(), 500,
                         "La descripción no puede superar los 500 caracteres"))
-                .urlMedia(RutinaService.textoOpcional(datos.getUrlMedia(), 255,
+                .urlMedia(RutinaService.textoOpcional(datos.urlMedia(), 255,
                         "La URL del video o imagen no puede superar los 255 caracteres"))
-                .svgTargetId(RutinaService.textoOpcional(datos.getSvgTargetId(), 50,
+                .svgTargetId(RutinaService.textoOpcional(datos.svgTargetId(), 50,
                         "La zona del modelo 2D no puede superar los 50 caracteres"))
-                .patologiasContraindicadas(normalizarPatologias(datos.getPatologiasContraindicadas()))
+                .patologiasContraindicadas(normalizarPatologias(datos.patologiasContraindicadas()))
                 .build();
         return toDTO(ejercicioRepository.save(ejercicio));
     }
@@ -62,30 +62,30 @@ public class EjercicioService {
      */
     public EjercicioDTO actualizar(Long id, EjercicioDTO datos) {
         Ejercicio ejercicio = buscar(id);
-        if (datos.getNombre() != null) {
-            String nombre = validarNombre(datos.getNombre());
+        if (datos.nombre() != null) {
+            String nombre = validarNombre(datos.nombre());
             if (ejercicioRepository.existsByNombreIgnoreCaseAndIdEjercicioNot(nombre, id)) {
                 throw new IllegalArgumentException("Ya existe un ejercicio llamado " + nombre);
             }
             ejercicio.setNombre(nombre);
         }
-        if (datos.getGrupoMuscular() != null) {
-            ejercicio.setGrupoMuscular(grupoMuscular(datos.getGrupoMuscular()));
+        if (datos.grupoMuscular() != null) {
+            ejercicio.setGrupoMuscular(grupoMuscular(datos.grupoMuscular()));
         }
-        if (datos.getDescripcion() != null) {
-            ejercicio.setDescripcion(RutinaService.textoOpcional(datos.getDescripcion(), 500,
+        if (datos.descripcion() != null) {
+            ejercicio.setDescripcion(RutinaService.textoOpcional(datos.descripcion(), 500,
                     "La descripción no puede superar los 500 caracteres"));
         }
-        if (datos.getUrlMedia() != null) {
-            ejercicio.setUrlMedia(RutinaService.textoOpcional(datos.getUrlMedia(), 255,
+        if (datos.urlMedia() != null) {
+            ejercicio.setUrlMedia(RutinaService.textoOpcional(datos.urlMedia(), 255,
                     "La URL del video o imagen no puede superar los 255 caracteres"));
         }
-        if (datos.getSvgTargetId() != null) {
-            ejercicio.setSvgTargetId(RutinaService.textoOpcional(datos.getSvgTargetId(), 50,
+        if (datos.svgTargetId() != null) {
+            ejercicio.setSvgTargetId(RutinaService.textoOpcional(datos.svgTargetId(), 50,
                     "La zona del modelo 2D no puede superar los 50 caracteres"));
         }
-        if (datos.getPatologiasContraindicadas() != null) {
-            ejercicio.setPatologiasContraindicadas(normalizarPatologias(datos.getPatologiasContraindicadas()));
+        if (datos.patologiasContraindicadas() != null) {
+            ejercicio.setPatologiasContraindicadas(normalizarPatologias(datos.patologiasContraindicadas()));
         }
         return toDTO(ejercicioRepository.save(ejercicio));
     }

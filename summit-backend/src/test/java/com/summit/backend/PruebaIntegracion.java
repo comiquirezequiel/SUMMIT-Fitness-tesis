@@ -145,11 +145,7 @@ public abstract class PruebaIntegracion {
 
     /** Pedido de cobro en efectivo con el total que se le mostró a recepción. */
     protected static CobroRequestDTO cobro(Usuario socio, Plan plan, int totalMostrado) {
-        CobroRequestDTO pedido = new CobroRequestDTO();
-        pedido.setIdUsuario(socio.getIdUsuario());
-        pedido.setIdPlan(plan.getIdPlan());
-        pedido.setMetodoPago("EFECTIVO");
-        pedido.setTotalMostrado(BigDecimal.valueOf(totalMostrado));
-        return pedido;
+        return CobroRequestDTO.builder().idUsuario(socio.getIdUsuario()).idPlan(plan.getIdPlan()).metodoPago("EFECTIVO")
+                .totalMostrado(BigDecimal.valueOf(totalMostrado)).build();
     }
 }

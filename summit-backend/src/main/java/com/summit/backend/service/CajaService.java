@@ -124,13 +124,13 @@ public class CajaService {
      */
     @Transactional
     public CierreCajaDTO cerrar(CierreRequestDTO pedido, String emailCajero) {
-        BigDecimal contado = montoValido(pedido.getEfectivoContado(), "El efectivo contado", true);
-        BigDecimal retiro = pedido.getRetiro() == null ? BigDecimal.ZERO : montoValido(pedido.getRetiro(), "El retiro", true);
+        BigDecimal contado = montoValido(pedido.efectivoContado(), "El efectivo contado", true);
+        BigDecimal retiro = pedido.retiro() == null ? BigDecimal.ZERO : montoValido(pedido.retiro(), "El retiro", true);
         if (retiro.compareTo(contado) > 0) {
             throw new IllegalArgumentException("No se puede retirar más efectivo del que hay en la caja (" + pesos(contado) + ")");
         }
-        String observacion = pedido.getObservacion() == null || pedido.getObservacion().isBlank()
-                ? null : pedido.getObservacion().trim();
+        String observacion = pedido.observacion() == null || pedido.observacion().isBlank()
+                ? null : pedido.observacion().trim();
 
         Turno turno = calcularTurno(ahora());
         BigDecimal diferencia = contado.subtract(turno.efectivoEsperado());
@@ -205,13 +205,13 @@ public class CajaService {
 
     @Transactional
     public GastoDTO registrarGasto(GastoRequestDTO pedido, String emailCajero) {
-        if (pedido.getMetodoPago() == MetodoPago.DEBITO_AUTOMATICO) {
+        if (pedido.metodoPago() == MetodoPago.DEBITO_AUTOMATICO) {
             throw new IllegalArgumentException("Elegí cómo se pagó el gasto: efectivo, transferencia, tarjeta o Mercado Pago");
         }
-        BigDecimal monto = montoValido(pedido.getMonto(), "El monto", false);
+        BigDecimal monto = montoValido(pedido.monto(), "El monto", false);
         // Los demás medios nunca tocan la caja: "fuera de caja" solo tiene sentido en efectivo
-        boolean efectivo = pedido.getMetodoPago() == MetodoPago.EFECTIVO;
-        boolean fueraDeCaja = efectivo && pedido.isFueraDeCaja();
+        boolean efectivo = pedido.metodoPago() == MetodoPago.EFECTIVO;
+        boolean fueraDeCaja = efectivo && pedido.fueraDeCaja();
         if (efectivo && !fueraDeCaja) {
             BigDecimal enCaja = calcularTurno(ahora()).efectivoEsperado().max(BigDecimal.ZERO);
             if (monto.compareTo(enCaja) > 0) {
@@ -219,13 +219,13 @@ public class CajaService {
                         + pesos(monto) + ". Si lo pagó el dueño con su plata, marcá que no salió de la caja; si se pagó de otra forma, elegí cómo");
             }
         }
-        String comprobante = pedido.getComprobante() == null || pedido.getComprobante().isBlank()
-                ? null : pedido.getComprobante().trim();
+        String comprobante = pedido.comprobante() == null || pedido.comprobante().isBlank()
+                ? null : pedido.comprobante().trim();
         Gasto gasto = gastoRepository.save(Gasto.builder()
                 .monto(monto)
-                .categoria(pedido.getCategoria())
-                .descripcion(pedido.getDescripcion().trim())
-                .metodoPago(pedido.getMetodoPago())
+                .categoria(pedido.categoria())
+                .descripcion(pedido.descripcion().trim())
+                .metodoPago(pedido.metodoPago())
                 .fueraDeCaja(fueraDeCaja)
                 .comprobanteNro(comprobante)
                 .registradoPor(usuarioPorEmail(emailCajero))

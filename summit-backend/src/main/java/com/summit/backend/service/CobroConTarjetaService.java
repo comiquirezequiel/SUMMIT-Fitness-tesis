@@ -66,8 +66,8 @@ public class CobroConTarjetaService {
             throw new IllegalArgumentException("Falta la clave del intento de cobro: volvé a abrir el cobro");
         }
         PresupuestoDTO detalle = pagoService.prepararCobro(pedido.cobro());
-        PasarelaTarjeta.Resultado resultado = pasarela.cobrar(detalle.getTotal(), pedido.tarjeta(),
-                "SUMMIT - " + detalle.getPlan(), pedido.idempotencia());
+        PasarelaTarjeta.Resultado resultado = pasarela.cobrar(detalle.total(), pedido.tarjeta(),
+                "SUMMIT - " + detalle.plan(), pedido.idempotencia());
         if (resultado.rechazado()) {
             throw new TarjetaRechazadaException("Mercado Pago rechazó el pago: "
                     + MOTIVOS.getOrDefault(resultado.detalle(), "probá con otra tarjeta o con otro medio de pago"));

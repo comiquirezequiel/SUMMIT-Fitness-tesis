@@ -37,11 +37,7 @@ public class UsuarioController {
      */
     @PostMapping
     public ResponseEntity<?> crearStaff(@Valid @RequestBody StaffRequestDTO request) {
-        try {
-            return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.crearStaff(request));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.crearStaff(request));
     }
 
     @GetMapping("/rol/{rol}")
@@ -52,39 +48,23 @@ public class UsuarioController {
 
     @GetMapping("/{id}")
     public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(usuarioService.buscarPorId(id));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(usuarioService.buscarPorId(id));
     }
 
     @GetMapping("/dni/{dni}")
     public ResponseEntity<?> buscarPorDni(@PathVariable String dni) {
-        try {
-            return ResponseEntity.ok(usuarioService.buscarPorDni(dni));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(usuarioService.buscarPorDni(dni));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> actualizar(@PathVariable Long id, @RequestBody Usuario datos) {
-        try {
-            return ResponseEntity.ok(usuarioService.actualizar(id, datos));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+        return ResponseEntity.ok(usuarioService.actualizar(id, datos));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> desactivar(@PathVariable Long id) {
-        try {
-            usuarioService.desactivar(id);
-            return ResponseEntity.ok(Map.of("mensaje", "Usuario desactivado correctamente"));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        usuarioService.desactivar(id);
+        return ResponseEntity.ok(Map.of("mensaje", "Usuario desactivado correctamente"));
     }
 
     /**
@@ -93,20 +73,12 @@ public class UsuarioController {
      */
     @PostMapping("/{id}/restablecer-password")
     public ResponseEntity<?> restablecerPassword(@PathVariable Long id, Authentication auth) {
-        try {
-            return ResponseEntity.ok(Map.of("passwordTemporal", usuarioService.restablecerPassword(id, auth.getName())));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+        return ResponseEntity.ok(Map.of("passwordTemporal", usuarioService.restablecerPassword(id, auth.getName())));
     }
 
     @PatchMapping("/{id}/activar")
     public ResponseEntity<?> activar(@PathVariable Long id) {
-        try {
-            usuarioService.activar(id);
-            return ResponseEntity.ok(Map.of("mensaje", "Usuario reactivado correctamente"));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        usuarioService.activar(id);
+        return ResponseEntity.ok(Map.of("mensaje", "Usuario reactivado correctamente"));
     }
 }
