@@ -66,17 +66,22 @@ class SeguimientoTest extends PruebaIntegracion {
     }
 
     @Test
-    void laTareaDeCuotaPorVencerSeResuelveSolaCuandoRenueva() {
+    void laCuotaPorVencerNoGeneraTareaYLaVencidaSeResuelveSolaCuandoRenueva() {
         Usuario socio = socio();
         Plan plan = plan(10000, null);
         membresia(socio, plan, hoy().plusDays(3));
         ingreso(socio, hoy().minusDays(1).atTime(9, 0));
         seguimiento.generarTareas();
-        assertThat(tareasDe(socio, "CUOTA_POR_VENCER")).hasSize(1);
-
-        pagos.registrarPago(cobro(socio, plan, 10000), null);
-        seguimiento.generarTareas();
         assertThat(tareasDe(socio, "CUOTA_POR_VENCER")).isEmpty();
-        assertThat(resueltaDe(socio, "CUOTA_POR_VENCER").nota()).contains("Renovó la cuota");
+
+        Usuario vencido = socio();
+        membresia(vencido, plan, hoy().minusDays(3));
+        seguimiento.generarTareas();
+        assertThat(tareasDe(vencido, "CUOTA_VENCIDA")).hasSize(1);
+
+        pagos.registrarPago(cobro(vencido, plan, 10000), null);
+        seguimiento.generarTareas();
+        assertThat(tareasDe(vencido, "CUOTA_VENCIDA")).isEmpty();
+        assertThat(resueltaDe(vencido, "CUOTA_VENCIDA").nota()).contains("Renovó la cuota");
     }
 }

@@ -83,12 +83,12 @@ const EditarSocioModal = ({ socio, onClose, onGuardado }) => {
       pie={<>
         {dadoDeBaja ? (
           <button type="button" onClick={reactivar} disabled={procesando}
-            className="mr-auto px-4 py-2.5 text-sm font-semibold text-emerald-700 border border-emerald-200 hover:bg-emerald-50 rounded-lg flex items-center gap-2">
+            className="mr-auto px-3 py-1.5 text-sm font-semibold text-emerald-700 border border-emerald-200 hover:bg-emerald-50 rounded-lg flex items-center gap-2">
             <UserCheck className="w-4 h-4" /> Reactivar socio
           </button>
         ) : (
           <button type="button" onClick={darDeBaja} disabled={procesando}
-            className="mr-auto px-4 py-2.5 text-sm font-semibold text-rose-600 border border-rose-200 hover:bg-rose-50 rounded-lg flex items-center gap-2">
+            className="mr-auto px-3 py-1.5 text-sm font-semibold text-rose-700 border border-rose-200 hover:bg-rose-50 rounded-lg flex items-center gap-2">
             <UserX className="w-4 h-4" /> Dar de baja
           </button>
         )}
@@ -98,7 +98,7 @@ const EditarSocioModal = ({ socio, onClose, onGuardado }) => {
         </button>
       </>}
     >
-      <form id="form-editar-socio" onSubmit={guardar} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form id="form-editar-socio" onSubmit={guardar} className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Campo label="Nombre completo" required className="md:col-span-2">
           <input required minLength={3} value={datos.nombreCompleto} onChange={e => set('nombreCompleto', e.target.value)} className={inputClass} />
         </Campo>
@@ -143,7 +143,7 @@ const EditarSocioModal = ({ socio, onClose, onGuardado }) => {
         <Campo label="Observaciones" className="md:col-span-2">
           <textarea rows={2} value={datos.observaciones} onChange={e => set('observaciones', e.target.value)} className={`${inputClass} resize-none`} />
         </Campo>
-        {error && <p className="md:col-span-2 text-sm text-rose-600 font-medium">{error}</p>}
+        {error && <p className="md:col-span-2 text-sm text-rose-700 font-medium">{error}</p>}
       </form>
     </Modal>
   );

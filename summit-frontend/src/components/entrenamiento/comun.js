@@ -95,7 +95,7 @@ export const cargarPatologias = async (idSocio) => {
 
 // Misma regla que el cruce preventivo del backend (sin mayúsculas ni tildes): solo para marcar
 // los ejercicios riesgosos en las listas. La validación que vale es la del backend.
-const normalizar = (texto) => (texto || '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toUpperCase();
+export const normalizar = (texto) => (texto || '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toUpperCase();
 export const riesgosLocales = (patologias, contraindicadas) => {
   const contra = (contraindicadas || '').split(',').map(normalizar).filter(Boolean);
   if (contra.length === 0) return [];

@@ -8,10 +8,10 @@ import { agruparPorDia, formatDescanso, formatKg, nombreGrupo, seriesPorReps } f
 const DetalleRutina = ({ rutina }) => {
   const dias = agruparPorDia(rutina.ejercicios);
   if (dias.length === 0) {
-    return <p className="text-sm text-slate-500 text-center py-6">La rutina todavía no tiene ejercicios.</p>;
+    return <p className="text-sm text-slate-500 text-center py-4">La rutina todavía no tiene ejercicios.</p>;
   }
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       {dias.map(([dia, ejercicios]) => (
         <section key={dia}>
           <h4 className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">
@@ -20,12 +20,12 @@ const DetalleRutina = ({ rutina }) => {
           <ol className="space-y-2">
             {ejercicios.map((e, i) => (
               <li key={e.idRutinaEjercicio} className="flex gap-3 p-3 rounded-xl border border-slate-200 bg-white">
-                <span className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 text-slate-500 text-xs font-bold flex items-center justify-center shrink-0">
+                <span className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center shrink-0">
                   {i + 1}
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-slate-800 leading-tight">{e.nombreEjercicio}</p>
-                  <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wide">{nombreGrupo(e.grupoMuscular)}</p>
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{nombreGrupo(e.grupoMuscular)}</p>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5 text-sm text-slate-600">
                     <span className="flex items-center gap-1"><Repeat className="w-3.5 h-3.5 text-slate-400" />{seriesPorReps(e.series, e.repeticiones)}</span>
                     <span className="flex items-center gap-1"><Weight className="w-3.5 h-3.5 text-slate-400" />{formatKg(e.pesoSugeridoKg)}</span>

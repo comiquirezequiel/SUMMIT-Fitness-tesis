@@ -24,39 +24,39 @@ const FichaPersonal = ({ ficha, onInvertir, invirtiendo }) => {
     ? (ficha.fichadaRepetida ? 'Salida ya registrada' : 'Salida registrada')
     : (ficha.fichadaRepetida ? 'Entrada ya registrada' : 'Entrada registrada');
   return (
-    <div className={`p-4 md:p-5 ${salida ? 'bg-sky-50/70' : 'bg-emerald-50/60'}`}>
-      <div className="flex items-start gap-4">
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${salida ? 'bg-sky-600' : 'bg-emerald-500'}`}>
-          {salida ? <LogOut className="w-8 h-8 text-white" /> : <LogIn className="w-8 h-8 text-white" />}
+    <div className={`p-3 ${salida ? 'bg-sky-50/70' : 'bg-emerald-50/60'}`}>
+      <div className="flex items-start gap-3">
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${salida ? 'bg-sky-600' : 'bg-emerald-500'}`}>
+          {salida ? <LogOut className="w-6 h-6 text-white" /> : <LogIn className="w-6 h-6 text-white" />}
         </div>
         <div className="flex-1 min-w-0">
-          <p className={`text-xs font-black uppercase tracking-widest ${salida ? 'text-sky-700' : 'text-emerald-600'}`}>{titulo}</p>
-          <h3 className="text-2xl md:text-3xl font-extrabold text-slate-800 leading-tight truncate">{ficha.nombreSocio}</h3>
-          <p className="text-sm text-slate-500 mt-0.5">DNI {ficha.dni} · Personal ({textoRol(ficha.rol)})</p>
+          <p className={`text-xs font-black uppercase tracking-widest ${salida ? 'text-sky-700' : 'text-emerald-700'}`}>{titulo}</p>
+          <h3 className="text-lg font-extrabold text-slate-800 leading-tight truncate">{ficha.nombreSocio}</h3>
+          <p className="text-xs text-slate-500 mt-0.5">DNI {ficha.dni} · Personal ({textoRol(ficha.rol)})</p>
           {salida && ficha.entradaTurno && (
-            <p className="text-sm text-slate-700 mt-1">
+            <p className="text-xs text-slate-700 mt-1">
               Trabajó <b>{duracion(ficha.minutosTrabajados)}</b> · entró {cuandoEntro(ficha.entradaTurno, diaDeLaFicha(ficha.fechaHora))}
             </p>
           )}
         </div>
         <div className="text-right shrink-0">
-          <p className={`text-[11px] font-black uppercase tracking-widest ${salida ? 'text-sky-700' : 'text-emerald-700'}`}>
+          <p className={`text-xs font-black uppercase tracking-widest ${salida ? 'text-sky-700' : 'text-emerald-700'}`}>
             {salida ? 'Salida' : 'Entrada'}
           </p>
-          <p className="text-3xl md:text-4xl font-extrabold text-slate-800 tabular-nums leading-none mt-1">{ficha.fechaHora?.substring(11, 16)}</p>
+          <p className="text-xl font-extrabold text-slate-800 tabular-nums leading-none mt-1">{ficha.fechaHora?.substring(11, 16)}</p>
         </div>
       </div>
 
       <AvisosIngreso avisos={ficha.avisos} />
 
       {ficha.inversionPosible && (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="mt-2 flex flex-wrap items-center gap-2">
           <button type="button" onClick={onInvertir} disabled={invirtiendo.enviando}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-700 text-xs font-semibold hover:bg-slate-50 disabled:opacity-50">
             <ArrowLeftRight className="w-3.5 h-3.5" />
             {invirtiendo.enviando ? 'Corrigiendo...' : salida ? '¿Está llegando? Es una entrada' : '¿Se está yendo? Es una salida'}
           </button>
-          {invirtiendo.error && <span className="text-xs text-rose-600 font-medium">{invirtiendo.error}</span>}
+          {invirtiendo.error && <span className="text-xs text-rose-700 font-medium">{invirtiendo.error}</span>}
         </div>
       )}
     </div>

@@ -20,7 +20,7 @@ const QrAutorizacion = ({ link }) => {
   };
 
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-xl border border-sky-100 bg-linear-to-br from-sky-50 to-white">
+    <div className="flex flex-col sm:flex-row items-center gap-3 p-3 rounded-xl border border-sky-100 bg-linear-to-br from-sky-50 to-white">
       <div className="bg-white p-3 rounded-xl shadow-xs border border-slate-100 shrink-0">
         <QRCodeSVG value={link} size={148} level="M" />
       </div>
@@ -36,7 +36,7 @@ const QrAutorizacion = ({ link }) => {
         <div className="flex gap-2 pt-1">
           <button type="button" onClick={copiar}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50">
-            {copiado ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+            {copiado ? <Check className="w-3.5 h-3.5 text-emerald-700" /> : <Copy className="w-3.5 h-3.5" />}
             {copiado ? 'Copiado' : 'Copiar link'}
           </button>
           <a href={link} target="_blank" rel="noreferrer"

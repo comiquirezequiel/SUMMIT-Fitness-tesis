@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import {
-  User, FileText, AlertTriangle, CheckCircle, CheckCircle2, Save, Plus, Trash2, ArrowUp, ArrowDown, Pencil, ArrowLeft,
+  User, FileText, AlertTriangle, CheckCircle, CheckCircle2, Save, Plus, Trash2, ArrowUp, ArrowDown, Pencil, LayoutTemplate,
   ShieldAlert, Loader2, Dumbbell, CalendarPlus, Sparkles,
 } from 'lucide-react';
 import SugerenciasEjercicios from '../components/ia/SugerenciasEjercicios';
 import Modal from '../components/Modal';
-import Campo, { inputClass, botonPrimario, botonSecundario } from '../components/Campo';
+import Campo, { inputClass, botonPrimario, botonSecundario, selectorHerramienta } from '../components/Campo';
 import BuscadorSocio from '../components/entrenamiento/BuscadorSocio';
 import DetalleRutina from '../components/entrenamiento/DetalleRutina';
 import ParametrosEjercicio, {
@@ -16,6 +16,7 @@ import SelectorEjercicio from '../components/entrenamiento/SelectorEjercicio';
 import { Cargando, ErrorCaja, Aviso, Vacio } from '../components/entrenamiento/Estados';
 import BotonesPdf from '../components/pdf/BotonesPdf';
 import { documentoRutina } from '../components/pdf/rutina';
+import { PLANTILLAS, plantillaPorId, resumenPlantilla, armarDesdePlantilla } from '../components/entrenamiento/plantillas';
 import {
   useSocios, obtenerJson, enviarJson, cargarCatalogo, cargarPatologias, riesgosLocales, puedeEditarEntrenamiento,
   nombreGrupo, formatKg, formatDescanso, seriesPorReps, DIAS_MAXIMOS,
@@ -28,20 +29,23 @@ const diaDe = (item) => item.diaNumero || 1;
 const mayorDia = (items) => items.reduce((m, i) => Math.max(m, diaDe(i)), 0);
 const CAMPOS_PARAMETROS = ['series', 'repeticiones', 'pesoSugeridoKg', 'descansoSegundos', 'observaciones'];
 // tactil: (tailwind.config.js) en el celular y la tablet los botones van de 44 px o más
-const botonIcono = 'w-10 h-10 tactil:w-11 tactil:h-11 shrink-0 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent flex items-center justify-center';
+const botonIcono = 'w-8 h-8 tactil:w-11 tactil:h-11 shrink-0 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent flex items-center justify-center';
 const botonChico = 'px-3 py-1.5 tactil:min-h-11 tactil:px-4 text-xs tactil:text-sm font-semibold';
-const tarjeta = 'bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]';
+const tarjeta = 'bg-white rounded-xl p-3 sm:p-4 border border-slate-200 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]';
 
 /**
- * Constructor de rutinas por días, con el cruce preventivo de patologías (RF-09).
- * - Nueva (?socio=ID o eligiendo el socio): se arma un borrador y se crea todo junto con "Crear rutina".
+ * Constructor de rutinas por días, con el cruce preventivo de patologías (RF-09). Ya no es una pantalla fija: se abre
+ * en una ventana sobre Rutinas con "+ Nueva rutina", "Editar" o una rutina predeterminada, y la dirección dice qué
+ * hay abierto (así "Atrás" la cierra y un link la vuelve a abrir):
+ * - Nueva (?nueva=1, con ?socio=ID o eligiendo el socio, y ?plantilla=ID para partir de una rutina predeterminada):
+ *   se arma un borrador y se crea todo junto con "Crear rutina".
  * - Edición (?rutina=ID): cada cambio se guarda al momento con PUT / POST / DELETE puntuales.
  * Un socio tiene una sola rutina activa: al crear otra, la anterior pasa a inactiva (se avisa).
  */
-const Constructor = () => {
+const Constructor = ({ onCerrar }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
   const idRutina = params.get('rutina');
   const modoEdicion = Boolean(idRutina);
   const puedeEditar = puedeEditarEntrenamiento(usuarioActual());
@@ -71,10 +75,19 @@ const Constructor = () => {
   const [ocupado, setOcupado] = useState(false);
   const [creando, setCreando] = useState(false);
   const [aviso, setAviso] = useState(() => location.state?.aviso || null);
+  // Rutina predeterminada elegida en Rutinas: se carga sola apenas estén el socio, el catálogo y la ficha médica
+  const [plantillaPendiente, setPlantillaPendiente] = useState(() => (modoEdicion ? null : plantillaPorId(params.get('plantilla'))));
+
+  // Cambia lo que muestra la ventana sin sumar pasos al "Atrás" del navegador (que la cierra y vuelve a la lista).
+  // desdeLista: la ventana se abrió desde Rutinas (al cerrarla se vuelve un paso atrás en lugar de sumar otro)
+  const irA = (busqueda, extra = {}) => navigate({ pathname: location.pathname, search: `?${new URLSearchParams(busqueda)}` },
+    { replace: true, state: { desdeLista: location.state?.desdeLista, ...extra } });
 
   // El aviso de "rutina creada" llega una sola vez (no se repite al recargar la página)
   useEffect(() => {
-    if (location.state?.aviso) navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
+    if (location.state?.aviso) {
+      navigate(`${location.pathname}${location.search}`, { replace: true, state: { desdeLista: location.state.desdeLista } });
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const idSocio = modoEdicion ? (rutina.datos ? String(rutina.datos.idSocio) : null) : params.get('socio');
@@ -202,7 +215,7 @@ const Constructor = () => {
     setAviso(null);
     setErrorAlta('');
     setUltimoAgregado(null);
-    setParams(s ? { socio: String(s.idSocio) } : {});
+    irA({ nueva: '1', ...(s ? { socio: String(s.idSocio) } : {}) });
   };
 
   const cambiarAlta = (campo, valor) => {
@@ -389,54 +402,86 @@ const Constructor = () => {
     const nuevoAviso = rechazados.length > 0
       ? { tipo: 'error', texto: `Rutina creada, pero no se pudieron agregar: ${rechazados.join(' | ')}.${reemplazo}` }
       : { tipo: 'exito', texto: `Rutina "${nombre.trim()}" creada para ${socio.nombreCompleto} con ${ordenados.length} ejercicios.${reemplazo} Ya podés imprimirla o mandársela en PDF, y seguir ajustándola desde acá: los cambios se guardan al momento.` };
-    navigate(`/rutinas/constructor?rutina=${idNueva}`, { replace: true, state: { aviso: nuevoAviso } });
+    irA({ rutina: String(idNueva) }, { aviso: nuevoAviso });
+  };
+
+  // Rutina predeterminada -> borrador (reemplaza lo que había, preguntando). El nombre y el objetivo se completan si
+  // estaban vacíos. Los contraindicados para este socio quedan marcados con ⚠: al crear no se agregan sin confirmar.
+  const cargarPlantilla = (plantilla) => {
+    if (!plantilla) return;
+    if (borrador.length > 0
+      && !window.confirm(`¿Reemplazar los ${borrador.length} ejercicios del borrador por la rutina "${plantilla.nombre}"?`)) return;
+    const { items: nuevos, faltantes } = armarDesdePlantilla(plantilla, catalogo.datos);
+    setBorrador(nuevos.map((i) => ({ ...i, clave: nuevaClave(), forzar: false, riesgos: [] })));
+    setCantidadDias(Math.min(DIAS_MAXIMOS, plantilla.dias.length));
+    setDiaActivo(1);
+    setNombre((n) => n.trim() || plantilla.nombre);
+    setObjetivo((o) => o.trim() || plantilla.objetivo);
+    setUltimoAgregado(null);
+    setErrorAlta('');
+    const riesgosos = nuevos.filter((i) => riesgosDe(i.idEjercicio).length > 0).length;
+    const partes = [`Rutina predeterminada "${plantilla.nombre}" cargada: ${nuevos.length} ejercicios en ${plantilla.dias.length} días. Ajustala si hace falta y tocá "Crear rutina".`];
+    if (faltantes.length) partes.push(`El catálogo no tiene: ${faltantes.join(', ')}.`);
+    if (riesgosos) {
+      partes.push(`${riesgosos} ${riesgosos === 1 ? 'ejercicio queda marcado' : 'ejercicios quedan marcados'} con ⚠ por la ficha médica: cambialos o quitalos (al crear no se agregan).`);
+    }
+    setAviso({ tipo: riesgosos || faltantes.length ? 'alerta' : 'exito', texto: partes.join(' ') });
+  };
+
+  const fichaLista = ficha.estado !== 'inicial' && ficha.estado !== 'cargando';
+  useEffect(() => {
+    if (!plantillaPendiente || !socio || catalogo.cargando || !fichaLista) return;
+    setPlantillaPendiente(null);
+    cargarPlantilla(plantillaPendiente);
+  }, [plantillaPendiente, socio, catalogo.cargando, fichaLista]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Cerrar la ventana: con un borrador sin crear se pregunta (se perdería); en la edición ya está todo guardado
+  const cerrar = () => {
+    if (creando || ocupado) return;
+    if (!modoEdicion && borrador.length > 0
+      && !window.confirm('La rutina todavía no se creó: si cerrás, se pierden los ejercicios que agregaste. ¿Cerrar igual?')) return;
+    onCerrar();
   };
 
   // ---- Vista ----
 
-  const encabezado = (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-slate-800 mb-1">{modoEdicion ? 'Editar rutina' : 'Constructor de rutinas'}</h1>
-          <p className="text-sm text-slate-500">
-            {modoEdicion
-              ? 'Cada cambio se guarda al momento: agregá, mové o quitá ejercicios de cada día.'
-              : 'Armá la rutina por días. El cruce con la ficha médica avisa si un ejercicio está contraindicado.'}
-          </p>
-        </div>
-        <button onClick={() => navigate('/entrenamiento/rutinas')} className={`${botonSecundario} whitespace-nowrap bg-white shrink-0`}>
-          <ArrowLeft className="w-4 h-4" /> Ver todas las rutinas
-        </button>
+  // La rutina guardada se imprime o se le manda al socio en PDF (en el celular, por WhatsApp con Compartir)
+  const barraPdf = documentoPdf && (
+    <div className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 flex flex-col lg:flex-row lg:items-center gap-2">
+      <div className="flex items-center gap-2 lg:flex-1 min-w-0">
+        <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+        <p className="text-xs text-slate-600"><b className="text-slate-800">Rutina en PDF</b> para imprimir o mandarle al socio</p>
       </div>
-      {/* La rutina guardada se imprime o se le manda al socio en PDF (en el celular, por WhatsApp con Compartir) */}
-      {documentoPdf && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-3 sm:p-4 flex flex-col lg:flex-row lg:items-center gap-3 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
-          <div className="flex items-center gap-2 lg:flex-1 min-w-0">
-            <FileText className="w-5 h-5 text-blue-600 shrink-0" />
-            <p className="text-sm text-slate-600"><b className="text-slate-800">Rutina en PDF</b> para imprimir o mandarle al socio</p>
-          </div>
-          <BotonesPdf documento={documentoPdf} className="lg:shrink-0" />
-        </div>
-      )}
+      <BotonesPdf documento={documentoPdf} className="lg:shrink-0" />
     </div>
   );
 
+  // Ventana grande (alto fijo: no salta mientras carga) con la lista de Rutinas detrás
+  const ventana = (contenido) => (
+    <Modal ancho="max-w-6xl" alto="h-[92dvh]" onClose={cerrar}
+      titulo={modoEdicion ? `Editar rutina${rutina.datos ? `: ${rutina.datos.nombre}` : ''}` : 'Nueva rutina'}
+      subtitulo={modoEdicion
+        ? 'Cada cambio se guarda al momento: agregá, mové o quitá ejercicios de cada día.'
+        : 'Armá la rutina por días o partí de una rutina predeterminada. El cruce con la ficha médica avisa si un ejercicio está contraindicado.'}>
+      <div className="space-y-3">{contenido}</div>
+    </Modal>
+  );
+
   if (!puedeEditar) {
-    return (
-      <div className="space-y-6">
-        {encabezado}
+    return ventana(
+      <>
+        {barraPdf}
         <Aviso tipo="info">Las rutinas las arman y modifican los profesores y los administradores. Desde tu usuario podés consultarlas.</Aviso>
         {modoEdicion && (rutina.cargando ? <Cargando texto="Cargando rutina..." />
           : rutina.error ? <ErrorCaja mensaje={rutina.error} />
             : rutina.datos && (
               <div className={tarjeta}>
-                <h2 className="text-lg font-bold text-slate-800">{rutina.datos.nombre}</h2>
-                <p className="text-sm text-slate-500 mb-4">{rutina.datos.nombreSocio} · {rutina.datos.objetivo || 'Sin objetivo'}</p>
+                <h2 className="text-base font-bold text-slate-800">{rutina.datos.nombre}</h2>
+                <p className="text-sm text-slate-500 mb-3">{rutina.datos.nombreSocio} · {rutina.datos.objetivo || 'Sin objetivo'}</p>
                 <DetalleRutina rutina={rutina.datos} />
               </div>
             ))}
-      </div>
+      </>,
     );
   }
 
@@ -444,21 +489,21 @@ const Constructor = () => {
     const riesgos = item.riesgos?.length ? item.riesgos : riesgosDe(item.idEjercicio);
     const descanso = formatDescanso(item.descansoSegundos);
     return (
-      <li key={item.clave} className={`p-3 sm:p-4 rounded-xl border ${riesgos.length ? 'bg-amber-50/60 border-amber-200' : 'bg-white border-slate-200 shadow-xs'}`}>
+      <li key={item.clave} className={`p-3 sm:p-3 rounded-xl border ${riesgos.length ? 'bg-amber-50/60 border-amber-200' : 'bg-white border-slate-200 shadow-xs'}`}>
         <div className="flex items-start gap-3">
-          <span className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 font-bold flex items-center justify-center text-sm border border-slate-200 shrink-0">
+          <span className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 font-bold flex items-center justify-center text-sm border border-slate-200 shrink-0">
             {indice + 1}
           </span>
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <p className="font-bold text-slate-800 leading-snug">{item.nombreEjercicio}</p>
               {riesgos.length > 0 && (
-                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 flex items-center gap-1">
+                <span className="text-xs font-bold uppercase px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" /> {item.forzar ? 'Riesgo asumido' : 'Contraindicado'}: {riesgos.join(', ')}
                 </span>
               )}
             </div>
-            <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wide">{nombreGrupo(item.grupoMuscular)}</p>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{nombreGrupo(item.grupoMuscular)}</p>
             <p className="text-sm text-slate-600 mt-1">
               <b className="text-slate-800">{seriesPorReps(item.series, item.repeticiones)}</b> · {formatKg(item.pesoSugeridoKg)}
               {descanso && ` · ${descanso} de descanso`}
@@ -469,7 +514,7 @@ const Constructor = () => {
           {!soloLectura && <div className="hidden sm:grid grid-cols-2 lg:flex gap-1.5 shrink-0">{accionesFila(item, indice)}</div>}
         </div>
         {/* En el celular, abajo y separados, para no tocar uno por otro */}
-        {!soloLectura && <div className="sm:hidden flex items-center gap-2 mt-3 pt-3 border-t border-slate-100">{accionesFila(item, indice, true)}</div>}
+        {!soloLectura && <div className="sm:hidden flex items-center gap-2 mt-2 pt-3 border-t border-slate-100">{accionesFila(item, indice, true)}</div>}
       </li>
     );
   };
@@ -483,10 +528,10 @@ const Constructor = () => {
         <ArrowDown className="w-4 h-4" />
       </button>
       <button onClick={() => abrirEdicion(item)} disabled={ocupado} aria-label={`Editar ${item.nombreEjercicio}`} title="Editar o mover de día"
-        className={conTexto ? `${botonIcono} w-auto! px-4 gap-2 ml-auto text-sm font-semibold text-slate-700` : botonIcono}>
+        className={conTexto ? `${botonIcono} w-auto! px-3 gap-2 ml-auto text-sm font-semibold text-slate-700` : botonIcono}>
         <Pencil className="w-4 h-4" />{conTexto && 'Editar'}
       </button>
-      <button onClick={() => quitar(item)} disabled={ocupado} className={`${botonIcono} hover:text-rose-600! hover:bg-rose-50!`} aria-label={`Quitar ${item.nombreEjercicio}`} title="Quitar">
+      <button onClick={() => quitar(item)} disabled={ocupado} className={`${botonIcono} hover:text-rose-700! hover:bg-rose-50!`} aria-label={`Quitar ${item.nombreEjercicio}`} title="Quitar">
         <Trash2 className="w-4 h-4" />
       </button>
     </>
@@ -494,9 +539,9 @@ const Constructor = () => {
 
   const opcionesDia = Array.from({ length: Math.min(DIAS_MAXIMOS, totalDias + 1) }, (_, i) => i + 1);
 
-  return (
-    <div className="space-y-6">
-      {encabezado}
+  return ventana(
+    <>
+      {barraPdf}
       {aviso && <Aviso tipo={aviso.tipo} onCerrar={() => setAviso(null)}>{aviso.texto}</Aviso>}
 
       {modoEdicion && !rutina.datos ? (
@@ -505,29 +550,29 @@ const Constructor = () => {
       ) : (
         // Dos columnas recién desde 1280 px: con el menú lateral, una tablet acostada deja unos 720 px y la rutina
         // quedaría angosta. Hasta ahí, socio y ficha van arriba, de a dos tarjetas cuando entran.
-        <div className="flex flex-col xl:flex-row gap-4 sm:gap-6 items-start">
+        <div className="flex flex-col xl:flex-row gap-3 sm:gap-4 items-start">
           {/* Socio, ficha médica y rutina vigente */}
-          <aside className="w-full xl:w-80 2xl:w-96 shrink-0 grid gap-4 items-start grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] xl:grid-cols-1">
+          <aside className="w-full xl:w-80 2xl:w-96 shrink-0 grid gap-3 items-start grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] xl:grid-cols-1">
             <div className={tarjeta}>
-              <h2 className="text-base font-bold text-slate-800 mb-3 flex items-center gap-2"><User className="w-5 h-5 text-blue-600" /> Socio</h2>
+              <h2 className="text-base font-bold text-slate-800 mb-2 flex items-center gap-2"><User className="w-5 h-5 text-blue-600" /> Socio</h2>
               {!modoEdicion && idSocio && !socio && cargandoSocios ? <Cargando texto="Cargando socio..." /> : (
                 <BuscadorSocio socios={socios} cargando={cargandoSocios} error={errorSocios} seleccionado={socio}
                   onSeleccionar={elegirSocio} permitirCambiar={!modoEdicion && !creando}
                   detalle={(s) => (s.aptoMedicoVigente === undefined ? '' : s.aptoMedicoVigente ? 'Apto vigente' : 'Sin apto vigente')} />
               )}
               {socioInactivo && (
-                <Aviso tipo="error" className="mt-3">El socio no está activo: no se le puede crear una rutina.</Aviso>
+                <Aviso tipo="error" className="mt-2">El socio no está activo: no se le puede crear una rutina.</Aviso>
               )}
             </div>
 
-            <div className={`${tarjeta} ${socio ? '' : 'opacity-60'}`}>
-              <h2 className="text-base font-bold text-slate-800 mb-3 flex items-center gap-2"><FileText className="w-5 h-5 text-rose-500" /> Ficha médica</h2>
+            <div className={tarjeta}>
+              <h2 className="text-base font-bold text-slate-800 mb-2 flex items-center gap-2"><FileText className="w-5 h-5 text-rose-500" /> Ficha médica</h2>
               {!socio ? (
-                <p className="text-sm text-slate-400">Elegí un socio para ver sus patologías.</p>
+                <p className="text-sm text-slate-500">Elegí un socio para ver sus patologías.</p>
               ) : ficha.estado === 'cargando' || ficha.estado === 'inicial' ? (
                 <p className="text-sm text-slate-500 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Cargando ficha...</p>
               ) : ficha.estado === 'error' ? (
-                <p className="text-sm text-rose-600">{ficha.error}</p>
+                <p className="text-sm text-rose-700">{ficha.error}</p>
               ) : ficha.estado === 'sin-certificado' ? (
                 <Aviso tipo="alerta">No tiene certificado médico cargado: el cruce preventivo no puede detectar contraindicaciones.</Aviso>
               ) : ficha.patologias.length > 0 ? (
@@ -538,15 +583,15 @@ const Constructor = () => {
                       <span key={p} className="px-2.5 py-1 bg-rose-50 text-rose-700 text-xs font-bold rounded-lg border border-rose-200">{p.toUpperCase()}</span>
                     ))}
                   </div>
-                  <p className="text-xs text-slate-500 mt-3">Los ejercicios contraindicados se marcan con ⚠ y piden confirmación para agregarlos.</p>
+                  <p className="text-xs text-slate-500 mt-2">Los ejercicios contraindicados se marcan con ⚠ y piden confirmación para agregarlos.</p>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg text-sm font-medium border border-emerald-100">
+                <div className="flex items-center gap-2 text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg text-sm font-medium border border-emerald-100">
                   <CheckCircle className="w-4 h-4" /> Sin patologías declaradas
                 </div>
               )}
               {ficha.estado === 'ok' && ficha.resumenIa && (
-                <p className="text-sm text-slate-600 mt-3 flex items-start gap-1.5">
+                <p className="text-sm text-slate-600 mt-2 flex items-start gap-1.5">
                   <Sparkles className="w-4 h-4 mt-0.5 text-violet-500 shrink-0" /> {ficha.resumenIa}
                 </p>
               )}
@@ -555,14 +600,14 @@ const Constructor = () => {
               {socio && puedeEditar && ficha.estado === 'ok' && (ficha.patologias.length > 0 || ficha.resumenIa) && (
                 <SugerenciasEjercicios idSocio={idSocio} onSugerencias={setSugerenciasIa} />
               )}
-              {socio?.aptoMedicoVigente === false && <p className="text-xs text-amber-700 mt-3">Atención: el apto médico no está vigente.</p>}
+              {socio?.aptoMedicoVigente === false && <p className="text-xs text-amber-700 mt-2">Atención: el apto médico no está vigente.</p>}
             </div>
 
             {!modoEdicion && socio && rutinaVigente && (
               <Aviso tipo="alerta">
                 <p><b>{socio.nombreCompleto}</b> ya tiene la rutina activa <b>“{rutinaVigente.nombre}”</b> ({rutinaVigente.totalDias} {rutinaVigente.totalDias === 1 ? 'día' : 'días'} · {rutinaVigente.ejercicios.length} ejercicios, desde el {formatFecha(rutinaVigente.fechaCreacion)}).</p>
                 <p className="mt-1">Si creás una nueva, esa pasa a <b>inactiva</b> y queda guardada.</p>
-                <button onClick={() => navigate(`/rutinas/constructor?rutina=${rutinaVigente.idRutina}`)}
+                <button onClick={() => irA({ rutina: String(rutinaVigente.idRutina) })}
                   className={`mt-2 inline-flex items-center gap-1.5 ${botonChico} bg-white border border-amber-300 rounded-lg hover:bg-amber-100`}>
                   <Pencil className="w-3.5 h-3.5" /> Editar la rutina actual
                 </button>
@@ -571,7 +616,7 @@ const Constructor = () => {
             {soloLectura && (
               <Aviso tipo="alerta">
                 <p>Esta rutina está <b>inactiva</b> (fue reemplazada o desactivada): se conserva como historial y no se puede modificar.</p>
-                <button onClick={() => navigate(`/rutinas/constructor?socio=${rutina.datos.idSocio}`)}
+                <button onClick={() => irA({ nueva: '1', socio: String(rutina.datos.idSocio) })}
                   className={`mt-2 inline-flex items-center gap-1.5 ${botonChico} bg-white border border-amber-300 rounded-lg hover:bg-amber-100`}>
                   <Plus className="w-3.5 h-3.5" /> Armar una nueva
                 </button>
@@ -580,8 +625,21 @@ const Constructor = () => {
           </aside>
 
           {/* Rutina por días */}
-          <section className={`flex-1 min-w-0 w-full bg-white rounded-2xl border border-slate-200 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] ${socio ? '' : 'opacity-60'}`}>
-            <div className="p-4 sm:p-5 border-b border-slate-100 bg-slate-50/50 rounded-t-2xl">
+          <section className={`flex-1 min-w-0 w-full bg-white rounded-xl border border-slate-200 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]`}>
+            <div className="p-3 sm:p-4 border-b border-slate-100 bg-slate-50/50 rounded-t-xl">
+              {!modoEdicion && (
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <label htmlFor="rutina-predeterminada" className="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
+                    <LayoutTemplate className="w-4 h-4 text-violet-600" /> Partir de una rutina predeterminada
+                  </label>
+                  <select id="rutina-predeterminada" value="" onChange={(e) => cargarPlantilla(plantillaPorId(e.target.value))}
+                    disabled={!socio || ocupado || catalogo.cargando || !fichaLista || socioInactivo}
+                    className={`${selectorHerramienta} flex-1 min-w-48`}>
+                    <option value="">{plantillaPendiente ? `Se carga "${plantillaPendiente.nombre}" al elegir el socio` : socio ? 'Elegí una plantilla…' : 'Primero elegí el socio'}</option>
+                    {PLANTILLAS.map((p) => <option key={p.id} value={p.id}>{p.nombre} · {resumenPlantilla(p)} · {p.nivel}</option>)}
+                  </select>
+                </div>
+              )}
               <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))]">
                 <Campo label="Nombre de la rutina" required>
                   <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={100}
@@ -593,7 +651,7 @@ const Constructor = () => {
                 </Campo>
               </div>
               {modoEdicion && rutina.datos && (
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-2">
                   <p className="text-xs text-slate-500">
                     Creada el {formatFecha(rutina.datos.fechaCreacion)}{rutina.datos.nombreProfesor ? ` por ${rutina.datos.nombreProfesor}` : ''} ·{' '}
                     <span className={rutina.datos.activa ? 'text-emerald-700 font-semibold' : 'text-slate-500 font-semibold'}>{rutina.datos.activa ? 'Activa' : 'Inactiva'}</span>
@@ -609,28 +667,28 @@ const Constructor = () => {
             </div>
 
             {/* Pestañas de días: en pantallas chicas se deslizan de costado */}
-            <div className="px-4 sm:px-5 pt-4 flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar" role="tablist" aria-label="Días de la rutina">
+            <div className="px-3 sm:px-4 pt-3 flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar" role="tablist" aria-label="Días de la rutina">
               {Array.from({ length: totalDias }, (_, i) => i + 1).map((d) => {
                 const cantidad = items.filter((i) => diaDe(i) === d).length;
                 return (
                   <button key={d} role="tab" aria-selected={d === dia} onClick={() => setDiaActivo(d)}
-                    className={`px-3.5 py-2 tactil:min-h-11 tactil:px-4 rounded-lg text-sm font-semibold whitespace-nowrap border transition-colors flex items-center gap-2 shrink-0 ${d === dia
+                    className={`px-3.5 py-1.5 tactil:min-h-11 tactil:px-4 rounded-lg text-sm font-semibold whitespace-nowrap border transition-colors flex items-center gap-2 shrink-0 ${d === dia
                       ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>
                     Día {d}
-                    <span className={`text-[11px] px-1.5 rounded-full ${d === dia ? 'bg-white/20' : 'bg-slate-100 text-slate-500'}`}>{cantidad}</span>
+                    <span className={`text-xs px-1.5 rounded-full ${d === dia ? 'bg-white/20' : 'bg-slate-100 text-slate-600'}`}>{cantidad}</span>
                   </button>
                 );
               })}
               {!soloLectura && totalDias < DIAS_MAXIMOS && (
                 <button onClick={agregarDia} disabled={!socio || ocupado}
-                  className="px-3 py-2 tactil:min-h-11 tactil:px-4 rounded-lg text-sm font-semibold whitespace-nowrap border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50 flex items-center gap-1.5 shrink-0 disabled:opacity-50">
+                  className="px-3 py-1.5 tactil:min-h-11 tactil:px-4 rounded-lg text-sm font-semibold whitespace-nowrap border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50 flex items-center gap-1.5 shrink-0 disabled:opacity-50">
                   <CalendarPlus className="w-4 h-4" /> Agregar día
                 </button>
               )}
             </div>
 
             {/* Ejercicios del día */}
-            <div className="p-4 sm:p-5 space-y-3">
+            <div className="p-3 sm:p-4 space-y-3">
               {/* Quitar el día va acá, a la vista, y no al final de las pestañas (en el celular quedaría fuera de la pantalla) */}
               <div className="flex items-center justify-between gap-3 min-h-11">
                 <h3 className="font-bold text-slate-800">
@@ -638,7 +696,7 @@ const Constructor = () => {
                 </h3>
                 {!soloLectura && totalDias > 1 && (
                   <button onClick={quitarDia} disabled={ocupado}
-                    className="px-3 py-2 tactil:min-h-11 rounded-lg text-sm font-semibold whitespace-nowrap text-rose-600 hover:bg-rose-50 flex items-center gap-1.5 disabled:opacity-50">
+                    className="px-3 py-1.5 tactil:min-h-11 rounded-lg text-sm font-semibold whitespace-nowrap text-rose-700 hover:bg-rose-50 flex items-center gap-1.5 disabled:opacity-50">
                     <Trash2 className="w-4 h-4" /> Quitar este día
                   </button>
                 )}
@@ -659,10 +717,10 @@ const Constructor = () => {
 
             {/* Agregar ejercicio */}
             {!soloLectura && (
-              <div className="mx-3 sm:mx-5 mb-4 sm:mb-5 p-3 sm:p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+              <div className="mx-3 sm:mx-5 mb-3 sm:mb-3 p-3 sm:p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                 <h3 className="text-sm font-bold text-slate-700">Agregar ejercicio al Día {dia}</h3>
                 {ultimoAgregado && !alta.idEjercicio && (
-                  <p className="text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 flex items-start gap-2" role="status">
+                  <p className="text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1.5 flex items-start gap-2" role="status">
                     <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
                     <span><b>{ultimoAgregado.nombre}</b> ({ultimoAgregado.detalle}) agregado al Día {ultimoAgregado.dia}. Elegí el siguiente.</span>
                   </p>
@@ -677,7 +735,7 @@ const Constructor = () => {
                     <ParametrosEjercicio valores={alta} onChange={cambiarAlta} deshabilitado={!socio || ocupado || socioInactivo} />
 
                     {riesgosAlta.length > 0 && (
-                      <div className="p-4 bg-amber-50 border-2 border-amber-200 rounded-xl" role="alert">
+                      <div className="p-3 bg-amber-50 border-2 border-amber-200 rounded-xl" role="alert">
                         <div className="flex items-start gap-3">
                           <div className="p-2 bg-amber-100 rounded-lg text-amber-700 shrink-0"><AlertTriangle className="w-5 h-5" /></div>
                           <div>
@@ -699,7 +757,7 @@ const Constructor = () => {
                         <span><b>La IA sugiere evitarlo:</b> {sugerenciasIa.get(Number(alta.idEjercicio)).motivo} (no bloquea: decidís vos).</span>
                       </p>
                     )}
-                    {errorAlta && <p className="text-sm text-rose-600" role="alert">{errorAlta}</p>}
+                    {errorAlta && <p className="text-sm text-rose-700" role="alert">{errorAlta}</p>}
 
                     <div className="flex flex-col sm:flex-row justify-end gap-2">
                       {riesgosAlta.length > 0 && (
@@ -707,7 +765,7 @@ const Constructor = () => {
                       )}
                       {riesgosAlta.length > 0 ? (
                         <button onClick={() => agregar(true)} disabled={ocupado}
-                          className="px-4 py-2.5 tactil:min-h-11 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 rounded-lg flex items-center justify-center gap-2">
+                          className="px-3 py-1.5 tactil:min-h-11 text-sm font-semibold text-white bg-alerta hover:bg-alerta-oscuro disabled:opacity-50 rounded-lg flex items-center justify-center gap-2">
                           <ShieldAlert className="w-4 h-4" /> Agregar igual
                         </button>
                       ) : (
@@ -723,13 +781,13 @@ const Constructor = () => {
             )}
 
             {/* Pie */}
-            <div className="px-4 sm:px-5 py-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="px-3 sm:px-4 py-2.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <p className="text-sm text-slate-500">
                 {totalDias} {totalDias === 1 ? 'día' : 'días'} · {items.length} {items.length === 1 ? 'ejercicio' : 'ejercicios'}
                 {ocupado && <span className="inline-flex items-center gap-1 ml-2 text-blue-600"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando...</span>}
               </p>
               {modoEdicion ? (
-                <button onClick={() => navigate('/entrenamiento/rutinas')} disabled={ocupado} className={botonSecundario}>Listo, volver a Rutinas</button>
+                <button onClick={cerrar} disabled={ocupado} className={botonSecundario}>Listo, cerrar</button>
               ) : (
                 <button onClick={crear} disabled={!socio || creando || borrador.length === 0 || socioInactivo} className={botonPrimario}>
                   {creando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -765,18 +823,18 @@ const Constructor = () => {
             </Campo>
             <ParametrosEjercicio valores={editando.valores} deshabilitado={editando.guardando}
               onChange={(campo, valor) => setEditando((ed) => ({ ...ed, error: '', valores: { ...ed.valores, [campo]: valor } }))} />
-            {editando.error && <p className="text-sm text-rose-600" role="alert">{editando.error}</p>}
+            {editando.error && <p className="text-sm text-rose-700" role="alert">{editando.error}</p>}
           </div>
         </Modal>
       )}
-    </div>
+    </>,
   );
 };
 
-// Pasar de una rutina a otra (o a una nueva) arranca el constructor de cero
-const ConstructorRutinas = () => {
+// Pasar de una rutina a otra (o a una nueva) arranca el constructor de cero. onCerrar: cerrar la ventana (Rutinas)
+const ConstructorRutinas = ({ onCerrar }) => {
   const [params] = useSearchParams();
-  return <Constructor key={params.get('rutina') || 'nueva'} />;
+  return <Constructor key={params.get('rutina') || 'nueva'} onCerrar={onCerrar} />;
 };
 
 export default ConstructorRutinas;

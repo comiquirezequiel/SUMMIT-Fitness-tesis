@@ -33,7 +33,7 @@ export const HistorialTurno = ({ turno }) => (
       </p>
     )}
     {turno.correcciones.length === 0 && turno.origen === 'RECEPCION' && (
-      <p className="text-xs text-slate-400">Sin correcciones.</p>
+      <p className="text-xs text-slate-500">Sin correcciones.</p>
     )}
     {turno.correcciones.map((c, i) => (
       <div key={i} className="text-xs text-slate-600 border-t border-slate-200 pt-2 first:border-0 first:pt-0">
@@ -114,7 +114,7 @@ const TurnoModal = ({ turno, equipo = [], inicial = {}, onClose, onGuardado }) =
     return (
       <Modal titulo="Turno anulado" subtitulo={subtitulo} onClose={onClose}
         pie={<button type="button" onClick={onClose} className={botonSecundario}>Cerrar</button>}>
-        <p className="text-sm text-slate-600 mb-3">
+        <p className="text-sm text-slate-600 mb-2">
           Entrada {hora(turno.entrada)} · Salida {turno.salida ? horaSalida(turno.entrada, turno.salida) : 'sin salida'}. No suma horas.
         </p>
         <HistorialTurno turno={turno} />
@@ -128,7 +128,7 @@ const TurnoModal = ({ turno, equipo = [], inicial = {}, onClose, onGuardado }) =
         <>
           <button type="button" onClick={() => setAnulando(false)} className={botonSecundario}>Volver</button>
           <button type="button" onClick={anular} disabled={enviando || !motivoValido}
-            className="px-4 py-2.5 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 rounded-lg flex items-center gap-2">
+            className="px-3 py-1.5 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 rounded-lg flex items-center gap-2">
             <Ban className="w-4 h-4" /> {enviando ? 'Anulando...' : 'Confirmar anulación'}
           </button>
         </>
@@ -136,7 +136,7 @@ const TurnoModal = ({ turno, equipo = [], inicial = {}, onClose, onGuardado }) =
         <>
           {!nuevo && (
             <button type="button" onClick={() => { setAnulando(true); setError(''); }}
-              className="mr-auto px-3 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-lg flex items-center gap-2">
+              className="mr-auto px-3 py-1.5 text-sm font-semibold text-rose-700 hover:bg-rose-50 rounded-lg flex items-center gap-2">
               <Ban className="w-4 h-4" /> Anular turno
             </button>
           )}
@@ -146,7 +146,7 @@ const TurnoModal = ({ turno, equipo = [], inicial = {}, onClose, onGuardado }) =
           </button>
         </>
       )}>
-      <form id="form-turno" onSubmit={guardar} className="space-y-4">
+      <form id="form-turno" onSubmit={guardar} className="space-y-3">
         {anulando ? (
           <p className="text-sm text-slate-700 bg-rose-50 border border-rose-200 rounded-lg p-3">
             El turno deja de sumar horas, pero queda guardado con el motivo y tu nombre.
@@ -187,7 +187,7 @@ const TurnoModal = ({ turno, equipo = [], inicial = {}, onClose, onGuardado }) =
           <input value={motivo} maxLength={200} onChange={e => setMotivo(e.target.value)} className={inputClass}
             placeholder={anulando ? 'Ej.: pasó el DNI por error, no trabajó' : 'Ej.: se olvidó de pasar el DNI a la salida'} />
         </Campo>
-        {error && <p className="text-sm text-rose-600 font-medium">{error}</p>}
+        {error && <p className="text-sm text-rose-700 font-medium">{error}</p>}
         {!nuevo && <HistorialTurno turno={turno} />}
       </form>
     </Modal>

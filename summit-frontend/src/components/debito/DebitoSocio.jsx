@@ -8,7 +8,7 @@ import QrAutorizacion from './QrAutorizacion';
 
 const Dato = ({ label, valor }) => (
   <div>
-    <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{label}</p>
+    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{label}</p>
     <p className="text-sm font-medium text-slate-800 mt-0.5">{valor || '—'}</p>
   </div>
 );
@@ -100,7 +100,7 @@ const DebitoSocio = ({ socio }) => {
   const insignia = vigente ? ESTADOS_DEBITO[debito.estado] : null;
 
   return (
-    <div className="rounded-xl border border-slate-200 p-4 space-y-4">
+    <div className="rounded-xl border border-slate-200 p-3 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-bold text-slate-800 flex items-center gap-2">
           <Repeat className="w-4 h-4 text-sky-600" /> Débito automático mensual
@@ -110,7 +110,7 @@ const DebitoSocio = ({ socio }) => {
 
       {vigente ? (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <Dato label="Plan" valor={`${debito.plan} · ${formatMoneda(debito.monto)}`} />
             <Dato label="Medio de pago" valor={textoMedioPago(debito.medioPago)} />
             <Dato label="Cuenta Mercado Pago" valor={debito.emailPagador} />
@@ -137,7 +137,7 @@ const DebitoSocio = ({ socio }) => {
               <RefreshCw className={`w-3.5 h-3.5 ${procesando ? 'animate-spin' : ''}`} /> Actualizar estado
             </button>
             <button onClick={() => darDeBaja(debito)} disabled={procesando}
-              className={`${boton} border border-rose-200 text-rose-600 hover:bg-rose-50`}>
+              className={`${boton} border border-rose-200 text-rose-700 hover:bg-rose-50`}>
               <XCircle className="w-3.5 h-3.5" /> {debito.estado === 'PENDIENTE_AUTORIZACION' ? 'Cancelar adhesión' : 'Dar de baja'}
             </button>
           </div>
@@ -158,13 +158,13 @@ const DebitoSocio = ({ socio }) => {
                 onChange={e => setForm({ ...form, emailPagador: e.target.value })} className={inputClass} />
             </label>
           </div>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-xs text-slate-500">
             Se cobra del dinero en cuenta de Mercado Pago o de la tarjeta que elija el socio (débito, crédito o prepaga:
             Ualá, Naranja X, su banco). Solo planes de 30 días o múltiplos.
           </p>
           <div className="flex gap-2">
             <button onClick={adherir} disabled={procesando || !form.idPlan}
-              className={`${boton} bg-sky-600 hover:bg-sky-700 text-white`}>
+              className={`${boton} bg-info hover:bg-info-oscuro text-white`}>
               {procesando ? 'Creando...' : 'Crear y mostrar QR'}
             </button>
             <button onClick={() => setForm(null)} className={`${boton} border border-slate-200 text-slate-600 hover:bg-slate-50`}>Cancelar</button>
@@ -176,13 +176,13 @@ const DebitoSocio = ({ socio }) => {
             {debito ? `Dado de baja el ${formatFecha(debito.fechaBaja)}.` : 'No tiene débito automático.'} Si prefiere no pasar por
             recepción cada mes, se puede adherir.
           </p>
-          <button onClick={abrirAlta} className={`${boton} bg-sky-600 hover:bg-sky-700 text-white`}>
+          <button onClick={abrirAlta} className={`${boton} bg-info hover:bg-info-oscuro text-white`}>
             <Plus className="w-3.5 h-3.5" /> Adherir al débito automático
           </button>
         </div>
       )}
 
-      {error && <p className="text-xs text-rose-600 font-medium">{error}</p>}
+      {error && <p className="text-xs text-rose-700 font-medium">{error}</p>}
     </div>
   );
 };

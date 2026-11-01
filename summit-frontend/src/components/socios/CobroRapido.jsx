@@ -48,16 +48,16 @@ const CobroRapido = ({ idSocio, onClose, onCobrado }) => {
   return (
     <Modal titulo="Cobrar cuota" subtitulo="Buscá al socio por nombre o DNI" onClose={onClose}>
       {error ? (
-        <p className="text-sm text-rose-600 font-medium">{error}</p>
+        <p className="text-sm text-rose-700 font-medium">{error}</p>
       ) : (
         <div className="space-y-3">
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
             <input autoFocus value={busqueda} onChange={e => setBusqueda(e.target.value)} disabled={!socios}
-              placeholder={socios ? 'Nombre o DNI' : 'Cargando socios...'} className={`${inputClass} pl-9`} />
+              placeholder={socios ? 'Nombre o DNI' : 'Cargando socios...'} className={`${inputClass} pl-8`} />
           </div>
           {filtro && resultados.length === 0 && socios && (
-            <p className="text-sm text-slate-500 text-center py-3">No hay socios que coincidan.</p>
+            <p className="text-sm text-slate-500 text-center py-2">No hay socios que coincidan.</p>
           )}
           <ul className="divide-y divide-slate-100">
             {resultados.map(s => {
@@ -65,7 +65,7 @@ const CobroRapido = ({ idSocio, onClose, onCobrado }) => {
               return (
                 <li key={s.idSocio}>
                   <button type="button" onClick={() => setSocio(s)}
-                    className="w-full flex items-center justify-between gap-3 py-2.5 px-2 rounded-lg hover:bg-slate-50 text-left">
+                    className="w-full flex items-center justify-between gap-3 py-1.5 px-2 rounded-lg hover:bg-slate-50 text-left">
                     <span className="min-w-0">
                       <span className="block font-semibold text-slate-800 truncate">{s.nombreCompleto}</span>
                       <span className="block text-xs text-slate-500">

@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
@@ -31,6 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Métricas del gimnasio con datos reales, para "Analítica de Socios" (asistencia y perfil de quienes vienen) y
@@ -59,6 +61,8 @@ public class MetricasService {
     private final SuscripcionRepository suscripcionRepository;
     private final PagoHistorialRepository pagoHistorialRepository;
     private final DebitoAutomaticoRepository debitoAutomaticoRepository;
+    private final DatosGimnasioService datosGimnasioService;
+    private final ConfiguracionAccesoService configService;
 
     /** Rango pedido (inclusive) y el período anterior del mismo largo, para comparar. */
     public record Periodo(LocalDate desde, LocalDate hasta, int dias, LocalDate desdeAnterior, LocalDate hastaAnterior) {
@@ -107,10 +111,15 @@ public class MetricasService {
             visitantes.add((Long) fila[1]);
         }
 
-        // Día por día (con ceros, para que la línea no "salte" los días sin ingresos)
+        // Día por día (con ceros, para que la línea no "salte" los días sin ingresos). Los días que el gimnasio no abre
+        // no van: no es que no vino nadie, es que no se podía venir (salvo que haya entrado alguien igual)
+        Set<DayOfWeek> cerrados = datosGimnasioService.diasCerrados();
         List<Punto> visitasPorDia = new ArrayList<>();
         int[] vecesDeCadaDia = new int[7];
         for (LocalDate dia = p.desde(); !dia.isAfter(p.hasta()); dia = dia.plusDays(1)) {
+            if (cerrados.contains(dia.getDayOfWeek()) && !porFecha.containsKey(dia)) {
+                continue;
+            }
             visitasPorDia.add(new Punto(dia.toString(), porFecha.getOrDefault(dia, 0L)));
             vecesDeCadaDia[dia.getDayOfWeek().getValue() - 1]++;
         }
@@ -119,6 +128,9 @@ public class MetricasService {
         List<Celda> mapaCalor = new ArrayList<>();
         for (int dia = 0; dia < 7; dia++) {
             long total = Arrays.stream(calor[dia]).sum();
+            if (cerrados.contains(DayOfWeek.of(dia + 1)) && total == 0) {
+                continue;
+            }
             promedioPorDiaSemana.add(new Punto(DIAS[dia], vecesDeCadaDia[dia] == 0 ? 0 : redondear((double) total / vecesDeCadaDia[dia])));
             for (int hora = 0; hora < 24; hora++) {
                 if (calor[dia][hora] > 0) {
@@ -139,8 +151,9 @@ public class MetricasService {
         indicadores.put("visitantesUnicos", new Indicador(visitantes.size(), (double) unicosAnteriores));
         indicadores.put("promedioPorVisitante", new Indicador(division(visitas.size(), visitantes.size()),
                 division(visitasAnteriores.size(), unicosAnteriores)));
-        indicadores.put("promedioDiario", new Indicador(division(visitas.size(), p.dias()),
-                division(visitasAnteriores.size(), p.dias())));
+        // Por día que el gimnasio abre
+        indicadores.put("promedioDiario", new Indicador(division(visitas.size(), diasAbiertos(p.desde(), p.hasta(), cerrados)),
+                division(visitasAnteriores.size(), diasAbiertos(p.desdeAnterior(), p.hastaAnterior(), cerrados))));
         indicadores.put("nuevos", new Indicador(nuevos(p.desde(), p.hasta()), (double) nuevos(p.desdeAnterior(), p.hastaAnterior())));
         indicadores.put("bajas", new Indicador(membresias.bajasEntre(p.desde(), p.hasta()),
                 (double) membresias.bajasEntre(p.desdeAnterior(), p.hastaAnterior())));
@@ -178,14 +191,19 @@ public class MetricasService {
         List<Object[]> pagosAnteriores = pagoHistorialRepository.aprobadosEntre(inicio(p.desdeAnterior()), fin(p.hastaAnterior()));
 
         boolean porMes = p.dias() > MAX_DIAS_POR_DIA;
-        Map<String, Double> enElTiempo = new LinkedHashMap<>();
+        // Ordenado por fecha (las claves son AAAA-MM o AAAA-MM-DD): un día cerrado con cobros queda en su lugar
+        Map<String, Double> enElTiempo = new TreeMap<>();
         if (porMes) {
             for (YearMonth mes = YearMonth.from(p.desde()); !mes.isAfter(YearMonth.from(p.hasta())); mes = mes.plusMonths(1)) {
                 enElTiempo.put(mes.toString(), 0.0);
             }
         } else {
+            // Los días que no abre van solo si entró algo igual (un débito automático, por ejemplo)
+            Set<DayOfWeek> cerrados = datosGimnasioService.diasCerrados();
             for (LocalDate dia = p.desde(); !dia.isAfter(p.hasta()); dia = dia.plusDays(1)) {
-                enElTiempo.put(dia.toString(), 0.0);
+                if (!cerrados.contains(dia.getDayOfWeek())) {
+                    enElTiempo.put(dia.toString(), 0.0);
+                }
             }
         }
 
@@ -237,16 +255,21 @@ public class MetricasService {
     // ---------- Membresías (activos, bajas, socios por plan) ----------
 
     private Membresias membresias() {
-        return new Membresias(suscripcionRepository.vencimientosConPlan());
+        return new Membresias(suscripcionRepository.vencimientosConPlan(),
+                configService.obtenerConfiguracionGlobal().getDiasGraciaMembresia());
     }
 
-    /** Filas [idUsuario, plan, inicio, vencimiento] de todas las membresías, con los cálculos que se hacen sobre ellas. */
-    private record Membresias(List<Object[]> filas) {
+    /**
+     * Filas [idUsuario, plan, inicio, vencimiento] de todas las membresías, con los cálculos que se hacen sobre ellas.
+     * diasGracia: los de las reglas de acceso; quien está en gracia sigue entrando, así que cuenta como activo.
+     */
+    private record Membresias(List<Object[]> filas, int diasGracia) {
 
-        /** Socios con una membresía que cubre esa fecha. */
+        /** Socios con una membresía que cubre esa fecha (o vencida hace menos que los días de gracia). */
         long activosAl(LocalDate fecha) {
+            LocalDate venceDesde = fecha.minusDays(diasGracia);
             return filas.stream()
-                    .filter(f -> !((LocalDate) f[2]).isAfter(fecha) && !((LocalDate) f[3]).isBefore(fecha))
+                    .filter(f -> !((LocalDate) f[2]).isAfter(fecha) && !((LocalDate) f[3]).isBefore(venceDesde))
                     .map(f -> (Long) f[0]).distinct().count();
         }
 
@@ -301,6 +324,11 @@ public class MetricasService {
     // Ingresos que recepción dejó pasar por excepción (cuota vencida o sin días del plan)
     private static long excepciones(List<Object[]> visitas) {
         return visitas.stream().filter(fila -> fila[2] == TipoEventoAsistencia.INGRESO_EXCEPCION).count();
+    }
+
+    // Cuántos días del rango abre el gimnasio (los feriados no se conocen: cuentan como abiertos)
+    private static long diasAbiertos(LocalDate desde, LocalDate hasta, Set<DayOfWeek> cerrados) {
+        return desde.datesUntil(hasta.plusDays(1)).filter(d -> !cerrados.contains(d.getDayOfWeek())).count();
     }
 
     private long nuevos(LocalDate desde, LocalDate hasta) {

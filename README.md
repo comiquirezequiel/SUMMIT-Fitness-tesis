@@ -106,7 +106,7 @@ MySQL y Ollama pueden quedar corriendo: casi no consumen nada mientras no se usa
 | `Access denied for user 'root'@'localhost'` al arrancar el backend | `DB_USERNAME` o `DB_PASSWORD` no coinciden con los de MySQL | Corregilos en `application-local.properties` |
 | En una base nueva no se puede entrar como admin y el backend dijo `No se creó el admin inicial: falta ADMIN_PASSWORD` | `ADMIN_PASSWORD` vacía | Completala y volvé a arrancar el backend |
 | Después de cambiar `JWT_SECRET`, el sistema vuelve al login | Las sesiones firmadas con la clave anterior dejan de valer | Volvé a entrar (es normal) |
-| Te olvidaste la contraseña del admin | — | Otro admin te la restablece desde *Ajustes > Equipo*. Si sos el único, configurá el correo (paso 2) y usá "¿Olvidaste tu contraseña?" en el login |
+| Te olvidaste la contraseña del admin | — | Otro admin te la restablece desde *Ajustes > Gestión de personal*. Si sos el único, configurá el correo (paso 2) y usá "¿Olvidaste tu contraseña?" en el login |
 | No llega el mail de "¿Olvidaste tu contraseña?" | Correo mal configurado, o el mail quedó en spam | Revisá spam y los `MAIL_*`; si el backend no pudo mandarlo, su consola dice `No se pudo mandar el mail de recuperación` |
 | `Port 8080 was already in use` | Ya hay un backend abierto en otra terminal | Cerrá esa terminal (o `Ctrl + C` en ella) |
 | Vite dice `Port 5173 is in use` y abre otro puerto | Ya hay un frontend abierto | Cerrá el otro: el backend solo acepta pedidos desde el puerto 5173 |
@@ -116,6 +116,19 @@ MySQL y Ollama pueden quedar corriendo: casi no consumen nada mientras no se usa
 
 Para revisar si todo el backend compila sin arrancarlo: `.\mvnw.cmd compile` dentro de `summit-backend`
 (`BUILD SUCCESS` = sin errores).
+
+## Datos de demostración
+
+Para mostrar las métricas con datos creíbles hay una demo: 6 meses de gimnasio que terminan el día en que se carga
+(80 socios con sus planes, pagos, certificados y horarios; 7 empleados con sus turnos; gastos y cierres de caja). Respeta
+el horario de *Ajustes > Datos del gimnasio*. **Borra a todos los socios**: es para una PC de prueba.
+
+1. Completá `DEMO_PASSWORD` en `application-local.properties`: es la contraseña de todos los usuarios de la demo.
+2. Cerrá el backend si está abierto (`Ctrl + C`).
+3. Doble clic en `demo\regenerar-demo.cmd` y escribí `BORRAR` cuando lo pida. Antes de borrar guarda una copia de la
+   base en `demo\respaldos`; después arranca el backend con la demo cargada y queda andando como siempre.
+
+Para tener fechas actuales (por ejemplo, el día de la defensa), se vuelve a correr ese mismo día.
 
 ## Tests automáticos
 

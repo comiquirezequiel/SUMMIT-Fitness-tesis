@@ -66,7 +66,7 @@ export default function Login() {
   return (
     <Marco titulo="Ingresá a tu cuenta">
       {error && (
-        <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm text-center">
+        <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-6 text-sm text-center">
           {error}
         </div>
       )}

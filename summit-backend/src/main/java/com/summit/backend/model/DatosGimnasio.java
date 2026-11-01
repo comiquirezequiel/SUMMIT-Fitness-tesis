@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Datos del gimnasio: nombre, contacto y logo (salen en los comprobantes y las rutinas en PDF). Hay un único
@@ -53,4 +55,11 @@ public class DatosGimnasio {
     // Cuándo se subió el logo: es su versión, para que el navegador no muestre uno viejo
     @Column(name = "logo_actualizado")
     private LocalDateTime logoActualizado;
+
+    // Horario de cada día, de lunes a domingo. Los días que no abre no cuentan en las métricas de asistencia
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "datos_gimnasio_horarios", joinColumns = @JoinColumn(name = "id_datos"))
+    @OrderColumn(name = "orden")
+    @Builder.Default
+    private List<HorarioGimnasio> horarios = new ArrayList<>();
 }

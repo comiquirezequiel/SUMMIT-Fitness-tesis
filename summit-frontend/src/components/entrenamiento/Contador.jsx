@@ -1,6 +1,6 @@
 import { Minus, Plus } from 'lucide-react';
 
-const boton = 'w-10 tactil:w-11 shrink-0 flex items-center justify-center text-slate-600 hover:bg-slate-100 active:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent';
+const boton = 'w-8 tactil:w-11 shrink-0 flex items-center justify-center text-slate-600 hover:bg-slate-100 active:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent';
 
 /**
  * Número con botones − y + para cargarlo con el dedo (series, repeticiones, carga, descanso). Igual se puede escribir:
@@ -25,7 +25,7 @@ const Contador = ({ valor, onChange, etiqueta, paso = 1, min = 0, max, vacioPerm
 
   return (
     // 46 px en el celular y la tablet: 44 de botón más el borde (el mismo alto que los demás campos)
-    <div className={`flex h-10 tactil:h-[46px] rounded-lg border border-slate-200 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400 ${deshabilitado ? 'bg-slate-50 opacity-70' : ''}`}>
+    <div className={`flex h-8 tactil:h-[46px] rounded-lg border border-slate-200 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400 ${deshabilitado ? 'bg-slate-50 opacity-70' : ''}`}>
       <button type="button" onClick={() => sumar(-paso)} disabled={deshabilitado || !puedeRestar} className={`${boton} border-r border-slate-200`}
         aria-label={`Restar ${etiqueta}`}>
         <Minus className="w-4 h-4" />

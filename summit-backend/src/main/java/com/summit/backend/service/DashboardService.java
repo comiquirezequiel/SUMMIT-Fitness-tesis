@@ -2,6 +2,7 @@ package com.summit.backend.service;
 
 import com.summit.backend.dto.DashboardResumenDTO;
 import com.summit.backend.dto.IngresoDTO;
+import com.summit.backend.model.ConfiguracionAcceso;
 import com.summit.backend.model.EstadoUsuario;
 import com.summit.backend.model.LogAsistencia;
 import com.summit.backend.model.ResultadoAsistencia;
@@ -35,6 +36,7 @@ public class DashboardService {
     private final SuscripcionRepository suscripcionRepository;
     private final LogAsistenciaRepository logAsistenciaRepository;
     private final FotoSocioService fotoSocioService;
+    private final ConfiguracionAccesoService configService;
 
     public DashboardResumenDTO resumen() {
         LocalDate hoy = LocalDate.now();
@@ -43,7 +45,13 @@ public class DashboardService {
         LocalDateTime ahora = LocalDateTime.now();
 
         long sociosTotal = usuarioRepository.countByRol(Rol.SOCIO);
-        long sociosActivos = usuarioRepository.countByRolAndEstado(Rol.SOCIO, EstadoUsuario.ACTIVO);
+        // Activo = cuenta activa y membresía al día (con los días de gracia): con la cuota vencida cuenta como inactivo,
+        // igual que en la lista de socios
+        ConfiguracionAcceso config = configService.obtenerConfiguracionGlobal();
+        long sociosActivos = config.isRequerirMembresiaActiva()
+                ? usuarioRepository.countConMembresiaAlDia(Rol.SOCIO, EstadoUsuario.ACTIVO,
+                        hoy.minusDays(config.getDiasGraciaMembresia()))
+                : usuarioRepository.countByRolAndEstado(Rol.SOCIO, EstadoUsuario.ACTIVO);
         // Las salidas del personal (CHECKOUT) no son ingresos
         long ingresosHoy = logAsistenciaRepository.countByTipoEventoNotAndFechaHoraBetween(SALIDA, inicioDia, finDia);
         long permitidosHoy = logAsistenciaRepository

@@ -21,9 +21,9 @@ const TablaCierres = ({ version }) => {
   useEffect(() => { cargar(); }, [cargar, version]);
 
   const cierres = pagina?.content || [];
-  if (error) return <div className="p-6 text-sm text-rose-600 font-medium">{error}</div>;
+  if (error) return <div className="p-4 text-sm text-rose-700 font-medium">{error}</div>;
   if (pagina && cierres.length === 0) {
-    return <div className="p-10 text-center text-slate-500 text-sm">Todavía no se cerró la caja. Al final de cada turno, tocá "Cerrar caja".</div>;
+    return <div className="p-6 text-center text-slate-500 text-sm">Todavía no se cerró la caja. Al final de cada turno, tocá "Cerrar caja".</div>;
   }
 
   return (
@@ -32,13 +32,13 @@ const TablaCierres = ({ version }) => {
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200 uppercase text-xs tracking-wider">
             <tr>
-              <th className="px-6 py-4">Turno</th>
-              <th className="px-6 py-4 text-right">Esperado</th>
-              <th className="px-6 py-4 text-right">Contado</th>
-              <th className="px-6 py-4">Diferencia</th>
-              <th className="px-6 py-4 text-right">Retiro</th>
-              <th className="px-6 py-4 text-right">Quedó de fondo</th>
-              <th className="px-2 py-4" aria-label="Detalle" />
+              <th className="px-3 py-2">Turno</th>
+              <th className="px-3 py-2 text-right">Esperado</th>
+              <th className="px-3 py-2 text-right">Contado</th>
+              <th className="px-3 py-2">Diferencia</th>
+              <th className="px-3 py-2 text-right">Retiro</th>
+              <th className="px-3 py-2 text-right">Quedó de fondo</th>
+              <th className="px-2 py-2.5" aria-label="Detalle" />
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -48,21 +48,21 @@ const TablaCierres = ({ version }) => {
               return (
                 <Fragment key={c.idCierre}>
                   <tr className="hover:bg-slate-50/50 cursor-pointer" onClick={() => setAbierto(estaAbierto ? null : c.idCierre)}>
-                    <td className="px-6 py-4">
+                    <td className="px-3 py-2">
                       <div className="font-medium text-slate-800 whitespace-nowrap">{formatFechaHora(c.hasta)}</div>
                       <div className="text-xs text-slate-500 mt-0.5">desde {formatFechaHora(c.desde)} · cerró {c.cerradoPor || '—'}</div>
                     </td>
-                    <td className="px-6 py-4 text-right whitespace-nowrap text-slate-700">{formatMoneda(c.efectivoEsperado)}</td>
-                    <td className="px-6 py-4 text-right whitespace-nowrap font-semibold text-slate-800">{formatMoneda(c.efectivoContado)}</td>
-                    <td className={`px-6 py-4 whitespace-nowrap font-semibold ${dif.clase}`}>{dif.texto}</td>
-                    <td className="px-6 py-4 text-right whitespace-nowrap text-slate-700">{formatMoneda(c.retiro)}</td>
-                    <td className="px-6 py-4 text-right whitespace-nowrap text-slate-700">{formatMoneda(c.fondoSiguiente)}</td>
-                    <td className="px-2 py-4 text-slate-400">{estaAbierto ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</td>
+                    <td className="px-3 py-2 text-right whitespace-nowrap text-slate-700">{formatMoneda(c.efectivoEsperado)}</td>
+                    <td className="px-3 py-2 text-right whitespace-nowrap font-semibold text-slate-800">{formatMoneda(c.efectivoContado)}</td>
+                    <td className={`px-4 py-2.5 whitespace-nowrap font-semibold ${dif.clase}`}>{dif.texto}</td>
+                    <td className="px-3 py-2 text-right whitespace-nowrap text-slate-700">{formatMoneda(c.retiro)}</td>
+                    <td className="px-3 py-2 text-right whitespace-nowrap text-slate-700">{formatMoneda(c.fondoSiguiente)}</td>
+                    <td className="px-2 py-2.5 text-slate-500">{estaAbierto ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</td>
                   </tr>
                   {estaAbierto && (
                     <tr className="bg-slate-50/60">
-                      <td colSpan={7} className="px-6 py-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <td colSpan={7} className="px-3 py-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 mb-2">
                               {c.cantidadCobros} {c.cantidadCobros === 1 ? 'cobro' : 'cobros'} · {c.cantidadGastos} {c.cantidadGastos === 1 ? 'gasto' : 'gastos'}

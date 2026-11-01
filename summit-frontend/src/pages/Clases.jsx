@@ -12,7 +12,7 @@ const ESTADOS_RESERVA = {
   CONFIRMADA: { texto: 'Confirmada', clase: 'bg-blue-50 text-blue-700 border-blue-200' },
   ASISTIO: { texto: 'Asistió', clase: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   AUSENTE: { texto: 'Ausente', clase: 'bg-rose-50 text-rose-700 border-rose-200' },
-  CANCELADA: { texto: 'Cancelada', clase: 'bg-slate-100 text-slate-500 border-slate-200' },
+  CANCELADA: { texto: 'Cancelada', clase: 'bg-slate-100 text-slate-600 border-slate-200' },
 };
 
 // Fecha local -> 'YYYY-MM-DD'
@@ -23,14 +23,14 @@ const hora = (h) => (h ? h.substring(0, 5) : '');
 const ClassCard = ({ clase, color, onClick }) => {
   const isFull = clase.reservados >= clase.capacidad;
   return (
-    <div onClick={onClick} className={`p-4 rounded-xl border border-l-4 ${color} relative shadow-xs hover:shadow-md transition-shadow cursor-pointer bg-white`}>
+    <div onClick={onClick} className={`p-3 rounded-xl border border-l-4 ${color} relative shadow-xs hover:shadow-md transition-shadow cursor-pointer bg-white`}>
       <div className="flex justify-between items-start mb-2 gap-2">
         <h3 className="font-bold text-slate-800">{clase.nombreClase}</h3>
         <span className={`text-xs font-bold px-2 py-1 rounded-sm whitespace-nowrap ${isFull ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
           {clase.reservados}/{clase.capacidad}
         </span>
       </div>
-      <div className="space-y-1.5 mt-3">
+      <div className="space-y-1.5 mt-2">
         <div className="flex items-center gap-2 text-sm text-slate-600">
           <Clock className="w-4 h-4 text-slate-400" />
           <span>{hora(clase.horaInicio)} - {hora(clase.horaFin)}</span>
@@ -108,8 +108,8 @@ const NuevaClaseModal = ({ onClose, onGuardado }) => {
           <Save className="w-4 h-4" /> {guardando ? 'Guardando...' : 'Crear clase'}
         </button>
       </>}>
-      <form id="form-clase" onSubmit={guardar} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form id="form-clase" onSubmit={guardar} className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Campo label="Nombre" required>
             <input required value={datos.nombre} onChange={e => setDatos({ ...datos, nombre: e.target.value })} className={inputClass} placeholder="Ej: Funcional" />
           </Campo>
@@ -136,10 +136,10 @@ const NuevaClaseModal = ({ onClose, onGuardado }) => {
                   {DIAS.map(d => <option key={d.enum} value={d.enum}>{d.nombre}</option>)}
                 </select>
                 <input type="time" value={h.horaInicio} onChange={e => setHorario(i, 'horaInicio', e.target.value)} className={`${inputClass} w-32`} />
-                <span className="text-slate-400 text-sm">a</span>
+                <span className="text-slate-500 text-sm">a</span>
                 <input type="time" value={h.horaFin} onChange={e => setHorario(i, 'horaFin', e.target.value)} className={`${inputClass} w-32`} />
                 {horarios.length > 1 && (
-                  <button type="button" onClick={() => setHorarios(hs => hs.filter((_, j) => j !== i))} className="p-2 text-slate-400 hover:text-rose-600" title="Quitar horario">
+                  <button type="button" onClick={() => setHorarios(hs => hs.filter((_, j) => j !== i))} className="p-2 text-slate-500 hover:text-rose-700" title="Quitar horario">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 )}
@@ -151,7 +151,7 @@ const NuevaClaseModal = ({ onClose, onGuardado }) => {
             <Plus className="w-4 h-4" /> Agregar horario
           </button>
         </div>
-        {error && <p className="text-sm text-rose-600 font-medium">{error}</p>}
+        {error && <p className="text-sm text-rose-700 font-medium">{error}</p>}
       </form>
     </Modal>
   );
@@ -220,13 +220,13 @@ const ReservasModal = ({ clase, fecha, esAdmin, onClose, onCambio }) => {
       onClose={onClose} ancho="max-w-2xl"
       pie={<>
         {esAdmin && (
-          <button onClick={desactivarClase} className="mr-auto px-4 py-2.5 text-sm font-semibold text-rose-600 border border-rose-200 hover:bg-rose-50 rounded-lg flex items-center gap-2">
+          <button onClick={desactivarClase} className="mr-auto px-3 py-1.5 text-sm font-semibold text-rose-700 border border-rose-200 hover:bg-rose-50 rounded-lg flex items-center gap-2">
             <Ban className="w-4 h-4" /> Desactivar clase
           </button>
         )}
         <button onClick={onClose} className={botonSecundario}>Cerrar</button>
       </>}>
-      <div className="space-y-4">
+      <div className="space-y-3">
         {esFutura && (
           <div className="flex flex-col sm:flex-row gap-2">
             <select value={idSocio} onChange={e => setIdSocio(e.target.value)} className={`${inputClass} flex-1`}>
@@ -240,10 +240,10 @@ const ReservasModal = ({ clase, fecha, esAdmin, onClose, onCambio }) => {
             </button>
           </div>
         )}
-        {mensaje && <p className={`text-sm font-medium ${mensaje.tipo === 'ok' ? 'text-emerald-700' : 'text-rose-600'}`}>{mensaje.texto}</p>}
+        {mensaje && <p className={`text-sm font-medium ${mensaje.tipo === 'ok' ? 'text-emerald-700' : 'text-rose-700'}`}>{mensaje.texto}</p>}
 
         {reservas.length === 0 ? (
-          <p className="text-sm text-slate-500 py-6 text-center">No hay reservas para esta clase.</p>
+          <p className="text-sm text-slate-500 py-4 text-center">No hay reservas para esta clase.</p>
         ) : (
           <ul className="divide-y divide-slate-100 border border-slate-200 rounded-lg">
             {reservas.map(r => {
@@ -261,12 +261,12 @@ const ReservasModal = ({ clase, fecha, esAdmin, onClose, onCambio }) => {
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${estado.clase}`}>{estado.texto}</span>
                     {r.estado !== 'CANCELADA' && yaDictada && (
                       <>
-                        <button onClick={() => marcar(r, 'ASISTIO')} title="Presente" className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50"><CheckCircle2 className="w-4 h-4" /></button>
-                        <button onClick={() => marcar(r, 'AUSENTE')} title="Ausente" className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50"><XCircle className="w-4 h-4" /></button>
+                        <button onClick={() => marcar(r, 'ASISTIO')} title="Presente" className="p-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50"><CheckCircle2 className="w-4 h-4" /></button>
+                        <button onClick={() => marcar(r, 'AUSENTE')} title="Ausente" className="p-1.5 rounded-lg text-rose-700 hover:bg-rose-50"><XCircle className="w-4 h-4" /></button>
                       </>
                     )}
                     {r.estado === 'CONFIRMADA' && esFutura && (
-                      <button onClick={() => cancelar(r)} className="text-xs font-semibold text-slate-500 hover:text-rose-600 px-2">Cancelar</button>
+                      <button onClick={() => cancelar(r)} className="text-xs font-semibold text-slate-500 hover:text-rose-700 px-2">Cancelar</button>
                     )}
                   </div>
                 </li>
@@ -302,21 +302,21 @@ const Clases = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center mb-8 gap-3">
+    <div className="space-y-4">
+      <div className="flex justify-between items-center mb-5 gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Agenda de Clases</h1>
+          <h1 className="text-xl font-bold text-slate-800">Agenda de Clases</h1>
           <p className="text-sm text-slate-500">Horarios, reservas y asistencia de las clases grupales</p>
         </div>
         {esAdmin && (
-          <button onClick={() => setModal({ tipo: 'nueva' })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-xs whitespace-nowrap">
+          <button onClick={() => setModal({ tipo: 'nueva' })} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-xs whitespace-nowrap">
             <Plus className="w-4 h-4" /> Nueva Clase
           </button>
         )}
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-        <div className="flex items-center justify-between mb-6 gap-2">
+      <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs">
+        <div className="flex items-center justify-between mb-4 gap-2">
           <button onClick={() => moverSemana(-1)} title="Semana anterior" className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-500 transition-colors">
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -326,14 +326,14 @@ const Clases = () => {
               <button
                 key={d.iso}
                 onClick={() => setFecha(d.iso)}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-lg font-medium text-sm transition-colors whitespace-nowrap ${
                   fecha === d.iso
                   ? 'bg-blue-50 text-blue-700 border border-blue-200'
                   : 'bg-transparent text-slate-600 border border-transparent hover:bg-slate-50 hover:border-slate-200'
                 }`}
               >
                 {d.nombre} {d.numero}
-                {d.iso === hoyIso() && <span className="ml-1 text-[10px] font-bold text-emerald-600">HOY</span>}
+                {d.iso === hoyIso() && <span className="ml-1 text-xs font-bold text-emerald-700">HOY</span>}
               </button>
             ))}
           </div>
@@ -343,15 +343,15 @@ const Clases = () => {
           </button>
         </div>
 
-        {error && <p className="text-sm text-rose-600 font-medium mb-4">{error}</p>}
+        {error && <p className="text-sm text-rose-700 font-medium mb-3">{error}</p>}
 
         {!cargando && agenda.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-            <Calendar className="w-12 h-12 mb-3 opacity-40" />
+          <div className="flex flex-col items-center justify-center py-8 text-slate-500">
+            <Calendar className="w-9 h-9 mb-2 opacity-40" />
             <p className="text-sm font-medium">No hay clases este día</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {agenda.map((c, i) => (
               <ClassCard key={c.idHorario} clase={c} color={COLORES[c.idClase % COLORES.length] || COLORES[i % COLORES.length]}
                 onClick={() => setModal({ tipo: 'reservas', clase: c })} />

@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { Save, Building2, CheckCircle, AlertTriangle, Image as ImageIcon, Upload, Trash2 } from 'lucide-react';
+import { Save, Building2, CheckCircle, AlertTriangle, Image as ImageIcon, Upload, Trash2, Clock } from 'lucide-react';
 import { apiFetch } from '../services/api';
+import { DIAS_SEMANA } from '../utils/constantes';
 
-const claseCampo = 'w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium text-slate-800 placeholder:text-slate-300 placeholder:font-normal';
+const claseCampo = 'w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium text-slate-800 placeholder:text-slate-300 placeholder:font-normal';
 
 const Tarjeta = ({ icono: Icono, titulo, children, className = '' }) => (
-  <div className={`bg-white border border-slate-200 rounded-2xl p-6 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] ${className}`}>
-    <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-100">
+  <div className={`bg-white border border-slate-200 rounded-xl p-4 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] ${className}`}>
+    <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
       <div className="p-2 bg-blue-50 rounded-lg text-blue-600"><Icono className="w-5 h-5" /></div>
-      <h2 className="text-lg font-bold text-slate-800">{titulo}</h2>
+      <h2 className="text-base font-bold text-slate-800">{titulo}</h2>
     </div>
     {children}
   </div>
@@ -78,8 +79,8 @@ const LogoGimnasio = ({ logoUrl, onCambio }) => {
   };
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-      <div className="w-28 h-28 rounded-2xl border border-dashed border-slate-300 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="w-28 h-28 rounded-xl border border-dashed border-slate-300 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
         {imagen ? <img src={imagen} alt="Logo del gimnasio" className="max-w-full max-h-full object-contain" />
           : <ImageIcon className="w-8 h-8 text-slate-300" />}
       </div>
@@ -88,25 +89,64 @@ const LogoGimnasio = ({ logoUrl, onCambio }) => {
         <div className="flex flex-wrap gap-2">
           <input ref={entrada} type="file" accept="image/png,image/jpeg" className="hidden" onChange={(e) => subir(e.target.files?.[0])} />
           <button type="button" onClick={() => entrada.current?.click()} disabled={procesando}
-            className="px-4 py-2 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white flex items-center gap-2">
+            className="px-3 py-1.5 rounded-xl text-sm font-semibold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white flex items-center gap-2">
             <Upload className="w-4 h-4" /> {procesando ? 'Guardando...' : logoUrl ? 'Cambiar logo' : 'Subir logo'}
           </button>
           {logoUrl && (
             <button type="button" disabled={procesando}
               onClick={() => window.confirm('¿Quitar el logo? Los PDF salen sin logo.') && enviar(() => apiFetch('/configuracion/gimnasio/logo', { method: 'DELETE' }))}
-              className="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-2">
+              className="px-3 py-1.5 rounded-xl text-sm font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-2">
               <Trash2 className="w-4 h-4" /> Quitar
             </button>
           )}
         </div>
-        {error && <p className="text-sm text-rose-600 font-medium">{error}</p>}
+        {error && <p className="text-sm text-rose-700 font-medium">{error}</p>}
       </div>
     </div>
   );
 };
 
 /**
- * Datos del gimnasio: logo y contacto. Van en el encabezado de los PDF (comprobantes y rutinas).
+ * Horario de cada día de la semana. Un día cerrado no cuenta en las métricas (no es que no vino nadie: no se podía venir).
+ */
+const Horarios = ({ horarios = [], onCambio }) => {
+  const delDia = (dia) => horarios.find(h => h.dia === dia) || { dia, abre: null, cierra: null };
+  const cambiar = (dia, cambios) => onCambio(DIAS_SEMANA.map(({ enum: d }) => (d === dia ? { ...delDia(d), ...cambios } : delDia(d))));
+
+  return (
+    <div className="space-y-2">
+      <p className="text-sm text-slate-600">Los días que no abre no aparecen en las métricas de asistencia, y el promedio de visitas se calcula solo sobre los días abiertos.</p>
+      <div className="divide-y divide-slate-100">
+        {DIAS_SEMANA.map(({ enum: dia, nombre }) => {
+          const h = delDia(dia);
+          const abierto = Boolean(h.abre && h.cierra);
+          return (
+            <div key={dia} className="flex flex-wrap items-center gap-3 py-2">
+              <span className="w-24 text-sm font-semibold text-slate-700">{nombre}</span>
+              <label className="flex items-center gap-2 text-sm text-slate-600 w-24">
+                <input type="checkbox" checked={abierto} className="w-4 h-4 accent-blue-600"
+                  onChange={(e) => cambiar(dia, e.target.checked ? { abre: '08:00', cierra: '22:00' } : { abre: null, cierra: null })} />
+                {abierto ? 'Abierto' : 'Cerrado'}
+              </label>
+              {abierto && (
+                <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <input type="time" value={h.abre} aria-label={`${nombre}: abre`} onChange={(e) => cambiar(dia, { abre: e.target.value })}
+                    className="px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-800" />
+                  <span>a</span>
+                  <input type="time" value={h.cierra} aria-label={`${nombre}: cierra`} onChange={(e) => cambiar(dia, { cierra: e.target.value })}
+                    className="px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-800" />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Datos del gimnasio: logo, contacto (van en el encabezado de los PDF de comprobantes y rutinas) y horario.
  */
 const DatosGimnasio = () => {
   const [datos, setDatos] = useState(null);
@@ -134,7 +174,7 @@ const DatosGimnasio = () => {
       const cuerpo = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(cuerpo.error || 'No se pudieron guardar los datos.');
       setDatos(cuerpo);
-      setMensaje({ texto: 'Datos guardados: ya salen en los PDF.', tipo: 'ok' });
+      setMensaje({ texto: 'Datos guardados: ya salen en los PDF y el horario se usa en las métricas.', tipo: 'ok' });
       setTimeout(() => setMensaje((m) => (m.tipo === 'ok' ? { texto: '', tipo: '' } : m)), 4000);
     } catch (err) {
       setMensaje({ texto: err.message, tipo: 'error' });
@@ -143,24 +183,24 @@ const DatosGimnasio = () => {
     }
   };
 
-  if (error) return <div className="p-8 text-center text-rose-600 font-medium">{error}</div>;
-  if (!datos) return <div className="p-8 text-center text-slate-500">Cargando datos del gimnasio...</div>;
+  if (error) return <div className="p-5 text-center text-rose-700 font-medium">{error}</div>;
+  if (!datos) return <div className="p-5 text-center text-slate-500">Cargando datos del gimnasio...</div>;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-8">
-      <div className="flex justify-between items-start gap-4">
+    <div className="max-w-5xl mx-auto space-y-4 pb-5">
+      <div className="flex justify-between items-start gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 mb-1">Datos del gimnasio</h1>
-          <p className="text-sm text-slate-500">Logo y contacto. Van en los comprobantes y rutinas en PDF.</p>
+          <h1 className="text-xl font-bold text-slate-800 mb-1">Datos del gimnasio</h1>
+          <p className="text-sm text-slate-500">Logo y contacto, que van en los comprobantes y rutinas en PDF, y el horario del gimnasio.</p>
         </div>
         <button onClick={guardar} disabled={guardando}
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors shadow-xs shrink-0">
+          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-1.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors shadow-xs shrink-0">
           <Save className="w-4 h-4" /> {guardando ? 'Guardando...' : 'Guardar Cambios'}
         </button>
       </div>
 
       {mensaje.texto && (
-        <div className={`p-4 rounded-xl text-sm font-medium flex items-center gap-2 ${mensaje.tipo === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`} role="status">
+        <div className={`p-3 rounded-xl text-sm font-medium flex items-center gap-2 ${mensaje.tipo === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`} role="status">
           {mensaje.tipo === 'ok' ? <CheckCircle className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />} {mensaje.texto}
         </div>
       )}
@@ -171,11 +211,11 @@ const DatosGimnasio = () => {
       </Tarjeta>
 
       <Tarjeta icono={Building2} titulo="Datos y contacto">
-        <div className="space-y-4">
+        <div className="space-y-3">
           <Campo etiqueta="Nombre">
             <input value={datos.nombre || ''} maxLength={80} onChange={(e) => cambiar('nombre', e.target.value)} className={claseCampo} />
           </Campo>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Campo etiqueta="Dirección">
               <input value={datos.direccion || ''} maxLength={150} placeholder="Av. Corrientes 1234" onChange={(e) => cambiar('direccion', e.target.value)} className={claseCampo} />
             </Campo>
@@ -196,6 +236,10 @@ const DatosGimnasio = () => {
             </Campo>
           </div>
         </div>
+      </Tarjeta>
+
+      <Tarjeta icono={Clock} titulo="Horario">
+        <Horarios horarios={datos.horarios} onCambio={(horarios) => cambiar('horarios', horarios)} />
       </Tarjeta>
     </div>
   );

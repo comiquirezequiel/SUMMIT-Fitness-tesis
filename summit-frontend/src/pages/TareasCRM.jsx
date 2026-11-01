@@ -21,7 +21,7 @@ const ESTADOS_RESUELTA = {
 const textoVence = (vence) => {
   const dias = diasHasta(vence);
   if (dias === 0) return { texto: 'Para hoy', clase: 'text-blue-700' };
-  if (dias < 0) return { texto: `Atrasada (era para el ${formatFecha(vence)})`, clase: 'text-rose-600' };
+  if (dias < 0) return { texto: `Atrasada (era para el ${formatFecha(vence)})`, clase: 'text-rose-700' };
   return { texto: `Para el ${formatFecha(vence)}`, clase: 'text-slate-500' };
 };
 
@@ -61,12 +61,12 @@ const NuevaTareaModal = ({ onClose, onCreada }) => {
           <Plus className="w-4 h-4" /> {procesando ? 'Guardando...' : 'Crear tarea'}
         </button>
       </>}>
-      <form id="form-tarea" onSubmit={guardar} className="space-y-4">
+      <form id="form-tarea" onSubmit={guardar} className="space-y-3">
         <Campo label="Socio" required>
           {socio ? (
-            <div className="flex items-center justify-between gap-2 px-3 py-2.5 border border-slate-200 rounded-lg bg-slate-50 text-sm">
+            <div className="flex items-center justify-between gap-2 px-3 py-1.5 border border-slate-200 rounded-lg bg-slate-50 text-sm">
               <span className="font-semibold text-slate-800">{socio.nombreCompleto} <span className="font-normal text-slate-500">· DNI {socio.dni}</span></span>
-              <button type="button" onClick={() => setSocio(null)} className="text-slate-400 hover:text-slate-600" aria-label="Elegir otro socio"><X className="w-4 h-4" /></button>
+              <button type="button" onClick={() => setSocio(null)} className="text-slate-500 hover:text-slate-600" aria-label="Elegir otro socio"><X className="w-4 h-4" /></button>
             </div>
           ) : (
             <>
@@ -75,7 +75,7 @@ const NuevaTareaModal = ({ onClose, onCreada }) => {
                 <ul className="mt-1 border border-slate-200 rounded-lg divide-y divide-slate-100">
                   {resultados.map(s => (
                     <li key={s.idSocio}>
-                      <button type="button" onClick={() => setSocio(s)} className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50">
+                      <button type="button" onClick={() => setSocio(s)} className="w-full text-left px-3 py-1.5 text-sm hover:bg-slate-50">
                         {s.nombreCompleto} <span className="text-slate-500">· DNI {s.dni}</span>
                       </button>
                     </li>
@@ -92,7 +92,7 @@ const NuevaTareaModal = ({ onClose, onCreada }) => {
         <Campo label="Para cuándo">
           <input type="date" min={hoyIso()} value={datos.vence} onChange={e => setDatos(d => ({ ...d, vence: e.target.value }))} className={inputClass} />
         </Campo>
-        {error && <p className="text-sm text-rose-600 font-medium">{error}</p>}
+        {error && <p className="text-sm text-rose-700 font-medium">{error}</p>}
       </form>
     </Modal>
   );
@@ -153,11 +153,11 @@ const TareasCRM = () => {
   const atrasadas = vista === 'pendientes' ? (tareas || []).filter(t => diasHasta(t.vence) < 0).length : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <CheckCircle2 className="w-6 h-6 text-blue-600" /> Tareas de seguimiento
+          <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-blue-600" /> Tareas de seguimiento
           </h1>
           <p className="text-sm text-slate-500 mt-1">A quién hay que contactar y por qué. Las automáticas se cierran solas cuando el socio renueva, trae el apto o vuelve.</p>
           {vista === 'pendientes' && tareas && (
@@ -168,10 +168,10 @@ const TareasCRM = () => {
           )}
         </div>
         <div className="flex gap-2">
-          <button onClick={() => cargar(true)} className="flex items-center gap-2 px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 bg-white">
+          <button onClick={() => cargar(true)} className="flex items-center gap-2 px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 bg-white">
             <RefreshCw className={`w-4 h-4 ${cargando ? 'animate-spin' : ''}`} /> Actualizar
           </button>
-          <button onClick={() => setNueva(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 shadow-xs">
+          <button onClick={() => setNueva(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 shadow-xs">
             <Plus className="w-4 h-4" /> Nueva tarea
           </button>
         </div>
@@ -180,15 +180,15 @@ const TareasCRM = () => {
       {error && <div className="p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>}
 
       <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
-        <div className="px-5 pt-4 border-b border-slate-200 flex gap-1" role="tablist">
+        <div className="px-4 pt-3 border-b border-slate-200 flex gap-1" role="tablist">
           {[['pendientes', 'Pendientes'], ['resueltas', 'Resueltas']].map(([id, texto]) => (
             <button key={id} role="tab" aria-selected={vista === id} onClick={() => { setVista(id); setResolviendo(null); }}
-              className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px ${vista === id ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+              className={`px-3 py-1.5 text-sm font-semibold border-b-2 -mb-px ${vista === id ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
               {texto}
             </button>
           ))}
         </div>
-        <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row gap-3 md:items-center justify-between">
+        <div className="p-3 border-b border-slate-200 flex flex-col md:flex-row gap-3 md:items-center justify-between">
           <div className="flex flex-wrap gap-2">
             <button onClick={() => setTipo(null)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${!tipo ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200'}`}>Todas</button>
@@ -200,14 +200,14 @@ const TareasCRM = () => {
             ))}
           </div>
           <div className="relative md:w-72">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar por socio o tarea..."
-              className="pl-9 pr-4 py-2 w-full border border-slate-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-100" />
+              className="pl-8 pr-3 py-1.5 w-full border border-slate-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-100" />
           </div>
         </div>
 
         {tareas && visibles.length === 0 ? (
-          <div className="p-12 text-center text-slate-500 text-sm">
+          <div className="p-6 text-center text-slate-500 text-sm">
             {tareas.length === 0
               ? (vista === 'pendientes' ? '¡Todo al día! No hay socios para contactar por ahora.' : 'Todavía no hay tareas resueltas.')
               : 'Ninguna tarea coincide con el filtro.'}
@@ -219,11 +219,11 @@ const TareasCRM = () => {
               const vence = textoVence(t.vence);
               const estado = ESTADOS_RESUELTA[t.estado];
               return (
-                <li key={t.idTarea} className="p-4 sm:px-5">
+                <li key={t.idTarea} className="p-3 sm:px-4">
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold border ${tipoTarea.clase}`}>{tipoTarea.texto}</span>
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border ${tipoTarea.clase}`}>{tipoTarea.texto}</span>
                         <span className="font-semibold text-slate-800">{t.nombreSocio}</span>
                         <span className="text-xs text-slate-500">DNI {t.dniSocio}{t.telefonoSocio ? ` · ${t.telefonoSocio}` : ''}</span>
                       </div>
@@ -232,7 +232,7 @@ const TareasCRM = () => {
                         <p className={`text-xs mt-1 font-medium ${vence.clase}`}>{vence.texto}{t.creadaPor ? ` · cargada por ${t.creadaPor}` : ''}</p>
                       ) : (
                         <p className="text-xs mt-1 text-slate-500">
-                          <span className={`inline-flex px-1.5 py-0.5 rounded-sm border text-[11px] font-semibold mr-1.5 ${estado?.clase}`}>{estado?.texto}</span>
+                          <span className={`inline-flex px-1.5 py-0.5 rounded-sm border text-xs font-semibold mr-1.5 ${estado?.clase}`}>{estado?.texto}</span>
                           {t.canal ? `${textoCanal(t.canal)} · ` : ''}{t.fechaResolucion ? formatFechaHora(t.fechaResolucion) : ''}
                           {t.resueltaPor ? ` · ${t.resueltaPor}` : ''}{t.nota ? ` · ${t.nota}` : ''}
                         </p>
@@ -257,25 +257,25 @@ const TareasCRM = () => {
                     )}
                   </div>
                   {resolviendo?.idTarea === t.idTarea && (
-                    <div className="mt-3 p-3 rounded-lg bg-blue-50/50 border border-blue-100">
+                    <div className="mt-2 p-3 rounded-lg bg-blue-50/50 border border-blue-100">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-sm font-semibold text-slate-700">¿Cómo lo contactaste?</span>
                         <select value={resolviendo.canal} onChange={e => setResolviendo(r => ({ ...r, canal: e.target.value }))}
-                          className="px-2 py-2 border border-slate-200 rounded-lg text-sm bg-white" aria-label="Canal">
+                          className="px-2 py-1.5 border border-slate-200 rounded-lg text-sm bg-white" aria-label="Canal">
                           {CANALES.map(c => <option key={c.valor} value={c.valor}>{c.texto}</option>)}
                         </select>
                         <input value={resolviendo.nota} maxLength={300} placeholder="¿Qué te dijo? (opcional)"
                           onChange={e => setResolviendo(r => ({ ...r, nota: e.target.value }))}
-                          className="flex-1 min-w-48 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
+                          className="flex-1 min-w-48 px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-white" />
                         <button onClick={() => resolver(t, 'HECHA')} disabled={resolviendo.enviando}
-                          className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold disabled:opacity-50">
+                          className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold disabled:opacity-50">
                           {resolviendo.enviando ? 'Guardando...' : 'Marcar como hecha'}
                         </button>
-                        <button onClick={() => setResolviendo(null)} className="px-3 py-2 rounded-lg border border-slate-200 text-slate-600 text-sm font-semibold bg-white">
+                        <button onClick={() => setResolviendo(null)} className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-sm font-semibold bg-white">
                           Todavía no
                         </button>
                       </div>
-                      {resolviendo.error && <p className="text-xs text-rose-600 font-medium mt-1">{resolviendo.error}</p>}
+                      {resolviendo.error && <p className="text-xs text-rose-700 font-medium mt-1">{resolviendo.error}</p>}
                     </div>
                   )}
                 </li>

@@ -8,7 +8,7 @@ import { ejerciciosDelMusculo } from '../components/entrenamiento/musculos';
 const EjercicioCatalogo = ({ ejercicio: e }) => (
   <li className="p-3">
     <p className="font-semibold text-slate-800 leading-snug">{e.nombre}</p>
-    <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wide mt-0.5">{nombreGrupo(e.grupoMuscular)}</p>
+    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mt-0.5">{nombreGrupo(e.grupoMuscular)}</p>
     {e.descripcion && <p className="text-sm text-slate-600 leading-relaxed mt-1">{e.descripcion}</p>}
     {e.patologiasContraindicadas && (
       <p className="text-xs text-amber-800 mt-1.5 flex items-start gap-1">
@@ -29,14 +29,14 @@ const Entrenamiento = () => {
 
   // Debajo de la explicación del músculo: los ejercicios que el gimnasio tiene cargados para él
   const ejerciciosDe = (idMusculo) => {
-    if (catalogo.cargando) return <p className="text-sm text-slate-500 mt-4">Cargando el catálogo...</p>;
-    if (catalogo.error) return <p className="text-sm text-rose-600 mt-4">{catalogo.error}</p>;
+    if (catalogo.cargando) return <p className="text-sm text-slate-500 mt-3">Cargando el catálogo...</p>;
+    if (catalogo.error) return <p className="text-sm text-rose-700 mt-3">{catalogo.error}</p>;
     const { directos, delGrupo, grupo } = ejerciciosDelMusculo(catalogo.datos, idMusculo);
     if (directos.length + delGrupo.length === 0) {
-      return <p className="text-sm text-slate-500 mt-4">El catálogo del gimnasio todavía no tiene ejercicios para este músculo.</p>;
+      return <p className="text-sm text-slate-500 mt-3">El catálogo del gimnasio todavía no tiene ejercicios para este músculo.</p>;
     }
     return (
-      <div className="mt-5 space-y-4">
+      <div className="mt-3 space-y-3">
         {directos.length > 0 && (
           <section>
             <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-1.5">En el catálogo del gimnasio</h3>
@@ -54,14 +54,14 @@ const Entrenamiento = () => {
   };
 
   return (
-    <div className="space-y-4 w-full pb-8">
+    <div className="space-y-3 w-full pb-5">
       {/* Header */}
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 shrink-0">
+        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 shrink-0">
           <Dumbbell className="w-5 h-5" />
         </div>
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-slate-800">Catálogo de Ejercicios y Biomecánica</h1>
+          <h1 className="text-xl font-bold text-slate-800">Catálogo de Ejercicios y Biomecánica</h1>
           <p className="text-sm text-slate-500">
             Tocá una zona del cuerpo y después el músculo para ver su función, los ejercicios clave y los que tiene cargados el gimnasio.
           </p>

@@ -24,7 +24,7 @@ const BuscadorSocio = ({ socios, cargando, error, seleccionado, onSeleccionar, d
   if (seleccionado) {
     return (
       <div className="flex items-center gap-3 p-3 bg-blue-50/60 border border-blue-100 rounded-xl">
-        <div className="w-10 h-10 rounded-full bg-blue-100 border border-blue-200 text-blue-700 font-semibold text-xs flex items-center justify-center shrink-0">
+        <div className="w-8 h-8 rounded-full bg-blue-100 border border-blue-200 text-blue-700 font-semibold text-xs flex items-center justify-center shrink-0">
           {seleccionado.nombreCompleto.substring(0, 2).toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
@@ -73,11 +73,11 @@ const BuscadorSocio = ({ socios, cargando, error, seleccionado, onSeleccionar, d
           onKeyDown={teclas}
           placeholder={placeholder}
           aria-label="Buscar socio"
-          className="w-full pl-9 pr-10 py-2.5 tactil:min-h-11 bg-slate-50 border border-slate-200 rounded-xl text-sm tactil:text-base focus:outline-hidden focus:ring-2 focus:ring-blue-100 focus:border-blue-400 focus:bg-white"
+          className="w-full pl-8 pr-10 py-1.5 tactil:min-h-11 bg-slate-50 border border-slate-200 rounded-xl text-sm tactil:text-base focus:outline-hidden focus:ring-2 focus:ring-blue-100 focus:border-blue-400 focus:bg-white"
         />
         {cargando && <Loader2 className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 animate-spin" />}
         {!cargando && texto && (
-          <button onClick={() => setTexto('')} className="absolute right-0 top-0 h-full w-10 tactil:w-11 flex items-center justify-center text-slate-400 hover:text-slate-600" aria-label="Borrar búsqueda">
+          <button onClick={() => setTexto('')} className="absolute right-0 top-0 h-full w-8 tactil:w-11 flex items-center justify-center text-slate-500 hover:text-slate-600" aria-label="Borrar búsqueda">
             <X className="w-4 h-4" />
           </button>
         )}
@@ -85,11 +85,11 @@ const BuscadorSocio = ({ socios, cargando, error, seleccionado, onSeleccionar, d
       {abierto && (
         <div className="absolute z-30 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
           {error ? (
-            <p className="px-4 py-3 text-sm text-rose-600">{error}</p>
+            <p className="px-3 py-2 text-sm text-rose-700">{error}</p>
           ) : cargando ? (
-            <p className="px-4 py-3 text-sm text-slate-500">Cargando socios...</p>
+            <p className="px-3 py-2 text-sm text-slate-500">Cargando socios...</p>
           ) : resultados.length === 0 ? (
-            <p className="px-4 py-3 text-sm text-slate-500">
+            <p className="px-3 py-2 text-sm text-slate-500">
               {socios.length === 0 ? 'No hay socios registrados.' : 'Ningún socio coincide con la búsqueda.'}
             </p>
           ) : (
@@ -100,14 +100,14 @@ const BuscadorSocio = ({ socios, cargando, error, seleccionado, onSeleccionar, d
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => elegir(s)}
                     onMouseEnter={() => setActivo(i)}
-                    className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between gap-3 ${i === activo ? 'bg-blue-50' : ''}`}
+                    className={`w-full text-left px-3 py-1.5 text-sm flex items-center justify-between gap-3 ${i === activo ? 'bg-blue-50' : ''}`}
                   >
                     <span className="min-w-0">
                       <span className="font-medium text-slate-800 block truncate">{s.nombreCompleto}</span>
                       <span className="text-xs text-slate-500">DNI {s.dni}{detalle ? ` · ${detalle(s)}` : ''}</span>
                     </span>
                     {s.estado && s.estado !== 'ACTIVO' && (
-                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-sm bg-slate-100 text-slate-500 shrink-0">{s.estado}</span>
+                      <span className="text-xs font-bold uppercase px-2 py-0.5 rounded-sm bg-slate-100 text-slate-600 shrink-0">{s.estado}</span>
                     )}
                   </button>
                 </li>

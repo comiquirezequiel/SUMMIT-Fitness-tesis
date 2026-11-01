@@ -19,7 +19,7 @@ const capitalizar = (texto) => (texto ? texto.charAt(0).toUpperCase() + texto.sl
 
 const Dato = ({ etiqueta, children }) => (
   <div>
-    <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{etiqueta}</dt>
+    <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{etiqueta}</dt>
     <dd className="text-sm text-slate-800 mt-0.5">{children}</dd>
   </div>
 );
@@ -88,10 +88,10 @@ const DetalleComprobante = ({ idComprobante, onClose, onCambio }) => {
   return (
     <Modal titulo={c ? nombreComprobante(c) : 'Comprobante'} ancho="max-w-2xl" onClose={onClose}
       subtitulo={c ? `${c.nombreSocio} · ${formatMoneda(c.total)}` : ''}>
-      {!c && !error && <p className="text-sm text-slate-400">Cargando…</p>}
-      {error && <p className="mb-4 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</p>}
+      {!c && !error && <p className="text-sm text-slate-500">Cargando…</p>}
+      {error && <p className="mb-3 p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</p>}
       {c && (
-        <div className="space-y-5">
+        <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold border ${estado.clase}`}>{estado.texto}</span>
             {c.anulada && <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold border bg-slate-100 text-slate-600 border-slate-200">Anulada</span>}
@@ -106,7 +106,7 @@ const DetalleComprobante = ({ idComprobante, onClose, onCambio }) => {
             </p>
           )}
 
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {c.cae && <Dato etiqueta="CAE">{c.cae} · vence el {formatFecha(c.caeVencimiento)}</Dato>}
             {c.fecha && <Dato etiqueta="Fecha de emisión">{formatFecha(c.fecha)}</Dato>}
             <Dato etiqueta="Receptor">
@@ -123,7 +123,7 @@ const DetalleComprobante = ({ idComprobante, onClose, onCambio }) => {
 
           {c.observaciones && (
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">Respuesta de ARCA</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Respuesta de ARCA</p>
               <pre className="text-xs text-slate-600 bg-slate-50 rounded-lg p-3 whitespace-pre-wrap font-sans">{c.observaciones}</pre>
             </div>
           )}
@@ -131,7 +131,7 @@ const DetalleComprobante = ({ idComprobante, onClose, onCambio }) => {
           {documento && <BotonesPdf documento={documento} />}
 
           {accion === 'anular' && (
-            <form className="p-4 rounded-xl border border-rose-100 bg-rose-50/40 space-y-3"
+            <form className="p-3 rounded-xl border border-rose-100 bg-rose-50/40 space-y-3"
               onSubmit={(e) => { e.preventDefault(); ejecutar(() => anularFactura(c.idComprobante, motivo)); }}>
               <p className="text-sm text-slate-700">
                 Se emite una nota de crédito {c.letra} por el total, que anula esta factura ante ARCA. No cambia la caja ni la
@@ -152,7 +152,7 @@ const DetalleComprobante = ({ idComprobante, onClose, onCambio }) => {
           )}
 
           {accion === 'facturar' && (
-            <form className="p-4 rounded-xl border border-blue-100 bg-blue-50/40 space-y-3"
+            <form className="p-3 rounded-xl border border-blue-100 bg-blue-50/40 space-y-3"
               onSubmit={(e) => { e.preventDefault(); ejecutar(() => facturarCobro(c.idPago, conDni)); }}>
               <p className="text-sm text-slate-700">Se emite una factura nueva para el mismo cobro.</p>
               <label className="flex items-center gap-2 text-sm text-slate-700">
@@ -177,7 +177,7 @@ const DetalleComprobante = ({ idComprobante, onClose, onCambio }) => {
                 </button>
               )}
               {puedeAnular && (
-                <button className={`${botonSecundario} text-rose-600 border-rose-200 hover:bg-rose-50`} onClick={() => setAccion('anular')}>
+                <button className={`${botonSecundario} text-rose-700 border-rose-200 hover:bg-rose-50`} onClick={() => setAccion('anular')}>
                   <Ban className="w-4 h-4" /> Anular con nota de crédito
                 </button>
               )}

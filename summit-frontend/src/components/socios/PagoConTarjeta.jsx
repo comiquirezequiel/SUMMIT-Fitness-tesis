@@ -33,7 +33,7 @@ const FormularioDePrueba = ({ total, onCobrar }) => {
     }
   };
   return (
-    <form onSubmit={cobrar} className="space-y-4">
+    <form onSubmit={cobrar} className="space-y-3">
       <p className="flex items-start gap-2 p-3 rounded-xl bg-violet-50 border border-violet-200 text-sm text-violet-800">
         <FlaskConical className="w-4 h-4 shrink-0 mt-0.5" />
         Simulador de Mercado Pago: no se cobra de verdad. El titular decide el resultado, como las tarjetas de prueba de Mercado Pago.
@@ -82,16 +82,16 @@ const PagoConTarjeta = ({ pedido, total, onListo, onVolver, onTotalCambiado }) =
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <p className="text-sm text-slate-600">Total a cobrar: <span className="font-bold text-slate-800">{formatMoneda(total)}</span></p>
       {config?.modo === 'SIMULADOR' && <FormularioDePrueba total={total} onCobrar={cobrar} />}
       {config?.modo === 'MERCADO_PAGO' && (
-        <Suspense fallback={<p className="text-sm text-slate-400">Cargando el formulario de Mercado Pago…</p>}>
+        <Suspense fallback={<p className="text-sm text-slate-500">Cargando el formulario de Mercado Pago…</p>}>
           <FormularioMercadoPago publicKey={config.publicKey} total={total} onCobrar={cobrar} />
         </Suspense>
       )}
-      {!config && !error && <p className="text-sm text-slate-400">Preparando el cobro con tarjeta…</p>}
-      {error && <p className="text-sm text-rose-600 font-medium" role="alert">{error}</p>}
+      {!config && !error && <p className="text-sm text-slate-500">Preparando el cobro con tarjeta…</p>}
+      {error && <p className="text-sm text-rose-700 font-medium" role="alert">{error}</p>}
       <button type="button" onClick={onVolver} className={`${botonSecundario} w-full justify-center`}>Elegir otro medio de pago</button>
     </div>
   );

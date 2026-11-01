@@ -7,9 +7,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  *
  * Uso: const { datos, cargando, error, cargar } = useCarga(() => obtenerInactividad(minDias), [minDias]);
  * cargar() vuelve a pedir los datos (por ejemplo, después de guardar algo).
+ * version cuenta las respuestas que llegaron: sirve de key para volver a animar lo que muestra los datos nuevos.
  */
 export const useCarga = (pedir, dependencias, inicial = null) => {
   const [datos, setDatos] = useState(inicial);
+  const [version, setVersion] = useState(0);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const ultimo = useRef(0);
@@ -22,6 +24,7 @@ export const useCarga = (pedir, dependencias, inicial = null) => {
       const nuevos = await pedir();
       if (numero === ultimo.current) {
         setDatos(nuevos);
+        setVersion(v => v + 1);
         setError('');
       }
     } catch (e) {
@@ -33,5 +36,5 @@ export const useCarga = (pedir, dependencias, inicial = null) => {
 
   useEffect(() => { cargar(); }, [cargar]);
 
-  return { datos, setDatos, cargando, error, setError, cargar };
+  return { datos, setDatos, cargando, error, setError, cargar, version };
 };

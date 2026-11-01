@@ -64,7 +64,7 @@ const PlanModal = ({ plan, onClose, onGuardado }) => {
         </button>
       </>}
     >
-      <form id="form-plan" onSubmit={guardar} className="grid grid-cols-2 gap-4">
+      <form id="form-plan" onSubmit={guardar} className="grid grid-cols-2 gap-3">
         <Campo label="Nombre del plan" required className="col-span-2">
           <input required maxLength={50} value={datos.nombrePlan} onChange={e => set('nombrePlan', e.target.value)} className={inputClass} />
         </Campo>
@@ -83,7 +83,7 @@ const PlanModal = ({ plan, onClose, onGuardado }) => {
             {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{textoFrecuencia(n)}</option>)}
           </select>
         </Campo>
-        {error && <p className="col-span-2 text-sm text-rose-600 font-medium">{error}</p>}
+        {error && <p className="col-span-2 text-sm text-rose-700 font-medium">{error}</p>}
       </form>
     </Modal>
   );
@@ -129,31 +129,31 @@ const Planes = () => {
   const activos = planes.filter(p => p.activo);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex justify-between items-start gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Planes</h1>
+          <h1 className="text-xl font-bold text-slate-800">Planes</h1>
           <p className="text-sm text-slate-500 mt-1">Gestión de planes y membresías</p>
         </div>
         {esAdmin && (
-          <button onClick={() => setModal({ plan: null })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-xs whitespace-nowrap">
+          <button onClick={() => setModal({ plan: null })} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-xs whitespace-nowrap">
             <Plus className="w-4 h-4" /> Nuevo plan
           </button>
         )}
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard title="Total planes" value={planes.length.toString()} icon={CreditCard} iconColor="text-blue-600" iconBg="bg-blue-50" />
-        <StatCard title="Planes activos" value={activos.length.toString()} icon={Tag} iconColor="text-emerald-600" iconBg="bg-emerald-50" />
+        <StatCard title="Planes activos" value={activos.length.toString()} icon={Tag} iconColor="text-emerald-700" iconBg="bg-emerald-50" />
         <StatCard title="Con límite semanal" value={activos.filter(p => p.vecesPorSemana).length.toString()} icon={CalendarDays} iconColor="text-purple-600" iconBg="bg-purple-50" />
-        <StatCard title="Membresías al día" value={socios.filter(s => s.membresiaAlDia).length.toString()} icon={Users} iconColor="text-rose-600" iconBg="bg-rose-50" />
+        <StatCard title="Membresías al día" value={socios.filter(s => s.membresiaAlDia).length.toString()} icon={Users} iconColor="text-rose-700" iconBg="bg-rose-50" />
       </div>
 
       {/* Barra de búsqueda */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-        <div className="flex flex-wrap gap-4 items-center">
+      <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs">
+        <div className="flex flex-wrap gap-3 items-center">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
             <input
@@ -161,12 +161,12 @@ const Planes = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar planes..."
-              className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-shadow"
+              className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-100 transition-shadow"
             />
           </div>
           <Filter className="w-4 h-4 text-slate-400" />
           <select value={tipo} onChange={e => setTipo(e.target.value)}
-            className="border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 bg-white">
+            className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-700 bg-white">
             <option value="TODOS">Todos los tipos</option>
             <option value="LIBRE">Pase libre</option>
             <option value="LIMITE">Con límite semanal</option>
@@ -180,7 +180,7 @@ const Planes = () => {
             />
             Mostrar inactivos
           </label>
-          <button onClick={exportar} className="border border-slate-200 rounded-lg px-4 py-2.5 text-sm font-medium text-slate-700 flex items-center gap-2 hover:bg-slate-50 ml-auto">
+          <button onClick={exportar} className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-700 flex items-center gap-2 hover:bg-slate-50 ml-auto">
             <Download className="w-4 h-4" /> Exportar
           </button>
           <button onClick={cargar} title="Actualizar" className="border border-slate-200 rounded-lg p-2.5 text-slate-500 hover:bg-slate-50 hover:text-slate-700">
@@ -193,38 +193,38 @@ const Planes = () => {
 
       {/* Grid de Planes */}
       {!cargando && planesFiltrados.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-500">No hay planes para mostrar.</div>
+        <div className="bg-white border border-slate-200 rounded-xl p-5 text-center text-slate-500">No hay planes para mostrar.</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {planesFiltrados.map(plan => (
-            <div key={plan.idPlan} className={`bg-white border rounded-xl p-5 shadow-xs transition-colors ${plan.activo ? 'border-slate-200 hover:border-blue-300' : 'border-dashed border-slate-300 opacity-70'}`}>
-              <div className="flex items-start justify-between mb-3 gap-2">
+            <div key={plan.idPlan} className={`bg-white border rounded-xl p-4 shadow-xs transition-colors ${plan.activo ? 'border-slate-200 hover:border-blue-300' : 'border-dashed border-slate-300 opacity-70'}`}>
+              <div className="flex items-start justify-between mb-2 gap-2">
                 <h3 className="font-bold text-slate-800">{plan.nombrePlan}</h3>
-                {!plan.activo && <span className="px-2 py-0.5 rounded-sm text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">INACTIVO</span>}
+                {!plan.activo && <span className="px-2 py-0.5 rounded-sm text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">INACTIVO</span>}
               </div>
 
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[11px] font-bold border mb-3 ${plan.vecesPorSemana ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-xs font-bold border mb-2 ${plan.vecesPorSemana ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
                 <CalendarDays className="w-3 h-3" /> {textoFrecuencia(plan.vecesPorSemana)}
               </span>
 
               <div className="mb-2">
-                <span className="text-2xl font-bold text-slate-800">{formatMoneda(plan.precioBase)}</span>
-                <span className="text-sm text-slate-400 ml-1">/ {plan.duracionDias} días</span>
+                <span className="text-xl font-bold text-slate-800">{formatMoneda(plan.precioBase)}</span>
+                <span className="text-sm text-slate-500 ml-1">/ {plan.duracionDias} días</span>
               </div>
-              {plan.descripcion && <p className="text-xs text-slate-500 mb-3">{plan.descripcion}</p>}
+              {plan.descripcion && <p className="text-xs text-slate-500 mb-2">{plan.descripcion}</p>}
 
-              <div className="flex items-center justify-between text-sm text-slate-600 mb-4">
+              <div className="flex items-center justify-between text-sm text-slate-600 mb-3">
                 <span>Membresías al día</span>
                 <span className="font-bold">{membresiasAlDia(plan)}</span>
               </div>
 
               {esAdmin && (
                 <div className="flex gap-2">
-                  <button onClick={() => setModal({ plan })} className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                  <button onClick={() => setModal({ plan })} className="flex-1 flex items-center justify-center gap-2 py-1.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
                     <Edit className="w-4 h-4" /> Editar plan
                   </button>
                   <button onClick={() => cambiarEstado(plan)} title={plan.activo ? 'Desactivar' : 'Reactivar'}
-                    className={`px-3 border rounded-lg transition-colors ${plan.activo ? 'border-slate-200 text-slate-500 hover:text-rose-600 hover:border-rose-200' : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'}`}>
+                    className={`px-3 border rounded-lg transition-colors ${plan.activo ? 'border-slate-200 text-slate-500 hover:text-rose-700 hover:border-rose-200' : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'}`}>
                     <Power className="w-4 h-4" />
                   </button>
                 </div>

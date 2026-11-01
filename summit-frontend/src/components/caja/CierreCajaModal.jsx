@@ -7,7 +7,7 @@ import { formatFechaHora, formatMoneda } from '../../utils/formato';
 import { textoMetodoPago } from '../../utils/constantes';
 
 const Fila = ({ texto, children, fuerte }) => (
-  <div className={`flex justify-between items-baseline gap-4 ${fuerte ? 'pt-2 border-t border-slate-200 font-bold text-slate-900' : 'text-slate-600'}`}>
+  <div className={`flex justify-between items-baseline gap-3 ${fuerte ? 'pt-2 border-t border-slate-200 font-bold text-slate-900' : 'text-slate-600'}`}>
     <span>{texto}</span>
     <span className={fuerte ? '' : 'font-semibold text-slate-800'}>{children}</span>
   </div>
@@ -88,9 +88,9 @@ const CierreCajaModal = ({ onClose, onCerrado }) => {
     return (
       <Modal titulo="Caja cerrada" subtitulo={`Turno del ${formatFechaHora(cierre.desde)} al ${formatFechaHora(cierre.hasta)}`} onClose={onClose}
         pie={<button type="button" onClick={onClose} className={botonPrimario}>Listo</button>}>
-        <div className="space-y-4">
+        <div className="space-y-3">
           <p className="flex items-center gap-2 text-emerald-700 font-semibold"><CheckCircle2 className="w-5 h-5" /> Cierre registrado</p>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2 text-sm">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2 text-sm">
             <Fila texto="Efectivo esperado">{formatMoneda(cierre.efectivoEsperado)}</Fila>
             <Fila texto="Efectivo contado">{formatMoneda(cierre.efectivoContado)}</Fila>
             <Fila texto="Diferencia"><span className={dif.clase}>{dif.texto}</span></Fila>
@@ -115,9 +115,9 @@ const CierreCajaModal = ({ onClose, onCerrado }) => {
         </button>
       </>}>
       {!turno ? (
-        error ? <p className="text-sm text-rose-600 font-medium">{error}</p> : <p className="text-sm text-slate-500">Cargando...</p>
+        error ? <p className="text-sm text-rose-700 font-medium">{error}</p> : <p className="text-sm text-slate-500">Cargando...</p>
       ) : (
-        <form id="form-cierre" onSubmit={cerrar} className="space-y-5">
+        <form id="form-cierre" onSubmit={cerrar} className="space-y-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 mb-2">
               Movimientos del turno ({turno.cantidadCobros} {turno.cantidadCobros === 1 ? 'cobro' : 'cobros'}, {turno.cantidadGastos} {turno.cantidadGastos === 1 ? 'gasto' : 'gastos'})
@@ -125,7 +125,7 @@ const CierreCajaModal = ({ onClose, onCerrado }) => {
             <TablaMetodos metodos={turno.metodos} />
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2 text-sm">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2 text-sm">
             <Fila texto="Fondo con el que empezó la caja">{formatMoneda(turno.fondoInicial)}</Fila>
             <Fila texto="+ Cobros en efectivo">{formatMoneda(turno.ingresosEfectivo)}</Fila>
             <Fila texto="− Gastos en efectivo">{formatMoneda(turno.egresosEfectivo)}</Fila>
@@ -139,7 +139,7 @@ const CierreCajaModal = ({ onClose, onCerrado }) => {
             </p>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Campo label="Efectivo contado ($)" required ayuda={dif ? undefined : 'Contá los billetes y monedas de la caja'}>
               <input type="number" required min="0" step="0.01" inputMode="decimal" autoFocus value={datos.efectivoContado}
                 onChange={e => cambiar('efectivoContado', e.target.value)} className={inputClass} />
@@ -157,7 +157,7 @@ const CierreCajaModal = ({ onClose, onCerrado }) => {
               placeholder={hayDiferencia ? 'Ej. faltan $ 500: se le dio vuelto de más a un socio' : 'Opcional'}
               onChange={e => cambiar('observacion', e.target.value)} className={`${inputClass} resize-none`} />
           </Campo>
-          {error && <p className="text-sm text-rose-600 font-medium">{error}</p>}
+          {error && <p className="text-sm text-rose-700 font-medium">{error}</p>}
         </form>
       )}
     </Modal>

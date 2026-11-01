@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Users, UserPlus, Save, Power, KeyRound } from 'lucide-react';
 import Modal from '../components/Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../components/Campo';
+import Encabezado from '../components/Encabezado';
 import RestablecerPasswordModal from '../components/RestablecerPasswordModal';
 import { apiFetch } from '../services/api';
 import { usuarioActual } from '../utils/formato';
@@ -50,7 +51,7 @@ const NuevoMiembroModal = ({ onClose, onGuardado }) => {
           <Save className="w-4 h-4" /> {guardando ? 'Guardando...' : 'Crear usuario'}
         </button>
       </>}>
-      <form id="form-miembro" onSubmit={guardar} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form id="form-miembro" onSubmit={guardar} className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Campo label="Nombre completo" required className="md:col-span-2">
           <input required minLength={3} value={datos.nombreCompleto} onChange={e => set('nombreCompleto', e.target.value)} className={inputClass} />
         </Campo>
@@ -71,15 +72,18 @@ const NuevoMiembroModal = ({ onClose, onGuardado }) => {
         <Campo label="Contraseña inicial" required ayuda="Mínimo 6 caracteres. Al entrar por primera vez, elige una propia." className="md:col-span-2">
           <input type="text" required minLength={6} value={datos.password} onChange={e => set('password', e.target.value)} className={`${inputClass} font-mono`} />
         </Campo>
-        {error && <p className="md:col-span-2 text-sm text-rose-600 font-medium">{error}</p>}
+        {error && <p className="md:col-span-2 text-sm text-rose-700 font-medium">{error}</p>}
       </form>
     </Modal>
   );
 };
 
+/**
+ * Equipo (pestaña de Gestión de personal): quién entra al sistema, con qué rol, y las altas, bajas y contraseñas.
+ */
 const AjustesEquipo = () => {
   const usuario = usuarioActual();
-  const [miembros, setMiembros] = useState([]);
+  const [miembros, setMiembros] = useState(null); // null: todavía cargando
   const [error, setError] = useState('');
   const [modalAbierto, setModalAbierto] = useState(false);
   const [restableciendo, setRestableciendo] = useState(null); // miembro al que se le da una contraseña temporal
@@ -93,6 +97,7 @@ const AjustesEquipo = () => {
       setError('');
     } catch {
       setError('No se pudo cargar el equipo.');
+      setMiembros((m) => m || []);
     }
   }, []);
 
@@ -111,57 +116,50 @@ const AjustesEquipo = () => {
   const esAdmin = usuario?.rol === 'ADMIN';
 
   return (
-    <div className="space-y-6 w-full pb-8 relative">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8 gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
-            <Users className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Equipo</h1>
-            <p className="text-sm text-slate-500">Administra los empleados y colaboradores de tu gimnasio</p>
-          </div>
-        </div>
-        {esAdmin && (
-          <button onClick={() => setModalAbierto(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors whitespace-nowrap">
+    <div className="space-y-3 w-full relative">
+      <Encabezado titulo="Equipo" icono={Users} subtitulo="Los empleados y colaboradores que entran al sistema, con su rol"
+        acciones={esAdmin && (
+          <button onClick={() => setModalAbierto(true)} className={`${botonPrimario} whitespace-nowrap`}>
             <UserPlus className="w-4 h-4" /> Nuevo miembro
           </button>
-        )}
-      </div>
+        )} />
 
-      {error && <div className="p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>}
+      {error && <div className="px-3 py-2 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>}
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-6 border-b border-slate-200">
-          <h2 className="font-semibold text-slate-800 text-lg">Miembros del equipo ({miembros.length})</h2>
+        <div className="px-3 py-2 border-b border-slate-200">
+          <h2 className="font-semibold text-slate-800 text-sm">Miembros del equipo{miembros && ` (${miembros.length})`}</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-6 py-4 font-medium">Miembro</th>
-                <th className="px-6 py-4 font-medium">Email</th>
-                <th className="px-6 py-4 font-medium">Rol</th>
-                <th className="px-6 py-4 font-medium">Estado</th>
-                {esAdmin && <th className="px-6 py-4 font-medium text-right">Acciones</th>}
+                <th className="px-4 py-2.5 font-medium">Miembro</th>
+                <th className="px-4 py-2.5 font-medium">Email</th>
+                <th className="px-4 py-2.5 font-medium">Rol</th>
+                <th className="px-4 py-2.5 font-medium">Estado</th>
+                {esAdmin && <th className="px-4 py-2.5 font-medium text-right">Acciones</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {miembros.map(m => {
+              {!miembros && (
+                <tr><td colSpan={esAdmin ? 5 : 4} className="px-4 py-6 text-center text-sm text-slate-500">
+                  <span className="aparece-tarde" role="status" data-cargando>Cargando…</span>
+                </td></tr>
+              )}
+              {(miembros || []).map(m => {
                 const rol = ROLES[m.rol];
                 const estado = ESTADOS_USUARIO[m.estado] || ESTADOS_USUARIO.INACTIVO;
                 const esYo = m.idUsuario === usuario?.idUsuario;
                 return (
                   <tr key={m.idUsuario} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2.5">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-semibold text-xs shrink-0">
                           {m.nombreCompleto.substring(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-medium text-slate-800">{m.nombreCompleto} {esYo && <span className="text-xs text-slate-400">(vos)</span>}</p>
+                          <p className="font-medium text-slate-800">{m.nombreCompleto} {esYo && <span className="text-xs text-slate-500">(vos)</span>}</p>
                           <p className="text-xs text-slate-500">{m.telefono || `DNI ${m.dni}`}</p>
                           {m.debeCambiarPassword && (
                             <p className="text-xs text-amber-700 mt-0.5" title="Todavía no entró a elegir su propia contraseña">Con contraseña temporal</p>
@@ -169,15 +167,15 @@ const AjustesEquipo = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-slate-600">{m.email}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2.5 text-slate-600">{m.email}</td>
+                    <td className="px-4 py-2.5">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${rol.clase}`}>{rol.texto}</span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2.5">
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold border ${estado.clase}`}>{estado.texto}</span>
                     </td>
                     {esAdmin && (
-                      <td className="px-6 py-4 text-right whitespace-nowrap">
+                      <td className="px-4 py-2.5 text-right whitespace-nowrap">
                         {!esYo && (
                           <button onClick={() => setRestableciendo(m)} title="Restablecer contraseña"
                             className="mr-2 p-2 rounded-lg border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 transition-colors">
@@ -186,7 +184,7 @@ const AjustesEquipo = () => {
                         )}
                         {!esYo && (
                           <button onClick={() => cambiarEstado(m)} title={m.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'}
-                            className={`p-2 rounded-lg border transition-colors ${m.estado === 'ACTIVO' ? 'border-slate-200 text-slate-500 hover:text-rose-600 hover:border-rose-200' : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'}`}>
+                            className={`p-2 rounded-lg border transition-colors ${m.estado === 'ACTIVO' ? 'border-slate-200 text-slate-500 hover:text-rose-700 hover:border-rose-200' : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'}`}>
                             <Power className="w-4 h-4" />
                           </button>
                         )}

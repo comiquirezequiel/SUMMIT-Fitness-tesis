@@ -56,3 +56,9 @@ ARCA_AMBIENTE=SIMULADOR
 # invertida no se puede usar sola). En el simulador no hacen falta.
 ARCA_CERTIFICADO=
 ARCA_CERTIFICADO_PASSWORD=
+
+# Datos de demostración (opcional): con DEMO=true y la base sin socios, al arrancar se cargan 6 meses simulados de
+# gimnasio (80 socios, 7 empleados, cobros, ingresos, gastos y caja). DEMO_PASSWORD es la contraseña de todos esos
+# usuarios. Después de cargarlos conviene volver a DEMO=false.
+DEMO=false
+DEMO_PASSWORD=

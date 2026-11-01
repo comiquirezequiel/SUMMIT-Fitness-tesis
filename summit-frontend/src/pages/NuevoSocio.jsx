@@ -233,23 +233,23 @@ const NuevoSocio = () => {
   };
 
   const StepIndicator = () => (
-    <div className="flex items-center justify-center gap-0 mb-8 overflow-x-auto">
+    <div className="flex items-center justify-center gap-0 mb-5 overflow-x-auto">
       {STEPS.map((label, idx) => (
         <Fragment key={idx}>
           <div className="flex flex-col items-center">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
               idx < step ? 'bg-blue-600 border-blue-600 text-white' :
               idx === step ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-200' :
-              'bg-white border-slate-200 text-slate-400'
+              'bg-white border-slate-200 text-slate-500'
             }`}>
               {idx < step ? <Check className="w-4 h-4" /> : idx + 1}
             </div>
-            <span className={`text-[10px] mt-1 font-medium whitespace-nowrap ${idx === step ? 'text-blue-600' : 'text-slate-400'}`}>
+            <span className={`text-xs mt-1 font-medium whitespace-nowrap ${idx === step ? 'text-blue-600' : 'text-slate-500'}`}>
               {label}
             </span>
           </div>
           {idx < STEPS.length - 1 && (
-            <div className={`h-0.5 w-8 sm:w-16 mx-1 mb-4 transition-all ${idx < step ? 'bg-blue-600' : 'bg-slate-200'}`} />
+            <div className={`h-0.5 w-8 sm:w-12 mx-1 mb-3 transition-all ${idx < step ? 'bg-blue-600' : 'bg-slate-200'}`} />
           )}
         </Fragment>
       ))}
@@ -260,7 +260,7 @@ const NuevoSocio = () => {
   if (resultado) {
     const Item = ({ ok, texto, detalle, accion }) => (
       <li className={`flex items-start gap-3 p-3 rounded-lg ${ok ? 'bg-emerald-50' : 'bg-amber-50'}`}>
-        {ok ? <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" /> : <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />}
+        {ok ? <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0" /> : <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />}
         <div>
           <p className={`font-semibold ${ok ? 'text-emerald-800' : 'text-amber-800'}`}>{texto}</p>
           {detalle && <p className={`text-sm ${ok ? 'text-emerald-700' : 'text-amber-700'}`}>{detalle}</p>}
@@ -271,12 +271,12 @@ const NuevoSocio = () => {
     const { cobro } = resultado;
     const aVerificar = cobro?.ok && cobro.pago.estado === 'PENDIENTE';
     return (
-      <div className="max-w-2xl mx-auto bg-white border border-slate-200 rounded-xl shadow-xs p-8 space-y-6">
+      <div className="max-w-2xl mx-auto bg-white border border-slate-200 rounded-xl shadow-xs p-5 space-y-4">
         <div className="text-center">
-          <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-3">
-            <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+          <div className="w-11 h-11 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-2">
+            <CheckCircle2 className="w-8 h-8 text-emerald-700" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-800">Socio registrado</h1>
+          <h1 className="text-xl font-bold text-slate-800">Socio registrado</h1>
           <p className="text-slate-500">{resultado.socio.nombreCompleto} · DNI {resultado.socio.dni}</p>
         </div>
         <ul className="space-y-2">
@@ -310,12 +310,12 @@ const NuevoSocio = () => {
           </div>
         )}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button onClick={() => navigate('/socios')} className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold">
+          <button onClick={() => navigate('/socios')} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold">
             Ver lista de socios
           </button>
           <button
             onClick={() => { setForm(FORM_INICIAL); setErrores({}); setResultado(null); setStep(0); }}
-            className="px-5 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-50"
+            className="px-4 py-1.5 border border-slate-200 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-50"
           >
             Registrar otro socio
           </button>
@@ -332,41 +332,41 @@ const NuevoSocio = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex justify-between items-start gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <UserPlus className="w-6 h-6 text-blue-600" /> Nuevo Socio
+          <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <UserPlus className="w-5 h-5 text-blue-600" /> Nuevo Socio
           </h1>
           <p className="text-sm text-slate-500">Completá los datos para registrar un nuevo socio</p>
         </div>
         <button
           onClick={() => navigate('/socios')}
-          className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 bg-white border border-slate-200 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
+          className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 bg-white border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors"
         >
           <X className="w-4 h-4" /> Cancelar
         </button>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl shadow-xs p-5 md:p-8">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-xs p-4 md:p-5">
         <StepIndicator />
 
         {/* PASO 1: Datos Personales */}
         {step === 0 && (
-          <div className="space-y-5">
-            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+          <div className="space-y-3">
+            <h2 className="text-base font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
               <User className="w-5 h-5 text-blue-500" /> Datos Personales
             </h2>
             {/* Foto (opcional): recepción la ve en cada ingreso */}
-            <div className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 bg-slate-50/60">
-              <div className="w-20 h-20 rounded-2xl overflow-hidden bg-blue-100 border border-blue-200 flex items-center justify-center shrink-0">
+            <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50/60">
+              <div className="w-20 h-20 rounded-xl overflow-hidden bg-blue-100 border border-blue-200 flex items-center justify-center shrink-0">
                 {urlFoto
                   ? <img src={urlFoto} alt="Foto del socio" className="w-full h-full object-cover" />
                   : <Camera className="w-7 h-7 text-blue-400" />}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-700">Foto <span className="font-normal text-slate-400">(opcional)</span></p>
+                <p className="text-sm font-semibold text-slate-700">Foto <span className="font-normal text-slate-500">(opcional)</span></p>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Para que recepción lo reconozca en cada ingreso. Se puede sacar después desde la ficha.
                 </p>
@@ -389,7 +389,7 @@ const NuevoSocio = () => {
                 onListo={(foto) => { update('foto', foto); setSacandoFoto(false); }}
                 onCerrar={() => setSacandoFoto(false)} />
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Campo label="Nombre" required error={errores.nombre}>
                 <input type="text" placeholder="Ej: Juan" value={form.nombre}
                   onChange={e => update('nombre', e.target.value)} className={inputClass} />
@@ -424,30 +424,30 @@ const NuevoSocio = () => {
 
         {/* PASO 2: Contacto y acceso */}
         {step === 1 && (
-          <div className="space-y-5">
-            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+          <div className="space-y-3">
+            <h2 className="text-base font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
               <Mail className="w-5 h-5 text-blue-500" /> Contacto y Acceso
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Campo label="Email" required error={errores.email}>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-300 absolute left-3 top-3" />
                   <input type="email" placeholder="correo@ejemplo.com" value={form.email}
-                    onChange={e => update('email', e.target.value)} className={`${inputClass} pl-9`} />
+                    onChange={e => update('email', e.target.value)} className={`${inputClass} pl-8`} />
                 </div>
               </Campo>
               <Campo label="Teléfono">
                 <div className="relative">
                   <Phone className="w-4 h-4 text-slate-300 absolute left-3 top-3" />
                   <input type="tel" placeholder="+54 9 11 1234 5678" value={form.telefono}
-                    onChange={e => update('telefono', e.target.value)} className={`${inputClass} pl-9`} />
+                    onChange={e => update('telefono', e.target.value)} className={`${inputClass} pl-8`} />
                 </div>
               </Campo>
               <Campo label="Domicilio">
                 <div className="relative">
                   <MapPin className="w-4 h-4 text-slate-300 absolute left-3 top-3" />
                   <input type="text" placeholder="Av. Siempreviva 742" value={form.domicilio}
-                    onChange={e => update('domicilio', e.target.value)} className={`${inputClass} pl-9`} />
+                    onChange={e => update('domicilio', e.target.value)} className={`${inputClass} pl-8`} />
                 </div>
               </Campo>
               <Campo label="Ciudad">
@@ -465,18 +465,18 @@ const NuevoSocio = () => {
 
         {/* PASO 3: Apto médico */}
         {step === 2 && (
-          <div className="space-y-6">
-            <div className="space-y-5">
-              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <h2 className="text-base font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
                 <HeartPulse className="w-5 h-5 text-blue-500" /> Certificado Médico (Apto Físico)
               </h2>
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
                 Sin un apto médico vigente (menos de 365 días) el socio no puede ingresar (Ley 5397).
                 Si todavía no lo trajo, podés cargarlo después desde su ficha.
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <Campo label="Archivo (PDF o imagen, máx. 5 MB)" error={errores.archivoApto} className="md:col-span-2">
-                  <label className="flex items-center gap-3 px-3 py-2.5 border border-dashed border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50">
+                  <label className="flex items-center gap-3 px-3 py-1.5 border border-dashed border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50">
                     <Upload className="w-4 h-4 text-slate-400" />
                     <span className="text-sm text-slate-600 truncate">
                       {form.archivoApto ? form.archivoApto.name : 'Seleccionar archivo...'}
@@ -491,7 +491,7 @@ const NuevoSocio = () => {
                       Leer el certificado con IA
                     </BotonIa>
                     <AvisoIaNoDisponible estado={estadoIa} />
-                    {errorIa && <p className="text-sm text-rose-600">{errorIa}</p>}
+                    {errorIa && <p className="text-sm text-rose-700">{errorIa}</p>}
                     {analisisIa && (
                       <ResultadoAnalisis analisis={analisisIa} acciones={<>
                         <button type="button" onClick={() => setAnalisisIa(null)} className={botonSecundario}>Descartar</button>
@@ -522,14 +522,14 @@ const NuevoSocio = () => {
 
         {/* PASO 4: Cobro. Su botón (abajo) registra al socio y le cobra de una vez */}
         {step === 3 && (
-          <div className="space-y-5">
-            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+          <div className="space-y-3">
+            <h2 className="text-base font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
               <Wallet className="w-5 h-5 text-blue-500" /> Cobro de la membresía
             </h2>
 
             {/* Quién es, para revisarlo antes de registrar */}
             <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <div className="w-11 h-11 rounded-xl overflow-hidden bg-blue-100 flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-xl overflow-hidden bg-blue-100 flex items-center justify-center shrink-0">
                 {urlFoto ? <img src={urlFoto} alt="" className="w-full h-full object-cover" /> : <User className="w-5 h-5 text-blue-400" />}
               </div>
               <div className="min-w-0 text-sm">
@@ -550,7 +550,7 @@ const NuevoSocio = () => {
               </label>
             </Campo>
 
-            <Campo label="Descuento habitual" ayuda="Se le propone en cada cobro. Los descuentos los arma el dueño en Membresías > Descuentos y reglas.">
+            <Campo label="Descuento habitual" ayuda="Se le propone en cada cobro. Los descuentos los arma el dueño en Ajustes > Configuración y reglas.">
               <select value={form.idDescuento} onChange={e => update('idDescuento', e.target.value)} className={inputClass}>
                 <option value="">Sin descuento</option>
                 {descuentos.map(d => (
@@ -591,7 +591,7 @@ const NuevoSocio = () => {
           <button
             onClick={anterior}
             disabled={step === 0 || enviando}
-            className="flex items-center gap-2 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft className="w-4 h-4" /> Anterior
           </button>
@@ -599,7 +599,7 @@ const NuevoSocio = () => {
           {step < STEPS.length - 1 ? (
             <button
               onClick={siguiente}
-              className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-xs"
+              className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-xs"
             >
               Siguiente <ChevronRight className="w-4 h-4" />
             </button>
@@ -607,7 +607,7 @@ const NuevoSocio = () => {
             <button
               onClick={registrar}
               disabled={enviando || (Boolean(form.idPlan) && !cobroListo)}
-              className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white rounded-lg text-sm font-semibold transition-colors shadow-xs"
+              className="flex items-center gap-2 px-4 py-1.5 bg-exito hover:bg-exito-oscuro disabled:bg-emerald-300 text-white rounded-lg text-sm font-semibold transition-colors shadow-xs"
             >
               <Check className="w-4 h-4" />
               {enviando ? 'Registrando...'

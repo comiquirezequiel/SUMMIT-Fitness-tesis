@@ -4,6 +4,8 @@ import {
   Pencil, RefreshCw, Info, LogIn,
 } from 'lucide-react';
 import TurnoModal from '../components/asistencia/TurnoModal';
+import Encabezado from '../components/Encabezado';
+import { botonPrimario } from '../components/Campo';
 import {
   ROLES_PERSONAL, textoRol, duracion, horasDecimales, diaCorto, hora, horaSalida, periodo, moverPeriodo, MODOS,
   ESTADOS_TURNO, ACCIONES_CORRECCION,
@@ -20,14 +22,14 @@ const Iniciales = ({ nombre }) => (
 );
 
 const Tarjeta = ({ titulo, valor, detalle, icon: Icon, color, alerta }) => (
-  <div className={`p-5 rounded-xl border shadow-xs flex items-center justify-between ${alerta ? 'bg-rose-50/60 border-rose-200' : 'bg-white border-slate-200'}`}>
+  <div className={`px-3 py-2.5 rounded-xl border shadow-xs flex items-center justify-between gap-2 ${alerta ? 'bg-rose-50/60 border-rose-200' : 'bg-white border-slate-200'}`}>
     <div className="min-w-0">
-      <p className="text-sm font-medium text-slate-500 mb-1">{titulo}</p>
-      <h3 className={`text-2xl font-bold ${alerta ? 'text-rose-700' : 'text-slate-800'}`}>{valor}</h3>
-      {detalle && <p className="text-xs text-slate-500 mt-1">{detalle}</p>}
+      <p className="text-xs font-medium text-slate-500">{titulo}</p>
+      <h3 className={`text-xl font-bold leading-tight mt-0.5 ${alerta ? 'text-rose-700' : 'text-slate-800'}`}>{valor}</h3>
+      {detalle && <p className="text-xs text-slate-500 mt-0.5 truncate">{detalle}</p>}
     </div>
-    <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${color}`}>
-      <Icon className="w-6 h-6" />
+    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${color}`}>
+      <Icon className="w-4 h-4" />
     </div>
   </div>
 );
@@ -38,7 +40,7 @@ const ChipTurno = ({ turno, onClick }) => {
   let clase = 'bg-white border-slate-200 text-slate-700 hover:border-blue-300';
   let texto = `${hora(turno.entrada)} – ${horaSalida(turno.entrada, turno.salida)}`;
   if (turno.anulado) {
-    clase = 'bg-slate-50 border-slate-200 text-slate-400 line-through';
+    clase = 'bg-slate-50 border-slate-200 text-slate-500 line-through';
   } else if (turno.estado === 'SIN_SALIDA') {
     clase = 'bg-rose-50 border-rose-300 text-rose-700 hover:border-rose-400';
     texto = `${hora(turno.entrada)} – sin salida`;
@@ -61,26 +63,26 @@ const ChipTurno = ({ turno, onClick }) => {
 // Días de una persona en el período: sus turnos, las horas de cada día y los días incompletos marcados
 const DetallePersona = ({ persona, onTurno }) => (
   persona.dias.length === 0 ? (
-    <p className="pl-9 sm:pl-14 pr-4 py-3 text-sm text-slate-400">No marcó entrada en este período.</p>
+    <p className="pl-8 sm:pl-14 pr-3 py-2 text-sm text-slate-500">No marcó entrada en este período.</p>
   ) : (
     <table className="w-full text-sm">
       <tbody className="divide-y divide-slate-100">
         {persona.dias.map(dia => (
           <tr key={dia.fecha} className={dia.incompleto ? 'bg-rose-50/50' : ''}>
-            <td className="pl-9 sm:pl-14 pr-2 sm:pr-4 py-2.5 whitespace-nowrap text-slate-600 font-medium w-24 sm:w-32">{diaCorto(dia.fecha)}</td>
-            <td className="px-2 sm:px-4 py-2.5">
+            <td className="pl-8 sm:pl-14 pr-2 sm:pr-3 py-1.5 whitespace-nowrap text-slate-600 font-medium w-24 sm:w-32">{diaCorto(dia.fecha)}</td>
+            <td className="px-2 sm:px-3 py-1.5">
               <div className="flex flex-wrap gap-1.5">
                 {dia.turnos.map(t => <ChipTurno key={t.idTurno} turno={t} onClick={() => onTurno(t)} />)}
               </div>
             </td>
-            <td className="pl-2 pr-3 sm:px-4 py-2.5 text-right whitespace-nowrap sm:w-48">
+            <td className="pl-2 pr-3 sm:px-3 py-1.5 text-right whitespace-nowrap sm:w-48">
               {dia.incompleto && (
-                <span className="mr-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-700">
+                <span className="mr-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700">
                   Incompleto
                 </span>
               )}
               <span className="font-semibold text-slate-800 tabular-nums">{dia.minutos > 0 ? duracion(dia.minutos) : '—'}</span>
-              {dia.enCurso && <span className="block text-[11px] text-emerald-600">+ turno en curso</span>}
+              {dia.enCurso && <span className="block text-xs text-emerald-700">+ turno en curso</span>}
             </td>
           </tr>
         ))}
@@ -90,7 +92,7 @@ const DetallePersona = ({ persona, onTurno }) => (
 );
 
 /**
- * Asistencia del personal (solo ADMIN): quién está trabajando ahora, los turnos que quedaron sin salida y las horas de
+ * Asistencia del personal (pestaña de Gestión de personal, solo ADMIN): quién está trabajando ahora, los turnos que quedaron sin salida y las horas de
  * cada persona por día, semana o mes, con la planilla para exportar. El equipo marca la entrada y la salida pasando el
  * DNI por el control de acceso de recepción; acá se corrigen los olvidos (queda quién, cuándo y por qué).
  */
@@ -182,27 +184,16 @@ const AjustesAsistencia = () => {
   const hayTurnos = personas.some(pp => pp.dias.length > 0);
 
   return (
-    <div className="space-y-6 w-full pb-8">
-      <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 shrink-0">
-            <Clipboard className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Asistencia del personal</h1>
-            <p className="text-sm text-slate-500">Entradas, salidas y horas trabajadas del equipo</p>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button onClick={() => setCargandoTurno({ idUsuario: idUsuario || '', dia: incluyeHoy ? hoy : p.hasta })}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-xs">
+    <div className="space-y-3 w-full">
+      <Encabezado titulo="Asistencia del personal" icono={Clipboard} subtitulo="Entradas, salidas y horas trabajadas del equipo"
+        acciones={(
+          <button onClick={() => setCargandoTurno({ idUsuario: idUsuario || '', dia: incluyeHoy ? hoy : p.hasta })} className={botonPrimario}>
             <Plus className="w-4 h-4" /> Cargar turno
           </button>
-        </div>
-      </div>
+        )} />
 
-      <div className="flex items-start gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-600">
-        <Info className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
+      <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600">
+        <Info className="w-4 h-4 text-slate-400 shrink-0 mt-px" />
         <p>
           Cada persona del equipo pasa su DNI por el <b>Control de acceso</b> del Dashboard al llegar y al irse: el primer paso
           marca la entrada y el siguiente, la salida. Un turno que pasa la medianoche cuenta en el día en que empezó. Si alguien
@@ -210,23 +201,23 @@ const AjustesAsistencia = () => {
         </p>
       </div>
 
-      {error && <div className="p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>}
-      {aviso && <div className="p-3 rounded-lg bg-emerald-50 text-emerald-700 text-sm font-medium">{aviso}</div>}
+      {error && <div className="px-3 py-2 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>}
+      {aviso && <div className="px-3 py-2 rounded-lg bg-emerald-50 text-emerald-700 text-sm font-medium">{aviso}</div>}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <section className="bg-white rounded-xl border border-slate-200 shadow-xs p-5" aria-label="Trabajando ahora">
-          <div className="flex justify-between items-start mb-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <section className="bg-white rounded-xl border border-slate-200 shadow-xs p-4" aria-label="Trabajando ahora">
+          <div className="flex justify-between items-start mb-2">
             <div>
               <h2 className="font-semibold text-slate-800">Trabajando ahora</h2>
               <p className="text-xs text-slate-500">Marcaron la entrada y todavía no la salida</p>
             </div>
-            <span className="text-3xl font-bold text-slate-800">{datos ? trabajando.length : '—'}</span>
+            <span className="text-2xl font-bold text-slate-800">{datos ? trabajando.length : '—'}</span>
           </div>
-          {datos && trabajando.length === 0 && <p className="text-sm text-slate-400 py-2">Nadie del equipo está trabajando ahora.</p>}
+          {datos && trabajando.length === 0 && <p className="text-sm text-slate-500 py-1.5">Nadie del equipo está trabajando ahora.</p>}
           <div className="divide-y divide-slate-100">
             {trabajando.map(t => (
               <button key={t.idTurno} type="button" onClick={() => setEditando(t)} title="Corregir este turno"
-                className="w-full flex items-center gap-3 py-2.5 text-left hover:bg-slate-50 rounded-lg px-1 transition-colors">
+                className="w-full flex items-center gap-3 py-1.5 text-left hover:bg-slate-50 rounded-lg px-1 transition-colors">
                 <Iniciales nombre={t.nombre} />
                 <div className="min-w-0">
                   <p className="font-medium text-slate-800 truncate">{t.nombre}</p>
@@ -242,21 +233,21 @@ const AjustesAsistencia = () => {
           </div>
         </section>
 
-        <section className={`rounded-xl border shadow-xs p-5 ${sinSalida.length ? 'bg-rose-50/40 border-rose-200' : 'bg-white border-slate-200'}`}
+        <section className={`rounded-xl border shadow-xs p-4 ${sinSalida.length ? 'bg-rose-50/40 border-rose-200' : 'bg-white border-slate-200'}`}
           aria-label="Turnos sin salida">
-          <div className="flex justify-between items-start mb-3">
+          <div className="flex justify-between items-start mb-2">
             <div>
               <h2 className={`font-semibold flex items-center gap-2 ${sinSalida.length ? 'text-rose-800' : 'text-slate-800'}`}>
                 {sinSalida.length > 0 && <AlertTriangle className="w-4 h-4" />} Turnos sin salida
               </h2>
               <p className="text-xs text-slate-500">Últimos 31 días: no marcaron la salida y no suman horas hasta corregirlos</p>
             </div>
-            <span className={`text-3xl font-bold ${sinSalida.length ? 'text-rose-700' : 'text-slate-800'}`}>{datos ? sinSalida.length : '—'}</span>
+            <span className={`text-2xl font-bold ${sinSalida.length ? 'text-rose-700' : 'text-slate-800'}`}>{datos ? sinSalida.length : '—'}</span>
           </div>
-          {datos && sinSalida.length === 0 && <p className="text-sm text-slate-400 py-2">No hay turnos incompletos.</p>}
+          {datos && sinSalida.length === 0 && <p className="text-sm text-slate-500 py-1.5">No hay turnos incompletos.</p>}
           <div className="divide-y divide-rose-100">
             {sinSalida.map(t => (
-              <div key={t.idTurno} className="flex items-center gap-3 py-2.5">
+              <div key={t.idTurno} className="flex items-center gap-3 py-1.5">
                 <Iniciales nombre={t.nombre} />
                 <div className="min-w-0">
                   <p className="font-medium text-slate-800 truncate">{t.nombre}</p>
@@ -273,21 +264,21 @@ const AjustesAsistencia = () => {
       </div>
 
       <section className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden" aria-label="Horas del período">
-        <div className="p-5 border-b border-slate-200 space-y-4">
+        <div className="p-4 border-b border-slate-200 space-y-3">
           <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
                 <CalendarDays className="w-5 h-5 text-slate-400" /> {p.titulo.charAt(0).toUpperCase() + p.titulo.slice(1)}
               </h2>
               <p className="text-xs text-slate-500">Horas por persona y por día · solo suman los turnos completos</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <button onClick={exportarResumen} disabled={personas.length === 0}
-                className="bg-white border border-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50 shadow-xs">
+                className="bg-white border border-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50 shadow-xs">
                 <Download className="w-4 h-4" /> Resumen (CSV)
               </button>
               <button onClick={exportarDetalle} disabled={!hayTurnos}
-                className="bg-white border border-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50 shadow-xs">
+                className="bg-white border border-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-slate-50 disabled:opacity-50 shadow-xs">
                 <Download className="w-4 h-4" /> Detalle por turno (CSV)
               </button>
             </div>
@@ -296,7 +287,7 @@ const AjustesAsistencia = () => {
             <div className="flex bg-slate-100 rounded-lg p-0.5 text-xs font-semibold" role="group" aria-label="Período">
               {MODOS.map(m => (
                 <button key={m.clave} onClick={() => setModo(m.clave)}
-                  className={`px-3 py-1.5 rounded-md transition-colors ${modo === m.clave ? 'bg-white shadow-xs text-slate-800' : 'text-slate-500'}`}>
+                  className={`px-3 py-1.5 rounded-md transition-colors ${modo === m.clave ? 'bg-white shadow-xs text-slate-800' : 'text-slate-600'}`}>
                   {m.texto}
                 </button>
               ))}
@@ -339,35 +330,37 @@ const AjustesAsistencia = () => {
         </div>
 
         {totales && (
-          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 border-b border-slate-100 bg-slate-50/40">
+          <div className="p-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 border-b border-slate-100 bg-slate-50/40">
             <Tarjeta titulo="Horas trabajadas" valor={duracion(totales.minutos)} detalle={`${horasDecimales(totales.minutos)} h en decimal`}
               icon={Clock} color="bg-blue-50 text-blue-600" />
             <Tarjeta titulo="Días trabajados" valor={totales.diasTrabajados}
               detalle={idUsuario ? 'Días con algún turno' : 'Sumando los de cada persona'} icon={CalendarDays} color="bg-violet-50 text-violet-600" />
             <Tarjeta titulo="Personas que trabajaron" valor={totales.personasQueTrabajaron} detalle={`de ${personas.length} en la lista`}
-              icon={Users} color="bg-emerald-50 text-emerald-600" />
+              icon={Users} color="bg-emerald-50 text-emerald-700" />
             <Tarjeta titulo="Turnos sin salida" valor={totales.turnosSinSalida} alerta={totales.turnosSinSalida > 0}
               detalle={totales.turnosSinSalida > 0 ? 'En el período: no suman hasta corregirlos' : 'En el período'}
-              icon={AlertTriangle} color={totales.turnosSinSalida > 0 ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-500'} />
+              icon={AlertTriangle} color={totales.turnosSinSalida > 0 ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'} />
           </div>
         )}
 
         {!datos ? (
-          <div className="p-10 text-center text-sm text-slate-400">{cargando ? 'Cargando…' : ''}</div>
+          cargando
+            ? <div className="p-6 text-center text-sm text-slate-500 aparece-tarde" role="status" data-cargando>Cargando…</div>
+            : <div className="p-6" />
         ) : personas.length === 0 ? (
-          <div className="p-10 text-center text-sm text-slate-500">
-            Todavía no hay personal cargado: se da de alta en Ajustes &gt; Equipo.
+          <div className="p-6 text-center text-sm text-slate-500">
+            Todavía no hay personal cargado: se da de alta en la pestaña Equipo.
           </div>
         ) : (
           <div className={`overflow-x-auto transition-opacity ${cargando ? 'opacity-60' : ''}`}>
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200 uppercase text-xs tracking-wider">
                 <tr>
-                  <th className="px-3 sm:px-6 py-3">Persona</th>
-                  <th className="px-2 sm:px-4 py-3 text-right">Días</th>
-                  <th className="px-2 sm:px-4 py-3 text-right">Horas</th>
-                  <th className="hidden sm:table-cell px-4 py-3 text-right">Sin salida</th>
-                  <th className="hidden sm:table-cell px-4 py-3 text-right"><span className="sr-only">Acciones</span></th>
+                  <th className="px-3 sm:px-4 py-2">Persona</th>
+                  <th className="px-2 sm:px-3 py-2 text-right">Días</th>
+                  <th className="px-2 sm:px-3 py-2 text-right">Horas</th>
+                  <th className="hidden sm:table-cell px-3 py-2 text-right">Sin salida</th>
+                  <th className="hidden sm:table-cell px-3 py-2 text-right"><span className="sr-only">Acciones</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -382,7 +375,7 @@ const AjustesAsistencia = () => {
                   return (
                     <Fragment key={pp.idUsuario}>
                       <tr className="hover:bg-slate-50/60 transition-colors">
-                        <td className="px-3 sm:px-6 py-3">
+                        <td className="px-3 sm:px-4 py-2">
                           <button type="button" onClick={() => alternar(pp.idUsuario)} aria-expanded={abiertaFila}
                             className="flex items-center gap-2 sm:gap-3 text-left">
                             <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${abiertaFila ? '' : '-rotate-90'}`} />
@@ -390,12 +383,12 @@ const AjustesAsistencia = () => {
                             <span>
                               <span className="font-medium text-slate-800">{pp.nombre}</span>
                               <span className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold border ${rol?.clase || 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                                <span className={`px-1.5 py-0.5 rounded-full text-xs font-semibold border ${rol?.clase || 'bg-slate-50 text-slate-600 border-slate-200'}`}>
                                   {textoRol(pp.rol)}
                                 </span>
-                                {!pp.activo && <span className="text-[10px] text-slate-400">inactivo</span>}
+                                {!pp.activo && <span className="text-xs text-slate-500">inactivo</span>}
                                 {pp.trabajandoAhora && (
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700">
+                                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
                                     <LogIn className="w-3 h-3" /> trabajando
                                   </span>
                                 )}
@@ -405,12 +398,12 @@ const AjustesAsistencia = () => {
                             </span>
                           </button>
                         </td>
-                        <td className="px-2 sm:px-4 py-3 text-right font-semibold text-slate-700 tabular-nums">{pp.diasTrabajados}</td>
-                        <td className="px-2 sm:px-4 py-3 text-right font-bold text-slate-800 tabular-nums whitespace-nowrap">{duracion(pp.minutos)}</td>
-                        <td className="hidden sm:table-cell px-4 py-3 text-right">
-                          {incompletos || <span className="text-slate-300">—</span>}
+                        <td className="px-2 sm:px-3 py-2 text-right font-semibold text-slate-700 tabular-nums">{pp.diasTrabajados}</td>
+                        <td className="px-2 sm:px-3 py-2 text-right font-bold text-slate-800 tabular-nums whitespace-nowrap">{duracion(pp.minutos)}</td>
+                        <td className="hidden sm:table-cell px-3 py-2 text-right">
+                          {incompletos || <span className="text-slate-500">—</span>}
                         </td>
-                        <td className="hidden sm:table-cell px-4 py-3 text-right">
+                        <td className="hidden sm:table-cell px-3 py-2 text-right">
                           <button type="button" title={`Cargar un turno de ${pp.nombre}`}
                             onClick={() => setCargandoTurno({ idUsuario: pp.idUsuario, dia: incluyeHoy ? hoy : p.hasta })}
                             className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200">
@@ -432,17 +425,17 @@ const AjustesAsistencia = () => {
               {personas.length > 1 && (
                 <tfoot className="bg-slate-50 border-t border-slate-200 text-sm">
                   <tr>
-                    <td className="px-3 sm:px-6 py-3 font-semibold text-slate-600">Total del equipo</td>
-                    <td className="px-2 sm:px-4 py-3 text-right font-semibold text-slate-700 tabular-nums">{totales.diasTrabajados}</td>
-                    <td className="px-2 sm:px-4 py-3 text-right font-bold text-slate-800 tabular-nums whitespace-nowrap">{duracion(totales.minutos)}</td>
-                    <td className="hidden sm:table-cell px-4 py-3 text-right font-semibold text-slate-600">{totales.turnosSinSalida || '—'}</td>
+                    <td className="px-3 sm:px-4 py-2 font-semibold text-slate-600">Total del equipo</td>
+                    <td className="px-2 sm:px-3 py-2 text-right font-semibold text-slate-700 tabular-nums">{totales.diasTrabajados}</td>
+                    <td className="px-2 sm:px-3 py-2 text-right font-bold text-slate-800 tabular-nums whitespace-nowrap">{duracion(totales.minutos)}</td>
+                    <td className="hidden sm:table-cell px-3 py-2 text-right font-semibold text-slate-600">{totales.turnosSinSalida || '—'}</td>
                     <td className="hidden sm:table-cell" />
                   </tr>
                 </tfoot>
               )}
             </table>
             {!hayTurnos && (
-              <p className="px-6 py-4 text-sm text-slate-500 border-t border-slate-100">
+              <p className="px-4 py-2.5 text-sm text-slate-500 border-t border-slate-100">
                 Nadie del equipo marcó entrada en este período.
               </p>
             )}

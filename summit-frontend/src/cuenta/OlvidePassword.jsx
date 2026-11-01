@@ -35,7 +35,7 @@ export default function OlvidePassword() {
     return (
       <Marco titulo="Revisá tu correo">
         <div className="text-center space-y-3">
-          <MailCheck className="w-12 h-12 text-emerald-600 mx-auto" />
+          <MailCheck className="w-12 h-12 text-emerald-700 mx-auto" />
           <p className="text-sm text-slate-700">{mensaje}</p>
           <p className="text-sm text-slate-500">El link sirve una sola vez. Si no llega en unos minutos, podés volver a pedirlo.</p>
         </div>

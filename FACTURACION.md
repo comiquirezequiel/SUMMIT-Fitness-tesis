@@ -14,7 +14,7 @@ para probar y después contra ARCA.
 - **Por ser gimnasio** (anexo de la RG 4290), al consumidor final hay que darle la factura **impresa**, salvo que acepte
   recibirla en el momento por otro medio (WhatsApp, mail).
 - **Si ARCA no responde**, la factura queda pendiente y se reintenta sola (al minuto, a los 5, a los 15 y después cada
-  hora). En *Caja & Pagos > Facturas* está el botón *Mandar ahora*. Sale con la fecha del día en que ARCA la autoriza.
+  hora). En *Caja & Pagos*, pestaña *Facturas*, está el botón *Mandar ahora*. Sale con la fecha del día en que ARCA la autoriza.
 - **Si se corta la conexión justo al pedirla**, queda *Confirmando con ARCA*: antes de usar otro número, SUMMIT le
   pregunta a ARCA si la autorizó. Así nunca se duplica ni se saltea un número.
 - **Si ARCA la rechaza**, el motivo se ve en *Facturas*. Se corrige (por ejemplo, los datos fiscales) y el admin la
@@ -34,7 +34,7 @@ para probar y después contra ARCA.
 | Monotributista | C (código 11): el precio no discrimina IVA | Nota de crédito C (13) |
 | Responsable inscripto | B (código 6) al consumidor final, con el IVA contenido (21 %) que pide la Ley 27.743 | Nota de crédito B (8) |
 
-Se elige en *Ajustes > Facturación*. Por defecto la factura sale "a consumidor final", sin identificar al socio: las
+Se elige en *Ajustes > Configuración y reglas > Facturación*. Por defecto la factura sale "a consumidor final", sin identificar al socio: las
 cuotas están muy por debajo del monto desde el que ARCA lo exige. Si se prefiere, se factura a nombre del socio con su
 DNI.
 
@@ -59,7 +59,7 @@ ARCA_HABILITADA=true
 ARCA_AMBIENTE=SIMULADOR
 ```
 
-En *Ajustes > Facturación* se cargan unos datos fiscales cualquiera, con una CUIT válida (por ejemplo `20-11111111-2`),
+En *Ajustes > Configuración y reglas > Facturación* se cargan unos datos fiscales cualquiera, con una CUIT válida (por ejemplo `20-11111111-2`),
 y se toca *Probar conexión*. Las facturas salen con la marca de agua "SIN VALIDEZ FISCAL".
 
 ### 2. Pruebas en ARCA (homologación)
@@ -96,7 +96,7 @@ ARCA tiene un ambiente de pruebas gratuito. El certificado de homologación se s
    ARCA_CERTIFICADO_PASSWORD=la-que-elegiste
    ```
 
-6. *Ajustes > Facturación*: los datos fiscales con tu CUIT y el punto de venta 1 (en homologación no hace falta darlo de
+6. *Ajustes > Configuración y reglas > Facturación*: los datos fiscales con tu CUIT y el punto de venta 1 (en homologación no hace falta darlo de
    alta). *Probar conexión* tiene que dar los 5 pasos bien.
 
 ### 3. Producción (el dueño, con su contador)
@@ -119,7 +119,7 @@ Lleva un par de horas y se hace en la PC del gimnasio.
    monotributista), con el domicilio del gimnasio.
 7. **SUMMIT**: en `C:\SUMMIT\app\config\application.properties`, `ARCA_HABILITADA=true`, `ARCA_AMBIENTE=PRODUCCION`,
    `ARCA_CERTIFICADO=C:/SUMMIT/app/config/arca/summit.p12` y su contraseña. Reiniciar el servicio `SUMMIT-Backend`.
-8. **Ajustes > Facturación**: los datos fiscales del dueño y *Probar conexión*: el punto de venta tiene que aparecer
+8. **Ajustes > Configuración y reglas > Facturación**: los datos fiscales del dueño y *Probar conexión*: el punto de venta tiene que aparecer
    habilitado y la numeración en 0. Hacer un primer cobro y verificar la factura escaneando el QR con el celular.
 
 Cada comprobante guarda el ambiente en que se emitió: los de prueba nunca se mezclan con los reales, y al cambiar de
@@ -134,7 +134,7 @@ ambiente las facturas de prueba que quedaron pendientes no se mandan a producci�
 - **Copia de seguridad**: el dueño guarda una copia cifrada del `.p12` (en un USB o un gestor de contraseñas). Si se
   pierde no es grave: se genera otro pedido y se agrega un certificado nuevo al mismo alias. Si se filtra, se reemplaza y
   se revisan las relaciones en ARCA.
-- **Vence** (habitualmente a los 2 años): *Ajustes > Facturación* avisa desde 30 días antes. Se renueva con *Agregar
+- **Vence** (habitualmente a los 2 años): *Ajustes > Configuración y reglas > Facturación* avisa desde 30 días antes. Se renueva con *Agregar
   certificado* sobre el mismo alias.
 - **La hora de la PC** tiene que estar bien (Configuración de Windows > Hora > *Sincronizar ahora*): con el reloj corrido,
   ARCA rechaza el pedido de acceso.
@@ -161,8 +161,8 @@ con la nota de crédito.
 | El certificado no está autorizado a facturar | Falta la relación con *Facturación Electrónica* (producción) o la autorización a `wsfe` en WSASS (homologación) |
 | La hora de esta PC no coincide con la de ARCA | Sincronizar la hora de Windows |
 | ARCA ya entregó un permiso de acceso para este certificado | Esperar hasta 12 horas (pasa si se restauró la base o se cambió de PC con el mismo certificado) |
-| El punto de venta N no está dado de alta para web services | Darlo de alta en ARCA o corregir el número en *Ajustes > Facturación* |
-| Faltan datos fiscales | Completarlos en *Ajustes > Facturación*: lo que esperaba sale enseguida |
+| El punto de venta N no está dado de alta para web services | Darlo de alta en ARCA o corregir el número en *Ajustes > Configuración y reglas > Facturación* |
+| Faltan datos fiscales | Completarlos en *Ajustes > Configuración y reglas > Facturación*: lo que esperaba sale enseguida |
 | Una factura sigue *Confirmando con ARCA* | ARCA no responde: se resuelve sola cuando vuelve. *Mandar ahora* lo intenta de nuevo |
 | El backend no arranca: "summit.arca.ambiente (ARCA_AMBIENTE) tiene que ser..." | Corregir `ARCA_AMBIENTE` (SIMULADOR, HOMOLOGACION o PRODUCCION) |
 

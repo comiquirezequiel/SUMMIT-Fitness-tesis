@@ -50,7 +50,7 @@ const GastoModal = ({ onClose, onGuardado }) => {
           <Save className="w-4 h-4" /> {procesando ? 'Guardando...' : 'Registrar gasto'}
         </button>
       </>}>
-      <form id="form-gasto" onSubmit={guardar} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <form id="form-gasto" onSubmit={guardar} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Campo label="Monto ($)" required>
           <input type="number" required min="0.01" step="0.01" inputMode="decimal" autoFocus value={datos.monto}
             onChange={e => cambiar('monto', e.target.value)} className={inputClass} />
@@ -77,7 +77,7 @@ const GastoModal = ({ onClose, onGuardado }) => {
         {efectivo && (
           <div className="sm:col-span-2 space-y-2">
             {!datos.fueraDeCaja && (
-              <p className={`text-xs ${noAlcanza ? 'text-rose-600 font-medium' : 'text-slate-500'}`}>
+              <p className={`text-xs ${noAlcanza ? 'text-rose-700 font-medium' : 'text-slate-500'}`}>
                 {noAlcanza
                   ? `En la caja hay ${formatMoneda(enCaja)} en efectivo: no alcanza. Si lo pagó el dueño con su plata, marcá la opción de abajo; si se pagó de otra forma, elegí cómo.`
                   : `Sale de la caja de recepción${enCaja !== null ? `: hay ${formatMoneda(enCaja)} en efectivo` : ''}.`}
@@ -93,7 +93,7 @@ const GastoModal = ({ onClose, onGuardado }) => {
             </label>
           </div>
         )}
-        {error && <p className="sm:col-span-2 text-sm text-rose-600 font-medium">{error}</p>}
+        {error && <p className="sm:col-span-2 text-sm text-rose-700 font-medium">{error}</p>}
       </form>
     </Modal>
   );

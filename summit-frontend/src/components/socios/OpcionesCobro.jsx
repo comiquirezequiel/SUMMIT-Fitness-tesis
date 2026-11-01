@@ -55,7 +55,7 @@ export const SelectorMetodo = ({ valor, onCambiar, conTarjeta = false }) => (
       const elegido = m.valor === valor;
       return (
         <label key={m.valor} title={m.texto}
-          className={`${claseOpcion(elegido)} px-3 py-2.5 tactil:min-h-11 flex items-center gap-2 text-sm font-semibold whitespace-nowrap ${elegido ? 'text-blue-700' : 'text-slate-700'}`}>
+          className={`${claseOpcion(elegido)} px-3 py-1.5 tactil:min-h-11 flex items-center gap-2 text-sm font-semibold whitespace-nowrap ${elegido ? 'text-blue-700' : 'text-slate-700'}`}>
           <input type="radio" name="metodo-cobro" value={m.valor} checked={elegido} onChange={() => onCambiar(m.valor)} className="sr-only" />
           <Icono className={`w-4 h-4 shrink-0 ${elegido ? 'text-blue-600' : 'text-slate-400'}`} />
           {TEXTO_CORTO[m.valor] || m.texto}

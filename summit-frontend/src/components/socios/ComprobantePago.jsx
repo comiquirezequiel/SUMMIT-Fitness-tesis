@@ -18,7 +18,7 @@ const CADA_MS = 1500;
  * Comprobante de un cobro: el resumen, los botones del PDF (imprimir, descargar, compartir) y un mensaje por WhatsApp
  * con el resumen del pago (para mandarlo desde la PC, donde no se puede adjuntar el PDF con un enlace).
  * Con la factura electrónica prendida, el PDF es la factura (con CAE y QR) apenas ARCA la autoriza. Si tarda, queda el
- * comprobante común: la factura sale sola y se ve después en Facturas.
+ * comprobante común: la factura sale sola y se ve después en Caja > Facturas.
  */
 const ComprobantePago = ({ pago }) => {
   const { facturacion } = useFunciones();
@@ -55,8 +55,8 @@ const ComprobantePago = ({ pago }) => {
     + ` ${referencia}. ¡Gracias!`;
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm space-y-1">
+    <div className="space-y-3">
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm space-y-1">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           {autorizada ? nombreComprobante(autorizada) : `Comprobante N.º ${numeroComprobante(pago.idPago)}`}
         </p>
@@ -89,13 +89,13 @@ const ComprobantePago = ({ pago }) => {
         <p className="flex items-start gap-2 text-sm text-amber-700">
           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
           La factura todavía no salió (ARCA no respondió). Mientras tanto podés dar este comprobante: la factura sale sola y
-          queda en Facturas.
+          queda en Caja &gt; Facturas.
         </p>
       )}
       {factura?.estado === 'RECHAZADO' && (
         <p className="flex items-start gap-2 text-sm text-rose-700">
           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-          ARCA rechazó la factura ({factura.ultimoError || 'sin motivo'}). Un administrador la revisa en Facturas; mientras
+          ARCA rechazó la factura ({factura.ultimoError || 'sin motivo'}). Un administrador la revisa en Caja &gt; Facturas; mientras
           tanto podés dar este comprobante.
         </p>
       )}
@@ -103,7 +103,7 @@ const ComprobantePago = ({ pago }) => {
       <BotonesPdf documento={documento} />
       <a href={enlaceWhatsApp(pago.telefonoSocio, mensaje)} target="_blank" rel="noopener noreferrer"
         className={`${botonSecundario} bg-white w-full sm:w-auto inline-flex`}>
-        <MessageCircle className="w-4 h-4 text-emerald-600" />
+        <MessageCircle className="w-4 h-4 text-emerald-700" />
         {numeroWhatsApp(pago.telefonoSocio) ? 'Avisarle por WhatsApp' : 'Mandar por WhatsApp (elegís el contacto)'}
       </a>
     </div>

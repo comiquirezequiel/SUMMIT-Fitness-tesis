@@ -31,12 +31,65 @@
   --color-bronce-800: #6e4720;
   --color-bronce-900: #57391b;
   --color-bronce-950: #301e0e;
+
+  /* Botones verdes (cobrar): el mismo verde en modo claro y oscuro, porque llevan texto blanco (5,4:1; con el mouse
+     encima, 7,6:1). emerald-600 no llegaba al mínimo (3,7:1) y emerald-700 en modo oscuro pasa a ser un verde claro. */
+  --color-exito: #007a55;
+  --color-exito-oscuro: #006045;
+  /* Botones y contadores ámbar con texto blanco (excepción de acceso, cobros a verificar): igual en los dos modos
+     (5:1; con el mouse encima, 7:1). amber-500 no llegaba (2,1:1). */
+  --color-alerta: #bb4d00;
+  --color-alerta-oscuro: #973c00;
+  /* Botones cian con texto blanco (congelamiento): igual en los dos modos (5,3:1; con el mouse encima, 7,2:1).
+     cyan-600 no llegaba (3,6:1). */
+  --color-info: #007595;
+  --color-info-oscuro: #005f78;
+
+  /* Paleta del logo (bordó, cobre y carbón). El acento del panel (botones, links, pestañas, el menú) se escribe
+     blue-* en todas las pantallas: acá pasa a ser el bordó del logo, así cambia en un solo lugar. */
+  --color-blue-50: #fbf3f5;
+  --color-blue-100: #f5e1e6;
+  --color-blue-200: #ebc3cd;
+  --color-blue-300: #da97a8;
+  --color-blue-400: #c2617a;
+  --color-blue-500: #a33654;
+  --color-blue-600: #861d3a;
+  --color-blue-700: #6b1027;
+  --color-blue-800: #4a0b1b;
+  --color-blue-900: #330812;
+  --color-blue-950: #1c0a10;
+
+  /* Grises cálidos (como el carbón del fondo del logo) en lugar de los azulados */
+  --color-slate-50: oklch(98.5% 0.002 30); --color-slate-100: oklch(96.8% 0.003 30); --color-slate-200: oklch(92.4% 0.005 30);
+  --color-slate-300: oklch(87% 0.007 30); --color-slate-400: oklch(70.9% 0.012 30); --color-slate-500: oklch(55.3% 0.014 30);
+  --color-slate-600: oklch(44.6% 0.013 30); --color-slate-700: oklch(37.4% 0.012 30); --color-slate-800: oklch(27% 0.01 30);
+  --color-slate-900: oklch(21.6% 0.008 30); --color-slate-950: oklch(14.7% 0.006 30);
+  --color-gray-50: oklch(98.5% 0.002 30); --color-gray-100: oklch(96.8% 0.003 30); --color-gray-200: oklch(92.4% 0.005 30);
+  --color-gray-300: oklch(87% 0.007 30); --color-gray-400: oklch(70.9% 0.012 30); --color-gray-500: oklch(55.3% 0.014 30);
+  --color-gray-600: oklch(44.6% 0.013 30); --color-gray-700: oklch(37.4% 0.012 30); --color-gray-800: oklch(27% 0.01 30);
+  --color-gray-900: oklch(21.6% 0.008 30); --color-gray-950: oklch(14.7% 0.006 30);
 }
 
 /* Grises de los gráficos (components/graficos/base.jsx) */
 :root {
   --grafico-tinta: #0b0b0b; --grafico-tinta-2: #52514e; --grafico-tinta-3: #898781; --grafico-grilla: #ebeae5;
-  --grafico-base: #c3c2b7; --grafico-enfasis: #cdd5df; --grafico-sin-dato: #b9b7ae; --grafico-cero: #f3f2ee;
+  --grafico-base: #c3c2b7; --grafico-enfasis: #e7d9dd; --grafico-sin-dato: #b9b7ae; --grafico-cero: #f3f2ee;
+  /* Texto oscuro sobre los tramos de color de los gráficos: igual en modo oscuro, porque los tramos no cambian */
+  --grafico-tinta-sobre-color: #0b0b0b;
+}
+
+/* Barra de arriba con la marca: bordó del logo con un filete de cobre abajo */
+.barra-marca {
+  background: linear-gradient(90deg, #330812 0%, #4a0b1b 45%, #6b1027 100%);
+  box-shadow: inset 0 -2px 0 #cd7f32;
+}
+
+/* Fondo de las pantallas de la cuenta (login): bordó con luz de cobre, como el logo */
+.fondo-marca {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgb(205 127 50 / 0.22), transparent 55%),
+    radial-gradient(ellipse at 50% 120%, #1c0a10 10%, transparent 60%),
+    linear-gradient(160deg, #6b1027 0%, #4a0b1b 55%, #1c0a10 100%);
 }
 
 /* Tailwind 4 cambió algunos valores por defecto de la versión 3: así el panel se sigue viendo igual */
@@ -64,6 +117,47 @@
   }
 }
 
+/* Avisos de "Cargando…": aparecen solo si la espera pasa de 300 ms, así una carga rápida no parpadea. Van con
+   data-cargando, que usa usePanelPestanas (components/Pestanas.jsx) para saber cuándo terminó de cargar una pestaña. */
+.aparece-tarde {
+  animation: aparecer 150ms ease-out 300ms both;
+}
+@keyframes aparecer {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Pestañas de métricas y gráficos: entran suave y los gráficos se dibujan (las columnas y barras crecen desde la base,
+   la línea se traza, la rueda se completa). Como las pestañas ocultas tienen display: none, la animación se repite
+   cada vez que se vuelve a una. Quien pidió menos movimiento en su sistema los ve quietos. */
+@media (prefers-reduced-motion: no-preference) {
+  .entra-suave { animation: entrar 280ms ease-out backwards; }
+  .grafico-crece-y { transform-box: fill-box; transform-origin: bottom; animation: crecer-y 600ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
+  .grafico-crece-x { transform-box: fill-box; transform-origin: left; animation: crecer-x 600ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
+  /* La línea lleva pathLength="1": el trazo mide 1 y se va descubriendo */
+  .grafico-traza { stroke-dasharray: 1; animation: trazar 900ms ease-out backwards; }
+  .grafico-funde { animation: aparecer 300ms ease-out 450ms backwards; }
+  /* Cada tramo de la rueda se dibuja después del anterior (duración y demora según su largo; --circunferencia) */
+  .grafico-tramo { animation-name: tramo; animation-timing-function: linear; animation-fill-mode: backwards; }
+}
+@keyframes entrar {
+  from { opacity: 0; transform: translateY(8px); }
+}
+@keyframes crecer-y {
+  from { transform: scaleY(0); }
+}
+@keyframes crecer-x {
+  from { transform: scaleX(0); }
+}
+@keyframes trazar {
+  from { stroke-dashoffset: 1; }
+}
+/* Oculto al arrancar: con puntas redondas, un trazo de largo 0 igual se vería como un punto */
+@keyframes tramo {
+  0% { stroke-dasharray: 0 var(--circunferencia); opacity: 0; }
+  1% { opacity: 1; }
+}
+
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -79,11 +173,11 @@
    claros: el fondo bordó del login no cambia. */
 .dark {
   color-scheme: dark;
-  --color-white: oklch(19.5% 0.03 260);
-  --grafico-tinta: #f1f2f4; --grafico-tinta-2: #b4b8c0; --grafico-tinta-3: #8b9099; --grafico-grilla: #2b313d;
-  --grafico-base: #4b5262; --grafico-enfasis: #4a5469; --grafico-sin-dato: #5b6170; --grafico-cero: #222835;
-  --color-slate-50: oklch(14.5% 0.030 257.4); --color-slate-100: oklch(24.5% 0.030 257.4); --color-slate-200: oklch(30.5% 0.030 257.4); --color-slate-300: oklch(40.0% 0.030 257.4); --color-slate-400: oklch(58.0% 0.012 257.4); --color-slate-500: oklch(66.5% 0.012 257.4); --color-slate-600: oklch(75.0% 0.012 257.4); --color-slate-700: oklch(84.0% 0.012 257.4); --color-slate-800: oklch(92.0% 0.012 257.4); --color-slate-900: oklch(96.0% 0.012 257.4); --color-slate-950: oklch(98.5% 0.012 257.4);
-  --color-gray-50: oklch(14.5% 0.030 264.4); --color-gray-100: oklch(24.5% 0.030 264.4); --color-gray-200: oklch(30.5% 0.030 264.4); --color-gray-300: oklch(40.0% 0.030 264.4); --color-gray-400: oklch(58.0% 0.011 264.4); --color-gray-500: oklch(66.5% 0.011 264.4); --color-gray-600: oklch(75.0% 0.011 264.4); --color-gray-700: oklch(84.0% 0.011 264.4); --color-gray-800: oklch(92.0% 0.011 264.4); --color-gray-900: oklch(96.0% 0.011 264.4); --color-gray-950: oklch(98.5% 0.011 264.4);
+  --color-white: oklch(20.5% 0.012 20);
+  --grafico-tinta: #f4f1f1; --grafico-tinta-2: #c0b7b8; --grafico-tinta-3: #988c8e; --grafico-grilla: #352c2e;
+  --grafico-base: #5a4d50; --grafico-enfasis: #5b4248; --grafico-sin-dato: #66595c; --grafico-cero: #2b2325;
+  --color-slate-50: oklch(14.5% 0.014 20); --color-slate-100: oklch(24.5% 0.014 20); --color-slate-200: oklch(30.5% 0.014 20); --color-slate-300: oklch(40.0% 0.014 20); --color-slate-400: oklch(58.0% 0.008 20); --color-slate-500: oklch(66.5% 0.008 20); --color-slate-600: oklch(75.0% 0.008 20); --color-slate-700: oklch(84.0% 0.008 20); --color-slate-800: oklch(92.0% 0.008 20); --color-slate-900: oklch(96.0% 0.008 20); --color-slate-950: oklch(98.5% 0.008 20);
+  --color-gray-50: oklch(14.5% 0.014 20); --color-gray-100: oklch(24.5% 0.014 20); --color-gray-200: oklch(30.5% 0.014 20); --color-gray-300: oklch(40.0% 0.014 20); --color-gray-400: oklch(58.0% 0.008 20); --color-gray-500: oklch(66.5% 0.008 20); --color-gray-600: oklch(75.0% 0.008 20); --color-gray-700: oklch(84.0% 0.008 20); --color-gray-800: oklch(92.0% 0.008 20); --color-gray-900: oklch(96.0% 0.008 20); --color-gray-950: oklch(98.5% 0.008 20);
   --color-red-50: oklch(25.5% 0.055 26.0); --color-red-100: oklch(29.0% 0.085 25.7); --color-red-200: oklch(36.0% 0.090 26.9); --color-red-700: oklch(80.8% 0.114 19.571); --color-red-800: oklch(88.5% 0.062 18.334); --color-red-900: oklch(93.6% 0.032 17.717); --color-red-950: oklch(97.1% 0.013 17.38);
   --color-orange-50: oklch(25.5% 0.047 36.3); --color-orange-100: oklch(29.0% 0.074 38.2); --color-orange-200: oklch(36.0% 0.090 37.3); --color-orange-700: oklch(83.7% 0.128 66.29); --color-orange-800: oklch(90.1% 0.076 70.697); --color-orange-900: oklch(95.4% 0.038 75.164); --color-orange-950: oklch(98% 0.016 73.684);
   --color-amber-50: oklch(25.5% 0.046 45.6); --color-amber-100: oklch(29.0% 0.067 45.9); --color-amber-200: oklch(36.0% 0.089 46.2); --color-amber-700: oklch(87.9% 0.169 91.605); --color-amber-800: oklch(92.4% 0.12 95.746); --color-amber-900: oklch(96.2% 0.059 95.617); --color-amber-950: oklch(98.7% 0.022 95.277);
@@ -91,14 +185,16 @@
   --color-emerald-50: oklch(25.5% 0.031 172.6); --color-emerald-100: oklch(29.0% 0.046 168.9); --color-emerald-200: oklch(36.0% 0.062 166.9); --color-emerald-700: oklch(84.5% 0.143 164.978); --color-emerald-800: oklch(90.5% 0.093 164.15); --color-emerald-900: oklch(95% 0.052 163.051); --color-emerald-950: oklch(97.9% 0.021 166.113);
   --color-cyan-50: oklch(25.5% 0.034 229.7); --color-cyan-100: oklch(29.0% 0.042 227.4); --color-cyan-200: oklch(36.0% 0.055 224.3); --color-cyan-700: oklch(86.5% 0.127 207.078); --color-cyan-800: oklch(91.7% 0.08 205.041); --color-cyan-900: oklch(95.6% 0.045 203.388); --color-cyan-950: oklch(98.4% 0.019 200.873);
   --color-sky-50: oklch(25.5% 0.040 243.2); --color-sky-100: oklch(29.0% 0.054 240.9); --color-sky-200: oklch(36.0% 0.072 240.8); --color-sky-700: oklch(82.8% 0.111 230.318); --color-sky-800: oklch(90.1% 0.058 230.902); --color-sky-900: oklch(95.1% 0.026 236.824); --color-sky-950: oklch(97.7% 0.013 236.62);
-  --color-blue-50: oklch(25.5% 0.055 267.9); --color-blue-100: oklch(29.0% 0.088 265.5); --color-blue-200: oklch(36.0% 0.090 265.6); --color-blue-700: oklch(80.9% 0.105 251.813); --color-blue-800: oklch(88.2% 0.059 254.128); --color-blue-900: oklch(93.2% 0.032 255.585); --color-blue-950: oklch(97% 0.014 254.604);
+  /* El bordó del acento: tintes oscuros de fondo, un bordó más vivo para botones e íconos (se lee sobre el carbón) y
+     rosados claros para los textos */
+  --color-blue-50: oklch(25.5% 0.055 8); --color-blue-100: oklch(29.0% 0.075 8); --color-blue-200: oklch(36.0% 0.09 8); --color-blue-300: oklch(45% 0.12 8); --color-blue-400: oklch(68% 0.14 8); --color-blue-500: oklch(63% 0.17 8); --color-blue-600: oklch(56% 0.18 8); --color-blue-700: oklch(80% 0.11 8); --color-blue-800: oklch(88% 0.06 8); --color-blue-900: oklch(93.5% 0.03 8); --color-blue-950: oklch(97% 0.014 8);
   --color-indigo-50: oklch(25.5% 0.054 281.3); --color-indigo-100: oklch(29.0% 0.086 278.7); --color-indigo-200: oklch(36.0% 0.090 277.4); --color-indigo-700: oklch(78.5% 0.115 274.713); --color-indigo-800: oklch(87% 0.065 274.039); --color-indigo-900: oklch(93% 0.034 272.788); --color-indigo-950: oklch(96.2% 0.018 272.314);
   --color-violet-50: oklch(25.5% 0.085 291.1); --color-violet-100: oklch(29.0% 0.090 293.7); --color-violet-200: oklch(36.0% 0.090 292.8); --color-violet-700: oklch(81.1% 0.111 293.571); --color-violet-800: oklch(89.4% 0.057 293.283); --color-violet-900: oklch(94.3% 0.029 294.588); --color-violet-950: oklch(96.9% 0.016 293.756);
   --color-purple-50: oklch(25.5% 0.089 302.7); --color-purple-100: oklch(29.0% 0.090 305.0); --color-purple-200: oklch(36.0% 0.090 303.7); --color-purple-700: oklch(82.7% 0.119 306.383); --color-purple-800: oklch(90.2% 0.063 306.703); --color-purple-900: oklch(94.6% 0.033 307.174); --color-purple-950: oklch(97.7% 0.014 308.299);
   --color-pink-50: oklch(25.5% 0.065 3.9); --color-pink-100: oklch(29.0% 0.090 2.4); --color-pink-200: oklch(36.0% 0.090 3.8); --color-pink-700: oklch(82.3% 0.12 346.018); --color-pink-800: oklch(89.9% 0.061 343.231); --color-pink-900: oklch(94.8% 0.028 342.258); --color-pink-950: oklch(97.1% 0.014 343.198);
   --color-rose-50: oklch(25.5% 0.063 12.1); --color-rose-100: oklch(29.0% 0.090 10.3); --color-rose-200: oklch(36.0% 0.090 13.7); --color-rose-700: oklch(81% 0.117 11.638); --color-rose-800: oklch(89.2% 0.058 10.001); --color-rose-900: oklch(94.1% 0.03 12.58); --color-rose-950: oklch(96.9% 0.015 12.422);
-  --color-bordo-50: color-mix(in oklab, #6b1027 22%, oklch(19.5% 0.02 265)); --color-bordo-100: color-mix(in oklab, #6b1027 30%, oklch(19.5% 0.02 265)); --color-bordo-200: color-mix(in oklab, #6b1027 42%, oklch(19.5% 0.02 265));
-  --color-bronce-50: color-mix(in oklab, #8c5a24 22%, oklch(19.5% 0.02 265)); --color-bronce-100: color-mix(in oklab, #8c5a24 30%, oklch(19.5% 0.02 265)); --color-bronce-200: color-mix(in oklab, #8c5a24 42%, oklch(19.5% 0.02 265));
+  --color-bordo-50: color-mix(in oklab, #6b1027 22%, oklch(20.5% 0.012 20)); --color-bordo-100: color-mix(in oklab, #6b1027 30%, oklch(20.5% 0.012 20)); --color-bordo-200: color-mix(in oklab, #6b1027 42%, oklch(20.5% 0.012 20));
+  --color-bronce-50: color-mix(in oklab, #8c5a24 22%, oklch(20.5% 0.012 20)); --color-bronce-100: color-mix(in oklab, #8c5a24 30%, oklch(20.5% 0.012 20)); --color-bronce-200: color-mix(in oklab, #8c5a24 42%, oklch(20.5% 0.012 20));
 }
 
 /* Lo que tiene que quedar igual en modo oscuro: el blanco de los textos y bordes sobre fondos de color y de la perilla
@@ -106,6 +202,9 @@
    ventanas */
 @layer utilities {
   .dark .text-white { color: #fff; }
+  /* blue-600 es el bordó de los botones con texto blanco: como color de texto sobre el carbón no se lee (3,5:1), así
+     que los textos y links en blue-600 usan el rosado claro de blue-700 (9,2:1) */
+  .dark .text-blue-600 { color: var(--color-blue-700); }
   .dark .border-white { border-color: #fff; }
   .dark .ring-white { --tw-ring-color: #fff; }
   .dark .text-white\/80 { color: rgb(255 255 255 / 0.8); }
@@ -114,12 +213,12 @@
   .dark .after\:bg-white::after { background-color: #fff; }
   .dark .after\:border-white::after { border-color: #fff; }
   .dark .hover\:bg-amber-700:hover { background-color: oklch(55.5% 0.163 48.998); }
-  .dark .hover\:bg-blue-700:hover { background-color: oklch(48.8% 0.243 264.376); }
+  .dark .hover\:bg-blue-700:hover { background-color: oklch(49% 0.17 8); }
   .dark .hover\:bg-cyan-700:hover { background-color: oklch(52% 0.105 223.128); }
   .dark .hover\:bg-emerald-700:hover { background-color: oklch(50.8% 0.118 165.612); }
   .dark .hover\:bg-rose-700:hover { background-color: oklch(51.4% 0.222 16.935); }
   .dark .hover\:bg-sky-700:hover { background-color: oklch(50% 0.134 242.749); }
-  .dark :is(.bg-slate-800, .bg-slate-900) { background-color: oklch(37% 0.03 257); }
-  .dark .hover\:bg-slate-900:hover { background-color: oklch(43% 0.03 257); }
+  .dark :is(.bg-slate-800, .bg-slate-900) { background-color: oklch(37% 0.015 20); }
+  .dark .hover\:bg-slate-900:hover { background-color: oklch(43% 0.015 20); }
   .dark :is(.bg-slate-900\/50, .bg-gray-900\/50) { background-color: rgb(0 0 0 / 0.6); }
 }

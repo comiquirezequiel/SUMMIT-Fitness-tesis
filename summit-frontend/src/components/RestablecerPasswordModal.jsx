@@ -49,14 +49,14 @@ const RestablecerPasswordModal = ({ nombre, ruta, onClose, onListo }) => {
           </button>
         </>}>
       {temporal ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <p className="text-sm text-slate-600">
             Esta es la contraseña temporal. Dásela en persona: al entrar, el sistema le va a pedir que elija una propia.
           </p>
-          <div className="flex items-center justify-between gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <code className="text-2xl font-bold tracking-[0.15em] text-slate-900 select-all" data-temporal>{temporal}</code>
-            <button onClick={copiar} className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 flex items-center gap-1.5">
-              {copiada ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+          <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
+            <code className="text-xl font-bold tracking-[0.15em] text-slate-900 select-all" data-temporal>{temporal}</code>
+            <button onClick={copiar} className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 flex items-center gap-1.5">
+              {copiada ? <Check className="w-4 h-4 text-emerald-700" /> : <Copy className="w-4 h-4" />}
               {copiada ? 'Copiada' : 'Copiar'}
             </button>
           </div>

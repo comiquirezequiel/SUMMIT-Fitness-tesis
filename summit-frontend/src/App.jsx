@@ -1,8 +1,7 @@
 import { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router';
+import { BrowserRouter as Router, Routes, Route, Navigate, useSearchParams } from 'react-router';
 import Login from './pages/Login';
 import { sesionVigente, limpiarSesion } from './services/auth';
-import { useFunciones } from './services/funciones';
 import { usuarioActual } from './utils/formato';
 
 // Contraseñas: elegir la propia al entrar con una temporal, "¿Olvidaste tu contraseña?" y el link del mail
@@ -16,28 +15,19 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Socios = lazy(() => import('./pages/Socios'));
 const NuevoSocio = lazy(() => import('./pages/NuevoSocio'));
 const ImportarSocios = lazy(() => import('./pages/ImportarSocios'));
-const MetricasGenerales = lazy(() => import('./pages/MetricasGenerales'));
 const TareasCRM = lazy(() => import('./pages/TareasCRM'));
-const Inactividad = lazy(() => import('./pages/Inactividad'));
+const EstadoSocios = lazy(() => import('./pages/EstadoSocios'));
 const Caja = lazy(() => import('./pages/Caja'));
-const Facturas = lazy(() => import('./pages/Facturas'));
-const AjustesFacturacion = lazy(() => import('./pages/AjustesFacturacion'));
 const Planes = lazy(() => import('./pages/Planes'));
-const EstadoMembresias = lazy(() => import('./pages/EstadoMembresias'));
-const DescuentosReglas = lazy(() => import('./pages/DescuentosReglas'));
-const MetricasPlanes = lazy(() => import('./pages/MetricasPlanes'));
-const DebitosAutomaticos = lazy(() => import('./pages/DebitosAutomaticos'));
-const ConstructorRutinas = lazy(() => import('./pages/ConstructorRutinas'));
 const EntrenamientoPlanes = lazy(() => import('./pages/EntrenamientoPlanes'));
 const Entrenamiento = lazy(() => import('./pages/Entrenamiento'));
 const Clases = lazy(() => import('./pages/Clases'));
 const DatosGimnasio = lazy(() => import('./pages/DatosGimnasio'));
-const ConfiguracionAcceso = lazy(() => import('./pages/ConfiguracionAcceso'));
-const AjustesEquipo = lazy(() => import('./pages/AjustesEquipo'));
-const AjustesAsistencia = lazy(() => import('./pages/AjustesAsistencia'));
+const ConfiguracionReglas = lazy(() => import('./pages/ConfiguracionReglas'));
+const GestionPersonal = lazy(() => import('./pages/GestionPersonal'));
 
 const Diferida = ({ children }) => (
-  <Suspense fallback={<div className="p-8 text-sm text-slate-400">Cargando…</div>}>{children}</Suspense>
+  <Suspense fallback={<div className="p-6 text-sm text-slate-500">Cargando…</div>}>{children}</Suspense>
 );
 
 // Mientras se descarga una pantalla de la cuenta, el fondo bordó del login
@@ -59,16 +49,23 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-// Pantallas de la factura electrónica: con la facturación apagada, vuelven al inicio
-const SoloConFacturacion = ({ children }) => (useFunciones().facturacion ? children : <Navigate to="/" replace />);
+// Pantallas a las que no conviene entrar ni escribiendo la dirección si el rol no las ve (el backend igual las protege)
+const SoloRoles = ({ roles, children }) => (roles.includes(usuarioActual()?.rol) ? children : <Navigate to="/" replace />);
+const STAFF = ['ADMIN', 'RECEPCION'];
 
-// Pantallas solo del admin a las que no conviene entrar ni escribiendo la dirección (el backend igual las protege)
-const SoloAdmin = ({ children }) => (usuarioActual()?.rol === 'ADMIN' ? children : <Navigate to="/" replace />);
-
-// Inicio según el rol: el tablero de recepción no le sirve al profesor
+// Inicio según el rol: el tablero de recepción no le sirve al profesor (empieza en Rutinas)
 const Inicio = () => (usuarioActual()?.rol === 'PROFESOR'
-  ? <Navigate to="/rutinas/constructor" replace />
+  ? <Navigate to="/entrenamiento/rutinas" replace />
   : <Diferida><Dashboard /></Diferida>);
+
+// El constructor de rutinas ya no es una pantalla: se abre desde Rutinas ("+ Nueva rutina" o "Editar"). Los links
+// viejos (?socio=, ?rutina=) abren ahí la misma rutina.
+const AlConstructor = () => {
+  const [params] = useSearchParams();
+  const destino = new URLSearchParams(params);
+  if (!destino.has('rutina')) destino.set('nueva', '1');
+  return <Navigate to={`/entrenamiento/rutinas?${destino}`} replace />;
+};
 
 function App() {
   return (
@@ -89,23 +86,16 @@ function App() {
 
           {/* Socios */}
           <Route path="socios" element={<Diferida><Socios /></Diferida>} />
-          <Route path="rutinas/constructor" element={<Diferida><ConstructorRutinas /></Diferida>} />
-          <Route path="socios/metricas" element={<Diferida><MetricasGenerales /></Diferida>} />
           <Route path="socios/nuevo" element={<Diferida><NuevoSocio /></Diferida>} />
           <Route path="socios/importar" element={<Diferida><ImportarSocios /></Diferida>} />
           <Route path="socios/tareas" element={<Diferida><TareasCRM /></Diferida>} />
-          <Route path="socios/inactividad" element={<Diferida><Inactividad /></Diferida>} />
+          <Route path="socios/estado" element={<Diferida><EstadoSocios /></Diferida>} />
 
-          {/* Caja */}
+          {/* Caja (cobros, gastos, cierres y facturas) */}
           <Route path="caja" element={<Diferida><Caja /></Diferida>} />
-          <Route path="caja/facturas" element={<SoloConFacturacion><Diferida><Facturas /></Diferida></SoloConFacturacion>} />
 
           {/* Membresías / Planes */}
           <Route path="planes" element={<Diferida><Planes /></Diferida>} />
-          <Route path="membresias/metricas" element={<Diferida><MetricasPlanes /></Diferida>} />
-          <Route path="membresias/estado" element={<Diferida><EstadoMembresias /></Diferida>} />
-          <Route path="membresias/debitos" element={<Diferida><DebitosAutomaticos /></Diferida>} />
-          <Route path="membresias/reglas" element={<Diferida><DescuentosReglas /></Diferida>} />
 
           {/* Entrenamiento */}
           <Route path="entrenamiento/rutinas" element={<Diferida><EntrenamientoPlanes /></Diferida>} />
@@ -115,11 +105,23 @@ function App() {
           <Route path="clases/*" element={<Diferida><Clases /></Diferida>} />
 
           {/* Ajustes */}
+          <Route path="ajustes/reglas" element={<SoloRoles roles={STAFF}><Diferida><ConfiguracionReglas /></Diferida></SoloRoles>} />
+          <Route path="ajustes/personal" element={<SoloRoles roles={['ADMIN']}><Diferida><GestionPersonal /></Diferida></SoloRoles>} />
           <Route path="ajustes/gimnasio" element={<Diferida><DatosGimnasio /></Diferida>} />
-          <Route path="ajustes/acceso" element={<Diferida><ConfiguracionAcceso /></Diferida>} />
-          <Route path="ajustes/equipo" element={<Diferida><AjustesEquipo /></Diferida>} />
-          <Route path="ajustes/asistencia" element={<Diferida><AjustesAsistencia /></Diferida>} />
-          <Route path="ajustes/facturacion" element={<SoloConFacturacion><SoloAdmin><Diferida><AjustesFacturacion /></Diferida></SoloAdmin></SoloConFacturacion>} />
+
+          {/* Direcciones de las pantallas que ahora son pestañas (o se fueron al tablero) */}
+          <Route path="socios/metricas" element={<Navigate to="/?metricas=socios" replace />} />
+          <Route path="socios/inactividad" element={<Navigate to="/socios/estado?vista=inactividad" replace />} />
+          <Route path="membresias/estado" element={<Navigate to="/socios/estado" replace />} />
+          <Route path="membresias/metricas" element={<Navigate to="/?metricas=ganancias" replace />} />
+          <Route path="membresias/debitos" element={<Navigate to="/?metricas=planes" replace />} />
+          <Route path="membresias/reglas" element={<Navigate to="/ajustes/reglas" replace />} />
+          <Route path="caja/facturas" element={<Navigate to="/caja?vista=facturas" replace />} />
+          <Route path="ajustes/acceso" element={<Navigate to="/ajustes/reglas" replace />} />
+          <Route path="ajustes/facturacion" element={<Navigate to="/ajustes/reglas?vista=facturacion" replace />} />
+          <Route path="ajustes/equipo" element={<Navigate to="/ajustes/personal" replace />} />
+          <Route path="ajustes/asistencia" element={<Navigate to="/ajustes/personal?vista=asistencia" replace />} />
+          <Route path="rutinas/constructor" element={<AlConstructor />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

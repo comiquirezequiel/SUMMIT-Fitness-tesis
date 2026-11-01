@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AlertTriangle, CalendarX, Clock, CheckCircle2, UserX, Wallet, Phone, Snowflake } from 'lucide-react';
 import CobroModal from '../components/socios/CobroModal';
+import Encabezado from '../components/Encabezado';
 import { apiFetch } from '../services/api';
 import { formatFecha, diasHasta, textoVencimiento, usuarioActual } from '../utils/formato';
 
@@ -16,14 +17,18 @@ const TABS = [
 ];
 
 const COLORES = {
-  rose: { border: 'border-rose-200', text: 'text-rose-600', activeBg: 'bg-rose-50', activeBorder: 'border-rose-500' },
-  orange: { border: 'border-orange-200', text: 'text-orange-600', activeBg: 'bg-orange-50', activeBorder: 'border-orange-500' },
-  yellow: { border: 'border-yellow-200', text: 'text-yellow-600', activeBg: 'bg-yellow-50', activeBorder: 'border-yellow-500' },
-  emerald: { border: 'border-emerald-200', text: 'text-emerald-600', activeBg: 'bg-emerald-50', activeBorder: 'border-emerald-500' },
+  rose: { border: 'border-rose-200', text: 'text-rose-700', activeBg: 'bg-rose-50', activeBorder: 'border-rose-500' },
+  orange: { border: 'border-orange-200', text: 'text-orange-700', activeBg: 'bg-orange-50', activeBorder: 'border-orange-500' },
+  yellow: { border: 'border-yellow-200', text: 'text-yellow-700', activeBg: 'bg-yellow-50', activeBorder: 'border-yellow-500' },
+  emerald: { border: 'border-emerald-200', text: 'text-emerald-700', activeBg: 'bg-emerald-50', activeBorder: 'border-emerald-500' },
   cyan: { border: 'border-cyan-200', text: 'text-cyan-700', activeBg: 'bg-cyan-50', activeBorder: 'border-cyan-500' },
   slate: { border: 'border-slate-200', text: 'text-slate-600', activeBg: 'bg-slate-50', activeBorder: 'border-slate-500' },
 };
 
+/**
+ * Estado de las membresías (pestaña de Estado de socios): los socios por días que faltan para el vencimiento, para
+ * renovarles la cuota a tiempo. Los congelados y los que no tienen membresía van aparte.
+ */
 const EstadoMembresias = () => {
   const puedeCobrar = ['ADMIN', 'RECEPCION'].includes(usuarioActual()?.rol);
   const [activeTab, setActiveTab] = useState('vencidas');
@@ -54,23 +59,18 @@ const EstadoMembresias = () => {
   const getTabColors = (tab, isActive) => {
     const theme = COLORES[tab.color];
     if (isActive) return `${theme.activeBg} ${theme.activeBorder} ${theme.text} shadow-xs`;
-    return `bg-white ${theme.border} text-slate-500 hover:bg-slate-50 opacity-70`;
+    return `bg-white ${theme.border} text-slate-500 hover:bg-slate-50`;
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <AlertTriangle className="w-8 h-8 text-amber-500" />
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Estado de Membresías</h1>
-          <p className="text-sm text-slate-500 mt-1">Gestiona membresías próximas a vencer y vencidas</p>
-        </div>
-      </div>
+    <div className="space-y-3">
+      <Encabezado titulo="Estado de Membresías" icono={AlertTriangle} colorIcono="text-amber-500"
+        subtitulo="Membresías vencidas y por vencer: elegí una categoría y renovalas desde la lista" />
 
-      {error && <div className="p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>}
+      {error && <div className="px-3 py-2 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>}
 
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs">
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+      <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs">
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-3">
           {TABS.map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -79,24 +79,23 @@ const EstadoMembresias = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex justify-between items-start p-5 rounded-xl border-2 transition-all text-left ${getTabColors(tab, isActive)} ${isActive ? 'shadow-[0_4px_12px_-4px_rgba(0,0,0,0.1)] -translate-y-0.5' : 'shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:-translate-y-0.5'}`}
+                aria-pressed={isActive}
+                className={`flex justify-between items-center gap-2 px-2.5 py-2 rounded-lg border-2 transition-colors text-left ${getTabColors(tab, isActive)}`}
               >
-                <div className="flex flex-col">
-                  <span className="font-semibold text-[13px] mb-2">{tab.label}</span>
-                  <span className="text-4xl font-extrabold tracking-tight">{cantidad}</span>
+                <div className="flex flex-col min-w-0">
+                  <span className="font-semibold text-xs truncate">{tab.label}</span>
+                  <span className="text-xl font-extrabold tracking-tight leading-tight">{cantidad}</span>
                 </div>
-                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/50">
-                  <Icon className="w-5 h-5 opacity-90" />
-                </div>
+                <Icon className="w-4 h-4 opacity-80 shrink-0" />
               </button>
             );
           })}
         </div>
 
         {lista.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-            <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-4">
-              <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+          <div className="flex flex-col items-center justify-center py-8 text-slate-500">
+            <div className="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-2">
+              <CheckCircle2 className="w-5 h-5 text-emerald-500" />
             </div>
             <p className="text-sm font-medium">No hay membresías en esta categoría</p>
           </div>
@@ -105,36 +104,36 @@ const EstadoMembresias = () => {
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Socio</th>
-                  <th className="px-4 py-3 font-medium">Contacto</th>
-                  <th className="px-4 py-3 font-medium">Plan</th>
-                  <th className="px-4 py-3 font-medium">Vencimiento</th>
-                  {puedeCobrar && <th className="px-4 py-3 font-medium text-right">Acción</th>}
+                  <th className="px-3 py-2 font-medium">Socio</th>
+                  <th className="px-3 py-2 font-medium">Contacto</th>
+                  <th className="px-3 py-2 font-medium">Plan</th>
+                  <th className="px-3 py-2 font-medium">Vencimiento</th>
+                  {puedeCobrar && <th className="px-3 py-2 font-medium text-right">Acción</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {lista.map(s => (
                   <tr key={s.idSocio} className="hover:bg-slate-50">
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2">
                       <p className="font-medium text-slate-800">{s.nombreCompleto}</p>
                       <p className="text-xs text-slate-500">DNI {s.dni}</p>
                     </td>
-                    <td className="px-4 py-3 text-slate-600">
+                    <td className="px-3 py-2 text-slate-600">
                       {s.telefono ? <span className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5 text-slate-400" />{s.telefono}</span> : s.email}
                     </td>
-                    <td className="px-4 py-3 text-slate-700">{s.planActual}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2 text-slate-700">{s.planActual}</td>
+                    <td className="px-3 py-2">
                       {s.vencimientoMembresia
-                        ? <><p className="text-slate-700">{formatFecha(s.vencimientoMembresia)}</p><p className={`text-xs ${s.dias < 0 ? 'text-rose-600' : 'text-slate-500'}`}>{textoVencimiento(s.dias)}</p>
+                        ? <><p className="text-slate-700">{formatFecha(s.vencimientoMembresia)}</p><p className={`text-xs ${s.dias < 0 ? 'text-rose-700' : 'text-slate-500'}`}>{textoVencimiento(s.dias)}</p>
                             {s.congeladaHasta && (
-                              <p className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-cyan-200 bg-cyan-50 text-cyan-700 text-[11px] font-semibold">
+                              <p className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-cyan-200 bg-cyan-50 text-cyan-700 text-xs font-semibold">
                                 <Snowflake className="w-3 h-3" /> Congelada hasta el {formatFecha(s.congeladaHasta)}
                               </p>
                             )}</>
-                        : <span className="text-slate-400">—</span>}
+                        : <span className="text-slate-500">—</span>}
                     </td>
                     {puedeCobrar && (
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-3 py-2 text-right">
                         <button onClick={() => setSocioCobro(s)}
                           className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-bold inline-flex items-center gap-1 border border-blue-200">
                           <Wallet className="w-3 h-3" /> {s.vencimientoMembresia ? 'Renovar' : 'Cobrar'}

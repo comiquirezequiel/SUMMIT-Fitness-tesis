@@ -28,3 +28,6 @@ Thumbs.db
 *.csr
 *.crt
 *.pem
+
+# Copias que hace demo/regenerar-demo.ps1 antes de borrar (datos personales y de salud)
+demo/respaldos/

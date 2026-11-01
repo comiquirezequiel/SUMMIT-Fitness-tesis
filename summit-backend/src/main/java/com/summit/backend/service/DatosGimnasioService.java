@@ -2,6 +2,8 @@ package com.summit.backend.service;
 
 import com.summit.backend.dto.DatosGimnasioDTO;
 import com.summit.backend.model.DatosGimnasio;
+import com.summit.backend.model.DiaSemana;
+import com.summit.backend.model.HorarioGimnasio;
 import com.summit.backend.repository.DatosGimnasioRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -10,12 +12,23 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * Datos del gimnasio (Ajustes > Datos del gimnasio): nombre, contacto y logo, que salen en los PDF.
+ * Datos del gimnasio (Ajustes > Datos del gimnasio): nombre, contacto y logo, que salen en los PDF, y el horario de
+ * cada día, que usan las métricas.
  */
 @Service
 @RequiredArgsConstructor
@@ -23,6 +36,7 @@ import java.util.regex.Pattern;
 public class DatosGimnasioService {
 
     private static final Long ID = 1L;
+    private static final DateTimeFormatter HH_MM = DateTimeFormatter.ofPattern("HH:mm");
     private static final Pattern EMAIL = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
     private static final Pattern TELEFONO = Pattern.compile("^[0-9+()\\-\\s]{6,25}$");
     private static final Pattern INSTAGRAM = Pattern.compile("^[A-Za-z0-9._]{1,30}$");
@@ -31,19 +45,59 @@ public class DatosGimnasioService {
     private final ArchivoService archivoService;
 
     /**
-     * Crea los datos por defecto la primera vez (solo el nombre), hasta que el admin cargue los reales.
+     * Crea los datos por defecto la primera vez (el nombre y el horario), hasta que el admin cargue los reales. Una base
+     * de antes del horario lo recibe también.
      */
     @PostConstruct
     public void crearSiNoExisten() {
-        if (repository.existsById(ID)) {
-            return;
+        DatosGimnasio datos = repository.findById(ID).orElse(null);
+        if (datos == null) {
+            log.info("Creando los datos del gimnasio por defecto...");
+            repository.save(DatosGimnasio.builder().idDatos(ID).nombre("SUMMIT Fitness").horarios(horarioPorDefecto()).build());
+        } else if (datos.getHorarios().size() != DiaSemana.values().length) {
+            log.info("Cargando el horario del gimnasio por defecto...");
+            datos.getHorarios().clear();
+            datos.getHorarios().addAll(horarioPorDefecto());
+            repository.save(datos);
         }
-        log.info("Creando los datos del gimnasio por defecto...");
-        repository.save(DatosGimnasio.builder().idDatos(ID).nombre("SUMMIT Fitness").build());
+    }
+
+    // De lunes a viernes de 8 a 22, los sábados de 8 a 13 y los domingos cerrado
+    private static List<HorarioGimnasio> horarioPorDefecto() {
+        List<HorarioGimnasio> horarios = new ArrayList<>();
+        for (DiaSemana dia : DiaSemana.values()) {
+            horarios.add(switch (dia) {
+                case SABADO -> new HorarioGimnasio(dia, LocalTime.of(8, 0), LocalTime.of(13, 0));
+                case DOMINGO -> new HorarioGimnasio(dia, null, null);
+                default -> new HorarioGimnasio(dia, LocalTime.of(8, 0), LocalTime.of(22, 0));
+            });
+        }
+        return horarios;
     }
 
     public DatosGimnasio obtener() {
         return repository.findById(ID).orElseThrow(() -> new IllegalStateException("Faltan los datos del gimnasio"));
+    }
+
+    /** El horario de cada día de la semana (los que no abren tienen abre y cierra en null). */
+    @Transactional(readOnly = true)
+    public Map<DayOfWeek, HorarioGimnasio> horarioSemanal() {
+        Map<DayOfWeek, HorarioGimnasio> semana = new EnumMap<>(DayOfWeek.class);
+        for (HorarioGimnasio horario : obtener().getHorarios()) {
+            semana.put(DayOfWeek.of(horario.getDia().ordinal() + 1), horario);
+        }
+        return semana;
+    }
+
+    /** Los días de la semana en que el gimnasio no abre. */
+    public Set<DayOfWeek> diasCerrados() {
+        Set<DayOfWeek> cerrados = EnumSet.noneOf(DayOfWeek.class);
+        horarioSemanal().forEach((dia, horario) -> {
+            if (!horario.abierto()) {
+                cerrados.add(dia);
+            }
+        });
+        return cerrados;
     }
 
     public DatosGimnasioDTO obtenerDTO() {
@@ -101,13 +155,69 @@ public class DatosGimnasioService {
             }
         }
         datos.setInstagram(instagram);
+        if (pedido.horarios() != null) {
+            List<HorarioGimnasio> horarios = horarios(pedido.horarios());
+            datos.getHorarios().clear();
+            datos.getHorarios().addAll(horarios);
+        }
         return aDTO(repository.save(datos));
     }
 
+    // Los 7 días, cada uno abierto (abre antes de cerrar) o cerrado (sin horas)
+    private static List<HorarioGimnasio> horarios(List<DatosGimnasioDTO.Horario> pedido) {
+        Map<DiaSemana, HorarioGimnasio> porDia = new EnumMap<>(DiaSemana.class);
+        for (DatosGimnasioDTO.Horario h : pedido) {
+            DiaSemana dia;
+            try {
+                dia = DiaSemana.valueOf(h.dia());
+            } catch (IllegalArgumentException | NullPointerException e) {
+                throw new IllegalArgumentException("Día de la semana desconocido: " + h.dia());
+            }
+            LocalTime abre = hora(h.abre());
+            LocalTime cierra = hora(h.cierra());
+            if ((abre == null) != (cierra == null)) {
+                throw new IllegalArgumentException("Completá a qué hora abre y a qué hora cierra el " + nombre(dia)
+                        + " (o marcalo como cerrado)");
+            }
+            if (abre != null && !abre.isBefore(cierra)) {
+                throw new IllegalArgumentException("El " + nombre(dia) + " tiene que abrir antes de cerrar");
+            }
+            porDia.put(dia, new HorarioGimnasio(dia, abre, cierra));
+        }
+        if (porDia.size() != DiaSemana.values().length) {
+            throw new IllegalArgumentException("Falta el horario de algún día de la semana");
+        }
+        if (porDia.values().stream().noneMatch(HorarioGimnasio::abierto)) {
+            throw new IllegalArgumentException("El gimnasio tiene que abrir al menos un día de la semana");
+        }
+        return new ArrayList<>(porDia.values());
+    }
+
+    private static LocalTime hora(String texto) {
+        if (texto == null || texto.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalTime.parse(texto.trim());
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("La hora " + texto + " no es válida (usá el formato 08:30)");
+        }
+    }
+
+    private static String nombre(DiaSemana dia) {
+        return dia == DiaSemana.MIERCOLES ? "miércoles" : dia == DiaSemana.SABADO ? "sábado" : dia.name().toLowerCase();
+    }
+
     private static DatosGimnasioDTO aDTO(DatosGimnasio d) {
+        List<DatosGimnasioDTO.Horario> horarios = d.getHorarios().stream()
+                .map(h -> new DatosGimnasioDTO.Horario(h.getDia().name(),
+                        h.getAbre() != null ? h.getAbre().format(HH_MM) : null,
+                        h.getCierra() != null ? h.getCierra().format(HH_MM) : null))
+                .toList();
         return new DatosGimnasioDTO(d.getNombre(), d.getDireccion(), d.getCiudad(), d.getTelefono(), d.getWhatsapp(),
                 d.getEmail(), d.getInstagram(),
-                d.getLogoUrl() != null ? "/api/configuracion/gimnasio/logo?v=" + Fotos.version(d.getLogoActualizado()) : null);
+                d.getLogoUrl() != null ? "/api/configuracion/gimnasio/logo?v=" + Fotos.version(d.getLogoActualizado()) : null,
+                horarios);
     }
 
     // ---- Logo ----

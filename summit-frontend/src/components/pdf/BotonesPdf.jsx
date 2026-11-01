@@ -58,7 +58,7 @@ const BotonesPdf = ({ documento, className = '' }) => {
         {boton('imprimir', 'Imprimir', Printer, `${botonSecundario} bg-white`)}
         {boton('descargar', 'Descargar PDF', Download, `${botonSecundario} bg-white`)}
       </div>
-      <p className={`text-sm mt-2 ${aviso?.tipo === 'error' ? 'text-rose-600' : 'text-slate-600'} ${enCurso || aviso ? '' : 'sr-only'}`}
+      <p className={`text-sm mt-2 ${aviso?.tipo === 'error' ? 'text-rose-700' : 'text-slate-600'} ${enCurso || aviso ? '' : 'sr-only'}`}
         role="status" aria-live="polite">
         {enCurso ? 'Preparando el PDF…' : aviso?.texto}
       </p>

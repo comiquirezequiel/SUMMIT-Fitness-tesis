@@ -152,7 +152,7 @@ const CongelamientoSocio = ({ socio, onCambio }) => {
       )}
 
       {mensaje && (
-        <p className={`text-sm font-medium ${mensaje.tipo === 'ok' ? 'text-emerald-700' : mensaje.tipo === 'aviso' ? 'text-amber-700' : 'text-rose-600'}`}>
+        <p className={`text-sm font-medium ${mensaje.tipo === 'ok' ? 'text-emerald-700' : mensaje.tipo === 'aviso' ? 'text-amber-700' : 'text-rose-700'}`}>
           {mensaje.texto}
         </p>
       )}
@@ -163,7 +163,7 @@ const CongelamientoSocio = ({ socio, onCambio }) => {
           <ul className="mt-2 space-y-1">
             {anteriores.map(c => (
               <li key={c.idCongelamiento} className="flex justify-between gap-3 text-xs">
-                <span className={c.estado === 'ANULADO' ? 'text-slate-400 line-through' : 'text-slate-600'}>
+                <span className={c.estado === 'ANULADO' ? 'text-slate-500 line-through' : 'text-slate-600'}>
                   {formatFecha(c.desde)} al {formatFecha(c.hasta)} · {textoMotivoCongelamiento(c.motivo)}
                 </span>
                 <span className="text-slate-500 whitespace-nowrap">

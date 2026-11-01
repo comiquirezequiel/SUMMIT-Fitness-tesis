@@ -6,9 +6,9 @@ const iniciales = (nombre = '') => nombre.trim().split(/\s+/).slice(0, 2).map((p
 /**
  * Foto del socio, o sus iniciales si no tiene (o mientras carga). La foto se pide recién cuando el recuadro
  * aparece en pantalla: en una lista larga no se piden todas juntas.
- * className lleva el tamaño y la forma (ej. "w-10 h-10 rounded-full"); texto, el tamaño de las iniciales.
+ * className lleva el tamaño y la forma (ej. "w-8 h-8 rounded-full"); texto, el tamaño de las iniciales.
  */
-const FotoSocio = ({ idSocio, fotoVersion, nombre, className = 'w-10 h-10 rounded-full', texto = 'text-xs' }) => {
+const FotoSocio = ({ idSocio, fotoVersion, nombre, className = 'w-8 h-8 rounded-full', texto = 'text-xs' }) => {
   const [url, setUrl] = useState(null);
   const [visible, setVisible] = useState(false);
   const recuadro = useRef(null);

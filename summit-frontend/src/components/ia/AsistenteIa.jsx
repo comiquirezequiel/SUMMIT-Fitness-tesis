@@ -52,7 +52,7 @@ export const BotonIa = ({ onClick, cargando, estado, children, className = '' })
   return (
     <button type="button" onClick={onClick} disabled={cargando || !disponible}
       title={disponible === false ? `Asistente de IA no disponible: ${estado.motivo}` : 'Lo analiza un modelo de IA que corre en este equipo'}
-      className={`inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold border transition-colors
+      className={`inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold border transition-colors
         border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100 disabled:opacity-60 disabled:cursor-not-allowed ${className}`}>
       {cargando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
       {cargando ? `Analizando… ${segundos} s` : children}
@@ -87,7 +87,7 @@ const Apto = ({ apto }) => {
  * 8) el aviso de que la IA puede equivocarse; 9) los botones de la pantalla que la usa.
  */
 export const ResultadoAnalisis = ({ analisis, acciones }) => (
-  <div className="rounded-xl border border-violet-200 bg-violet-50/40 p-4 space-y-3 text-sm">
+  <div className="rounded-xl border border-violet-200 bg-violet-50/40 p-3 space-y-3 text-sm">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <p className="font-semibold text-violet-800 flex items-center gap-1.5"><Sparkles className="w-4 h-4" /> Lectura del asistente de IA</p>
       {/* Cómo se leyó (texto o imagen), qué modelo lo hizo y cuánto tardó: transparencia para el usuario. */}
@@ -98,7 +98,7 @@ export const ResultadoAnalisis = ({ analisis, acciones }) => (
     </div>
     {/* Advertencias calculadas por el backend (no por la IA). "?." por si el campo no viniera. */}
     {analisis.advertencias?.length > 0 && (
-      <ul className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 space-y-1 text-rose-800 font-medium">
+      <ul className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 space-y-1 text-rose-800 font-medium">
         {analisis.advertencias.map(a => (
           <li key={a} className="flex items-start gap-1.5"><AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" /> {a}</li>
         ))}
@@ -107,7 +107,7 @@ export const ResultadoAnalisis = ({ analisis, acciones }) => (
     {/* Señales de un posible certificado falso: las detecta la IA (es una opinión, no una regla exacta), por eso
         van aparte de las advertencias y lo aclaran. Naranja: llaman la atención sin confundirse con el rojo. */}
     {analisis.senalesDeAlerta?.length > 0 && (
-      <div className="rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-orange-900">
+      <div className="rounded-lg border border-orange-300 bg-orange-50 px-3 py-1.5 text-orange-900">
         <p className="font-semibold flex items-center gap-1.5"><ShieldAlert className="w-4 h-4 shrink-0" /> Posible certificado falso o no válido</p>
         <ul className="list-disc pl-6 mt-1 space-y-0.5">{analisis.senalesDeAlerta.map(s => <li key={s}>{s}</li>)}</ul>
         <p className="text-xs mt-1.5">Lo detectó la IA: verificá el certificado original o pedile uno nuevo al socio antes de guardarlo.</p>

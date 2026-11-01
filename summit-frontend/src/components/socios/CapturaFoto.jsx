@@ -171,7 +171,7 @@ const CapturaFoto = ({ nombre, onListo, onCerrar, subtitulo = 'Para que recepci�
       onClose={onCerrar} ancho="max-w-md" pie={pie}>
       <div className="space-y-3">
         {paso === 'camara' && (
-          <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-900">
+          <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-slate-900">
             {/* Espejada, como un espejo: así el socio se acomoda solo. La foto se guarda sin espejar */}
             <video ref={videoRef} playsInline muted className="absolute inset-0 w-full h-full object-cover -scale-x-100" />
             {/* Guía para la cara: lo que queda afuera del cuadrado no sale en la foto */}
@@ -184,17 +184,17 @@ const CapturaFoto = ({ nombre, onListo, onCerrar, subtitulo = 'Para que recepci�
           </div>
         )}
         {paso === 'sinCamara' && (
-          <div className="aspect-square w-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 flex flex-col items-center justify-center gap-3 p-6 text-center">
-            <CameraOff className="w-10 h-10 text-slate-400" />
+          <div className="aspect-square w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 flex flex-col items-center justify-center gap-3 p-4 text-center">
+            <CameraOff className="w-8 h-8 text-slate-400" />
             <p className="text-sm font-semibold text-slate-700">{motivoSinCamara}</p>
             <p className="text-sm text-slate-500">Podés subir una imagen: desde un celular, te deja sacarla en el momento.</p>
           </div>
         )}
         {(paso === 'revisar' || paso === 'guardando') && foto && (
-          <img src={foto.url} alt="Foto sacada" className="aspect-square w-full rounded-2xl object-cover bg-slate-100" />
+          <img src={foto.url} alt="Foto sacada" className="aspect-square w-full rounded-xl object-cover bg-slate-100" />
         )}
         {paso === 'camara' && <p className="text-xs text-slate-500 text-center">Que la cara quede dentro del círculo, de frente y con buena luz.</p>}
-        {error && <p className="text-sm font-medium text-rose-600" role="alert">{error}</p>}
+        {error && <p className="text-sm font-medium text-rose-700" role="alert">{error}</p>}
         <input ref={archivoRef} type="file" accept="image/*" className="hidden" aria-label="Elegir una imagen"
           onChange={(e) => { elegirArchivo(e.target.files[0]); e.target.value = ''; }} />
       </div>

@@ -3,13 +3,13 @@ import { Loader2, Inbox, AlertTriangle, CheckCircle2, Info, X, RefreshCw } from 
 // Estados de carga, vacío, error y avisos de las pantallas de entrenamiento
 
 export const Cargando = ({ texto = 'Cargando...' }) => (
-  <div className="p-8 text-center text-slate-500 text-sm flex items-center justify-center gap-2" role="status">
+  <div className="p-5 text-center text-slate-500 text-sm flex items-center justify-center gap-2 aparece-tarde" role="status" data-cargando>
     <Loader2 className="w-4 h-4 animate-spin" /> {texto}
   </div>
 );
 
 export const Vacio = ({ icono: Icono = Inbox, titulo, children }) => (
-  <div className="p-8 text-center text-slate-500">
+  <div className="p-5 text-center text-slate-500">
     <Icono className="w-9 h-9 mx-auto mb-2 text-slate-300" />
     <p className="font-semibold text-slate-600">{titulo}</p>
     {children && <div className="text-sm mt-1">{children}</div>}
@@ -17,12 +17,12 @@ export const Vacio = ({ icono: Icono = Inbox, titulo, children }) => (
 );
 
 export const ErrorCaja = ({ mensaje, onReintentar }) => (
-  <div className="p-6 text-center bg-rose-50 text-rose-700 rounded-xl border border-rose-100" role="alert">
+  <div className="p-4 text-center bg-rose-50 text-rose-700 rounded-xl border border-rose-100" role="alert">
     <AlertTriangle className="w-7 h-7 mx-auto mb-2 opacity-60" />
     <p className="text-sm font-medium">{mensaje}</p>
     {onReintentar && (
       <button onClick={onReintentar}
-        className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 tactil:min-h-11 tactil:px-4 text-sm font-semibold bg-white border border-rose-200 rounded-lg hover:bg-rose-100">
+        className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 tactil:min-h-11 tactil:px-4 text-sm font-semibold bg-white border border-rose-200 rounded-lg hover:bg-rose-100">
         <RefreshCw className="w-3.5 h-3.5" /> Reintentar
       </button>
     )}

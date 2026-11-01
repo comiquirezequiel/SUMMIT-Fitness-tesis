@@ -1,6 +1,8 @@
 import { Fragment, useEffect, useState } from 'react';
 import { useCarga } from '../hooks/useCarga';
-import { AlertTriangle, RefreshCw, Download, Search, MessageCircle, Clock, Users, CheckCircle2, Phone } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Download, MessageCircle, Clock, Users, CheckCircle2, Phone } from 'lucide-react';
+import Encabezado from '../components/Encabezado';
+import { Buscador, botonHerramienta, selectorHerramienta } from '../components/Campo';
 import { CANALES, mensajeInactivo, obtenerInactividad, registrarContacto, textoCanal } from '../services/seguimiento';
 import { datosDelGimnasio } from '../components/pdf';
 import { enlaceWhatsApp } from '../utils/whatsapp';
@@ -14,19 +16,19 @@ const NIVELES = {
 
 const Tarjeta = ({ titulo, valor, detalle, icono: Icono, color, onClick, activa }) => (
   <button type="button" onClick={onClick} disabled={!onClick}
-    className={`text-left bg-white p-5 rounded-xl border shadow-xs flex items-center justify-between transition-all ${onClick ? 'hover:shadow-md' : 'cursor-default'} ${activa ? 'border-blue-300 ring-2 ring-blue-100' : 'border-slate-200'}`}>
-    <div>
-      <p className="text-sm font-medium text-slate-500">{titulo}</p>
-      <p className="text-3xl font-bold text-slate-800 mt-1">{valor}</p>
-      {detalle && <p className="text-xs text-slate-500 mt-1">{detalle}</p>}
+    className={`text-left bg-white px-3 py-2.5 rounded-xl border shadow-xs flex items-center justify-between gap-2 transition-all ${onClick ? 'hover:shadow-md' : 'cursor-default'} ${activa ? 'border-blue-300 ring-2 ring-blue-100' : 'border-slate-200'}`}>
+    <div className="min-w-0">
+      <p className="text-xs font-medium text-slate-500">{titulo}</p>
+      <p className="text-xl font-bold text-slate-800 leading-tight mt-0.5">{valor}</p>
+      {detalle && <p className="text-xs text-slate-500 mt-0.5 truncate">{detalle}</p>}
     </div>
-    <div className={`w-11 h-11 rounded-full flex items-center justify-center ${color}`}><Icono className="w-5 h-5" /></div>
+    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${color}`}><Icono className="w-4 h-4" /></div>
   </button>
 );
 
 /**
- * Socios que dejaron de venir: los que tienen la cuota al día (o vencida hace poco) y hace días que no entran, para
- * escribirles antes de que no renueven. Cada contacto queda registrado.
+ * Socios que dejaron de venir (pestaña de Estado de socios): los que tienen la cuota al día (o vencida hace poco) y
+ * hace días que no entran, para escribirles antes de que no renueven. Cada contacto queda registrado.
  */
 const Inactividad = () => {
   const [minDias, setMinDias] = useState(7);
@@ -65,26 +67,21 @@ const Inactividad = () => {
   const porcentaje = datos && datos.sociosAlDia > 0 ? Math.round((datos.vinieronSemana * 100) / datos.sociosAlDia) : 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <AlertTriangle className="w-6 h-6 text-amber-500" /> Inactividad
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">Socios con la cuota al día (o vencida hace poco) que hace días que no vienen</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={cargar} className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 bg-white">
-            <RefreshCw className={`w-4 h-4 ${cargando ? 'animate-spin' : ''}`} /> Actualizar
-          </button>
-          <button onClick={exportar} disabled={socios.length === 0}
-            className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 bg-white disabled:opacity-50">
-            <Download className="w-4 h-4" /> Exportar
-          </button>
-        </div>
-      </div>
+    <div className="space-y-3">
+      <Encabezado titulo="Inactividad" icono={AlertTriangle} colorIcono="text-amber-500"
+        subtitulo="Socios con la cuota al día (o vencida hace poco) que hace días que no vienen"
+        acciones={(
+          <>
+            <button onClick={cargar} className={botonHerramienta}>
+              <RefreshCw className={`w-3.5 h-3.5 ${cargando ? 'animate-spin' : ''}`} /> Actualizar
+            </button>
+            <button onClick={exportar} disabled={socios.length === 0} className={botonHerramienta}>
+              <Download className="w-3.5 h-3.5" /> Exportar
+            </button>
+          </>
+        )} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-2">
         {['LEVE', 'MEDIO', 'ALTO'].map(n => (
           <Tarjeta key={n} titulo={`Alerta ${NIVELES[n].texto.toLowerCase()}`} valor={datos ? datos[n.toLowerCase()] : '—'}
             detalle={`${NIVELES[n].rango} sin venir · tocá para filtrar`} icono={n === 'LEVE' ? Clock : AlertTriangle}
@@ -95,29 +92,25 @@ const Inactividad = () => {
           icono={Users} color="bg-blue-50 text-blue-600" />
       </div>
 
-      {error && <div className="p-3 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>}
-      {aviso && <div className="p-3 rounded-lg bg-emerald-50 text-emerald-700 text-sm font-medium flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> {aviso}</div>}
+      {error && <div className="px-3 py-2 rounded-lg bg-rose-50 text-rose-700 text-sm font-medium">{error}</div>}
+      {aviso && <div className="px-3 py-2 rounded-lg bg-emerald-50 text-emerald-700 text-sm font-medium flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> {aviso}</div>}
 
       <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row gap-3 md:items-center justify-between">
-          <div className="flex flex-wrap gap-2">
+        <div className="px-3 py-2 border-b border-slate-200 flex flex-col md:flex-row gap-2 md:items-center justify-between">
+          <div className="flex flex-wrap gap-1.5">
             <button onClick={() => setNivel(null)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${!nivel ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200'}`}>Todos</button>
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold border ${!nivel ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200'}`}>Todos</button>
             {Object.entries(NIVELES).map(([clave, n]) => (
               <button key={clave} onClick={() => setNivel(clave)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border flex items-center gap-1.5 ${nivel === clave ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200'}`}>
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold border flex items-center gap-1.5 ${nivel === clave ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200'}`}>
                 <span className={`w-2 h-2 rounded-full ${n.punto}`} /> {n.texto}
               </button>
             ))}
           </div>
           <div className="flex gap-2">
-            <div className="relative flex-1 md:w-64">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-              <input value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar por nombre o DNI..."
-                className="pl-9 pr-4 py-2 w-full border border-slate-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-100" />
-            </div>
+            <Buscador valor={busqueda} onChange={setBusqueda} placeholder="Buscar por nombre o DNI..." className="flex-1 md:w-56" />
             <select value={minDias} onChange={e => setMinDias(Number(e.target.value))} aria-label="Días sin venir"
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white">
+              className={selectorHerramienta}>
               <option value={7}>7 días o más</option>
               <option value={15}>15 días o más</option>
               <option value={30}>30 días o más</option>
@@ -126,7 +119,7 @@ const Inactividad = () => {
         </div>
 
         {datos && socios.length === 0 ? (
-          <div className="p-10 text-center text-slate-500 text-sm">
+          <div className="p-6 text-center text-slate-500 text-sm">
             {datos.socios.length === 0 ? '¡Bien! Todos los socios con la cuota al día vinieron en los últimos días.' : 'Ningún socio coincide con el filtro.'}
           </div>
         ) : (
@@ -134,39 +127,39 @@ const Inactividad = () => {
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 text-slate-500 border-b border-slate-200 uppercase text-xs tracking-wider">
                 <tr>
-                  <th className="px-5 py-3 font-medium">Socio</th>
-                  <th className="px-5 py-3 font-medium">Último ingreso</th>
-                  <th className="px-5 py-3 font-medium">Promedio</th>
-                  <th className="px-5 py-3 font-medium">Membresía</th>
-                  <th className="px-5 py-3 font-medium">Último contacto</th>
-                  <th className="px-5 py-3 font-medium text-right">Contactar</th>
+                  <th className="px-4 py-2 font-medium">Socio</th>
+                  <th className="px-4 py-2 font-medium">Último ingreso</th>
+                  <th className="px-4 py-2 font-medium">Promedio</th>
+                  <th className="px-4 py-2 font-medium">Membresía</th>
+                  <th className="px-4 py-2 font-medium">Último contacto</th>
+                  <th className="px-4 py-2 font-medium text-right">Contactar</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {socios.map(s => (
                   <Fragment key={s.idSocio}>
                     <tr className="hover:bg-slate-50/60">
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-2">
                         <div className="flex items-center gap-2">
-                          <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold border ${NIVELES[s.nivel].clase}`}>{NIVELES[s.nivel].texto}</span>
+                          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border ${NIVELES[s.nivel].clase}`}>{NIVELES[s.nivel].texto}</span>
                           <span className="font-medium text-slate-800">{s.nombreCompleto}</span>
                         </div>
                         <div className="text-xs text-slate-500 mt-0.5">DNI {s.dni}{s.telefono ? ` · ${s.telefono}` : ''}</div>
                       </td>
-                      <td className="px-5 py-3 whitespace-nowrap">
+                      <td className="px-4 py-2 whitespace-nowrap">
                         <div className="font-semibold text-slate-800">{s.ultimoIngreso ? `Hace ${s.diasSinVenir} días` : 'Nunca vino'}</div>
                         <div className="text-xs text-slate-500">{s.ultimoIngreso ? formatFecha(s.ultimoIngreso) : `Alta hace ${s.diasSinVenir} días`}</div>
                       </td>
-                      <td className="px-5 py-3 whitespace-nowrap">
+                      <td className="px-4 py-2 whitespace-nowrap">
                         <div className="text-slate-800">{String(s.promedioSemanal).replace('.', ',')} por semana</div>
                         <div className="text-xs text-slate-500">{s.ingresos90} en 90 días</div>
                       </td>
-                      <td className="px-5 py-3 whitespace-nowrap">
+                      <td className="px-4 py-2 whitespace-nowrap">
                         <div className="text-slate-800">{s.plan}</div>
                         <div className="text-xs text-slate-500">vence {formatFecha(s.vencimientoMembresia)}</div>
                       </td>
-                      <td className="px-5 py-3 whitespace-nowrap text-slate-600">{s.ultimoContacto ? formatFecha(s.ultimoContacto) : '—'}</td>
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-2 whitespace-nowrap text-slate-600">{s.ultimoContacto ? formatFecha(s.ultimoContacto) : '—'}</td>
+                      <td className="px-4 py-2">
                         <div className="flex justify-end gap-1.5">
                           <a href={enlaceWhatsApp(s.telefono, mensajeInactivo(s.nombreCompleto, s.ultimoIngreso ? s.diasSinVenir : null, gimnasio))}
                             target="_blank" rel="noopener noreferrer" title="Escribirle por WhatsApp (mensaje ya armado)"
@@ -184,25 +177,25 @@ const Inactividad = () => {
                     </tr>
                     {contacto?.idSocio === s.idSocio && (
                       <tr className="bg-blue-50/40">
-                        <td colSpan={6} className="px-5 py-3">
+                        <td colSpan={6} className="px-4 py-2">
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="text-sm font-semibold text-slate-700">Registrar el contacto:</span>
                             <select value={contacto.canal} onChange={e => setContacto(c => ({ ...c, canal: e.target.value }))}
-                              className="px-2 py-2 border border-slate-200 rounded-lg text-sm bg-white" aria-label="Cómo lo contactaste">
+                              className="px-2 py-1.5 border border-slate-200 rounded-lg text-sm bg-white" aria-label="Cómo lo contactaste">
                               {CANALES.map(c => <option key={c.valor} value={c.valor}>{c.texto}</option>)}
                             </select>
                             <input value={contacto.nota} maxLength={300} placeholder="¿Qué te dijo? (opcional)"
                               onChange={e => setContacto(c => ({ ...c, nota: e.target.value }))}
-                              className="flex-1 min-w-48 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" />
+                              className="flex-1 min-w-48 px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-white" />
                             <button onClick={guardarContacto} disabled={contacto.enviando}
-                              className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold disabled:opacity-50">
+                              className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold disabled:opacity-50">
                               {contacto.enviando ? 'Guardando...' : `Registrar (${textoCanal(contacto.canal)})`}
                             </button>
-                            <button onClick={() => setContacto(null)} className="px-3 py-2 rounded-lg border border-slate-200 text-slate-600 text-sm font-semibold bg-white">
+                            <button onClick={() => setContacto(null)} className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-sm font-semibold bg-white">
                               No lo contacté
                             </button>
                           </div>
-                          {contacto.error && <p className="text-xs text-rose-600 font-medium mt-1">{contacto.error}</p>}
+                          {contacto.error && <p className="text-xs text-rose-700 font-medium mt-1">{contacto.error}</p>}
                         </td>
                       </tr>
                     )}

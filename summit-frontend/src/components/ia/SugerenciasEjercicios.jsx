@@ -48,12 +48,12 @@ const SugerenciasEjercicios = ({ idSocio, onSugerencias }) => {
   };
 
   return (
-    <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">
+    <div className="mt-3 pt-3 border-t border-slate-100 space-y-2">
       <BotonIa estado={estado} cargando={cargando} onClick={pedir} className="w-full">
         {resultado ? 'Volver a consultar a la IA' : 'Ejercicios a evitar según la IA'}
       </BotonIa>
       <AvisoIaNoDisponible estado={estado} />
-      {error && <p className="text-sm text-rose-600">{error}</p>}
+      {error && <p className="text-sm text-rose-700">{error}</p>}
       {resultado && (
         <div className="space-y-2 text-sm">
           {resultado.ejercicios.length === 0 ? (
@@ -65,7 +65,7 @@ const SugerenciasEjercicios = ({ idSocio, onSugerencias }) => {
                 <li key={e.idEjercicio} className="p-2 rounded-lg border border-slate-200 bg-white">
                   <div className="flex items-start justify-between gap-2">
                     <span className="font-semibold text-slate-800">{e.nombre}</span>
-                    <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-sm border ${ORIGEN[e.origen]?.clase}`}>
+                    <span className={`shrink-0 text-xs font-bold px-1.5 py-0.5 rounded-sm border ${ORIGEN[e.origen]?.clase}`}>
                       {ORIGEN[e.origen]?.texto}
                     </span>
                   </div>
@@ -76,7 +76,7 @@ const SugerenciasEjercicios = ({ idSocio, onSugerencias }) => {
           )}
           {resultado.recomendacion && <p className="text-xs text-slate-600"><b>Consejo:</b> {resultado.recomendacion}</p>}
           {/* Trazabilidad (modelo y tiempo) y recordatorio de que decide el profesor. */}
-          <p className="text-[11px] text-slate-400">
+          <p className="text-xs text-slate-500">
             {resultado.modelo} · {resultado.segundos} s · Son sugerencias: el criterio final es del profesor.
           </p>
         </div>

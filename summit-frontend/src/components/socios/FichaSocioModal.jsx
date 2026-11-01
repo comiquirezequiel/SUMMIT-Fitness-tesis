@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FileText, Upload, HeartPulse, Wallet, User, LogIn, Sparkles, Camera, Trash2 } from 'lucide-react';
+import { FileText, Upload, HeartPulse, Wallet, User, LogIn, Sparkles, Camera, Trash2, Pencil } from 'lucide-react';
 import Modal from '../Modal';
 import Campo, { inputClass, botonPrimario, botonSecundario } from '../Campo';
 import FotoSocio from './FotoSocio';
@@ -15,7 +15,7 @@ import { formatFecha, formatFechaHora, textoVencimiento, diasHasta, edad, hoyIso
 
 const Dato = ({ label, valor }) => (
   <div>
-    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
     <p className="text-sm text-slate-800 font-medium wrap-break-word">{valor || '—'}</p>
   </div>
 );
@@ -32,7 +32,8 @@ const Seccion = ({ icon: Icon, titulo, children }) => (
 /**
  * Ficha del socio: datos, membresía, certificados médicos (con carga de uno nuevo) y últimos ingresos.
  */
-const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
+// onEditar: botón "Editar datos" abajo a la izquierda (del otro lado de Cerrar) para ir a editar al socio
+const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar, onEditar }) => {
   const [certificados, setCertificados] = useState([]);
   const [ingresos, setIngresos] = useState([]);
   const [nuevoApto, setNuevoApto] = useState({ archivo: null, fechaEmision: '', patologias: '', resumenIa: '' });
@@ -152,7 +153,7 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
 
   // Muestran el error o la tarjeta de lectura solo debajo del certificado que corresponde a la "clave".
   // La tarjeta incluye un campo para CORREGIR las patologías antes de guardarlas (supervisión humana).
-  const errorDe = (clave) => (errorIa?.clave === clave ? <p className="text-sm text-rose-600">{errorIa.texto}</p> : null);
+  const errorDe = (clave) => (errorIa?.clave === clave ? <p className="text-sm text-rose-700">{errorIa.texto}</p> : null);
 
   const resultadoDe = (clave) => (analisis?.clave === clave ? (
     <ResultadoAnalisis analisis={analisis.datos} acciones={<>
@@ -204,14 +205,23 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
 
   return (
     <Modal titulo={socio.nombreCompleto} subtitulo={`DNI ${socio.dni} · socio desde ${formatFecha(socio.fechaCreacion)}`}
-      onClose={onClose} ancho="max-w-3xl" pie={<button onClick={onClose} className={botonSecundario}>Cerrar</button>}>
-      <div className="space-y-6">
+      onClose={onClose} ancho="max-w-3xl" pie={(
+        <>
+          {puedeEditar && onEditar && (
+            <button onClick={onEditar} className={`${botonPrimario} mr-auto`}>
+              <Pencil className="w-4 h-4" /> Editar datos del socio
+            </button>
+          )}
+          <button onClick={onClose} className={botonSecundario}>Cerrar</button>
+        </>
+      )}>
+      <div className="space-y-4">
         <Seccion icon={User} titulo="Datos personales">
-          <div className="flex flex-col sm:flex-row gap-5">
+          <div className="flex flex-col sm:flex-row gap-3">
             {/* Foto: la ve recepción en cada ingreso */}
             <div className="flex sm:flex-col items-center gap-3 shrink-0">
               <FotoSocio idSocio={socio.idSocio} fotoVersion={fotoVersion} nombre={socio.nombreCompleto}
-                className="w-28 h-28 rounded-2xl" texto="text-2xl" />
+                className="w-28 h-28 rounded-xl" texto="text-xl" />
               {puedeEditar && (
                 <div className="flex sm:flex-col gap-2">
                   <button onClick={() => setSacandoFoto(true)}
@@ -228,7 +238,7 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
               )}
             </div>
             <div className="flex-1 min-w-0 space-y-3">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <Dato label="Email" valor={socio.email} />
                 <Dato label="Teléfono" valor={socio.telefono} />
                 <Dato label="Nacimiento" valor={socio.fechaNacimiento && `${formatFecha(socio.fechaNacimiento)} (${anios} años)`} />
@@ -239,14 +249,14 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
               {socio.observaciones && <p className="text-sm text-slate-600 bg-slate-50 rounded-lg p-3">{socio.observaciones}</p>}
             </div>
           </div>
-          {errorFoto && <p className="text-sm font-medium text-rose-600">{errorFoto}</p>}
+          {errorFoto && <p className="text-sm font-medium text-rose-700">{errorFoto}</p>}
         </Seccion>
         {sacandoFoto && (
           <CapturaFoto nombre={socio.nombreCompleto} onListo={guardarFoto} onCerrar={() => setSacandoFoto(false)} />
         )}
 
         <Seccion icon={Wallet} titulo="Membresía">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Dato label="Plan" valor={socio.planActual} />
             <Dato label="Vencimiento" valor={socio.vencimientoMembresia && `${formatFecha(socio.vencimientoMembresia)} (${textoVencimiento(diasHasta(socio.vencimientoMembresia))})`} />
             <Dato label="Estado" valor={socio.congeladaHasta ? `Congelada hasta el ${formatFecha(socio.congeladaHasta)}` : socio.membresiaAlDia ? 'Al día' : 'Vencida o sin plan'} />
@@ -267,8 +277,8 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
                   <div className="text-sm">
                     <p className="font-semibold text-slate-800">
                       Emitido {formatFecha(c.fechaEmision)} · vence {formatFecha(c.fechaVencimiento)}
-                      {c.idCertificado === idQueRige && <span className="ml-2 text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-sm">ACTUAL</span>}
-                      {c.estadoLegal === 'RECHAZADO' && <span className="ml-2 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded-sm">RECHAZADO</span>}
+                      {c.idCertificado === idQueRige && <span className="ml-2 text-xs font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-sm">ACTUAL</span>}
+                      {c.estadoLegal === 'RECHAZADO' && <span className="ml-2 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded-sm">RECHAZADO</span>}
                     </p>
                     {c.estadoLegal === 'RECHAZADO' && (
                       <p className="text-rose-700 text-xs mt-0.5">
@@ -297,7 +307,7 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
                     </button>
                     {puedeEditar && c.estadoLegal !== 'RECHAZADO' && (
                       <button onClick={() => setRechazo({ id: c.idCertificado, motivo: '', error: '' })}
-                        className="px-3 py-1.5 text-xs font-semibold text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-50">
+                        className="px-3 py-1.5 text-xs font-semibold text-rose-700 border border-rose-200 rounded-lg hover:bg-rose-50">
                         Rechazar
                       </button>
                     )}
@@ -326,7 +336,7 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
                           Cancelar
                         </button>
                       </div>
-                      {rechazo.error && <p className="text-xs text-rose-600 font-medium">{rechazo.error}</p>}
+                      {rechazo.error && <p className="text-xs text-rose-700 font-medium">{rechazo.error}</p>}
                     </div>
                   )}
                   {errorDe(c.idCertificado)}
@@ -338,11 +348,11 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
 
           {puedeEditar && <AvisoIaNoDisponible estado={estadoIa} />}
           {puedeEditar && (
-            <form onSubmit={cargarApto} className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
+            <form onSubmit={cargarApto} className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-3">
               <p className="text-sm font-semibold text-slate-700">Cargar nuevo certificado</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <Campo label="Archivo (PDF o imagen)" className="md:col-span-3">
-                  <label className="flex items-center gap-3 px-3 py-2.5 border border-dashed border-slate-300 rounded-lg cursor-pointer bg-white hover:bg-slate-50">
+                  <label className="flex items-center gap-3 px-3 py-1.5 border border-dashed border-slate-300 rounded-lg cursor-pointer bg-white hover:bg-slate-50">
                     <Upload className="w-4 h-4 text-slate-400" />
                     <span className="text-sm text-slate-600 truncate">{nuevoApto.archivo ? nuevoApto.archivo.name : 'Seleccionar archivo...'}</span>
                     <input type="file" accept=".pdf,image/jpeg,image/png,image/webp" className="hidden"
@@ -378,7 +388,7 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
             </form>
           )}
           {mensaje && (
-            <p className={`text-sm font-medium ${mensaje.tipo === 'ok' ? 'text-emerald-700' : 'text-rose-600'}`}>{mensaje.texto}</p>
+            <p className={`text-sm font-medium ${mensaje.tipo === 'ok' ? 'text-emerald-700' : 'text-rose-700'}`}>{mensaje.texto}</p>
           )}
         </Seccion>
 
@@ -390,12 +400,12 @@ const FichaSocioModal = ({ socio, onClose, onActualizado, puedeEditar }) => {
               <ul className="text-sm space-y-1">
                 {ingresos.map(i => (
                   <li key={i.idLog}>
-                    <div className="flex justify-between gap-4">
+                    <div className="flex justify-between gap-3">
                       <span className="text-slate-600">{formatFechaHora(i.fechaHora)}</span>
                       {i.tipoEvento === 'INGRESO_EXCEPCION' ? (
                         <span className="text-amber-700 font-medium">Por excepción</span>
                       ) : (
-                        <span className={i.resultado === 'PERMITIDO' ? 'text-emerald-600 font-medium' : 'text-rose-600 font-medium'}>
+                        <span className={i.resultado === 'PERMITIDO' ? 'text-emerald-700 font-medium' : 'text-rose-700 font-medium'}>
                           {i.resultado === 'PERMITIDO' ? 'Permitido' : i.resultado.replace('DENEGADO_', '').replaceAll('_', ' ').toLowerCase()}
                         </span>
                       )}

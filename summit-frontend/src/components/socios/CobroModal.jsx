@@ -130,7 +130,7 @@ const CobroModal = ({ socio, planes, onClose, onGuardado, metodoInicial = 'EFECT
         </button>
       </>}
     >
-      <form id="form-cobro" onSubmit={registrar} className="space-y-4">
+      <form id="form-cobro" onSubmit={registrar} className="space-y-3">
         <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
           <p className="text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">Socio</p>
           <p className="font-semibold text-slate-800">{socio.nombreCompleto}</p>
@@ -160,7 +160,7 @@ const CobroModal = ({ socio, planes, onClose, onGuardado, metodoInicial = 'EFECT
         </Campo>
 
         {especial && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-3 rounded-xl border border-emerald-100 bg-emerald-50/50">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-xl border border-emerald-100 bg-emerald-50/50">
             <Campo label="Monto a descontar ($)" required>
               <input type="number" min="0" step="0.01" value={datos.especialMonto} inputMode="decimal"
                 onChange={e => cambiar('especialMonto', e.target.value)} className={inputClass} />
@@ -192,7 +192,7 @@ const CobroModal = ({ socio, planes, onClose, onGuardado, metodoInicial = 'EFECT
 
         {verificable && <OpcionAVerificar marcada={datos.aVerificar} onCambiar={v => cambiar('aVerificar', v)} />}
 
-        {error && <p className="text-sm text-rose-600 font-medium">{error}</p>}
+        {error && <p className="text-sm text-rose-700 font-medium">{error}</p>}
       </form>
     </Modal>
   );

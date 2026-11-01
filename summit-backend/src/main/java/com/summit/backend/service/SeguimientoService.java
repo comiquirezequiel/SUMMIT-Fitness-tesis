@@ -62,9 +62,9 @@ public class SeguimientoService {
     private static final int DIAS_CUOTA_VENCIDA_EN_LISTA = 30;
 
     // Ventanas de las tareas automáticas
-    private static final int DIAS_AVISO_CUOTA = 5;
+    // La cuota por vencer no genera tarea (la tarea llega si vence sin renovar); el apto por vencer, a una semana
     private static final int DIAS_TAREA_CUOTA_VENCIDA = 15;
-    private static final int DIAS_AVISO_APTO = 15;
+    private static final int DIAS_AVISO_APTO = 7;
 
     private static final int DIAS_PROMEDIO = 90;
 
@@ -153,6 +153,12 @@ public class SeguimientoService {
 
         int resueltas = 0;
         for (TareaSeguimiento tarea : tareaRepository.findByEstadoAndTipoNot(EstadoTarea.PENDIENTE, TipoTarea.MANUAL)) {
+            // Avisos que ya no se usan (cuota por vencer) o creados antes de su ventana (apto con más de una semana): se
+            // borran; el del apto vuelve a crearse, con la misma clave, cuando falte una semana
+            if (sobra(tarea, hoy)) {
+                tareaRepository.delete(tarea);
+                continue;
+            }
             EstadoSocio e = porSocio.get(tarea.getUsuario().getIdUsuario());
             String motivo = motivoResuelta(tarea, e, hoy);
             if (motivo != null) {
@@ -186,6 +192,15 @@ public class SeguimientoService {
         return resultado;
     }
 
+    private static boolean sobra(TareaSeguimiento tarea, LocalDate hoy) {
+        LocalDate referencia = tarea.getFechaReferencia();
+        return switch (tarea.getTipo()) {
+            case CUOTA_POR_VENCER -> true;
+            case APTO_POR_VENCER -> referencia != null && referencia.isAfter(hoy.plusDays(DIAS_AVISO_APTO));
+            default -> false;
+        };
+    }
+
     // Por qué una tarea pendiente ya no hace falta (null si sigue haciendo falta)
     private static String motivoResuelta(TareaSeguimiento tarea, EstadoSocio e, LocalDate hoy) {
         if (e == null) return "El socio ya no está activo";
@@ -214,10 +229,6 @@ public class SeguimientoService {
         LocalDate vence = e.vencimiento();
         if (vence != null) {
             long dias = ChronoUnit.DAYS.between(hoy, vence);
-            if (dias >= 0 && dias <= DIAS_AVISO_CUOTA && !e.debitoActivo()) {
-                tareas.add(tarea(e, TipoTarea.CUOTA_POR_VENCER, "POR_VENCER:" + id + ":" + vence, vence, vence,
-                        "La cuota (" + e.plan() + ") vence el " + TextoFechas.completa(vence) + ": recordarle que la renueve"));
-            }
             if (dias < 0 && -dias <= DIAS_TAREA_CUOTA_VENCIDA) {
                 tareas.add(tarea(e, TipoTarea.CUOTA_VENCIDA, "VENCIDA:" + id + ":" + vence, hoy, vence,
                         "La cuota (" + e.plan() + ") venció el " + TextoFechas.completa(vence) + " y no renovó: invitarlo a volver"));
