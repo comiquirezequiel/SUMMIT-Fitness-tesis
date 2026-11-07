@@ -12,7 +12,9 @@ import DetalleRutina from '../components/entrenamiento/DetalleRutina';
 import ParametrosEjercicio, {
   PARAMETROS_INICIALES, parametrosDe, validarParametros,
 } from '../components/entrenamiento/ParametrosEjercicio';
-import SelectorEjercicio from '../components/entrenamiento/SelectorEjercicio';
+import SelectorEjercicio, {
+  MiniaturaGif, VistaPreviaGif, calcularPosicionHover,
+} from '../components/entrenamiento/SelectorEjercicio';
 import { Cargando, ErrorCaja, Aviso, Vacio } from '../components/entrenamiento/Estados';
 import BotonesPdf from '../components/pdf/BotonesPdf';
 import { documentoRutina } from '../components/pdf/rutina';
@@ -72,6 +74,7 @@ const Constructor = ({ onCerrar }) => {
   // Confirmación al lado del formulario: en el celular, el aviso de arriba queda fuera de la vista
   const [ultimoAgregado, setUltimoAgregado] = useState(null);
   const [editando, setEditando] = useState(null);
+  const [hoverFila, setHoverFila] = useState(null);
   const [ocupado, setOcupado] = useState(false);
   const [creando, setCreando] = useState(false);
   const [aviso, setAviso] = useState(() => location.state?.aviso || null);
@@ -152,12 +155,16 @@ const Constructor = ({ onCerrar }) => {
   useEffect(() => {
     if (!alta.idEjercicio || !idSocio || !puedeEditar) { setValidacion({ idEjercicio: '', cargando: false, riesgos: [] }); return undefined; }
     let vigente = true;
+    if (Number(alta.idEjercicio) < 0) {
+      setValidacion({ idEjercicio: alta.idEjercicio, cargando: false, riesgos: riesgosLocales(ficha.patologias, catalogoPorId.get(Number(alta.idEjercicio))?.patologiasContraindicadas) });
+      return undefined;
+    }
     setValidacion({ idEjercicio: alta.idEjercicio, cargando: true, riesgos: [] });
     obtenerJson(`/rutinas/validar-ejercicio?idSocio=${idSocio}&idEjercicio=${alta.idEjercicio}`)
       .then((r) => { if (vigente) setValidacion({ idEjercicio: alta.idEjercicio, cargando: false, riesgos: r.riesgos || [] }); })
       .catch(() => { if (vigente) setValidacion({ idEjercicio: alta.idEjercicio, cargando: false, riesgos: [] }); });
     return () => { vigente = false; };
-  }, [alta.idEjercicio, idSocio, puedeEditar]);
+  }, [alta.idEjercicio, idSocio, puedeEditar, ficha.patologias, catalogoPorId]);
 
   // ---- Derivados ----
 
@@ -239,7 +246,7 @@ const Constructor = ({ onCerrar }) => {
     if (!modoEdicion) {
       setBorrador((b) => [...b, {
         clave: nuevaClave(), idEjercicio: ejercicio.idEjercicio, nombreEjercicio: ejercicio.nombre,
-        grupoMuscular: ejercicio.grupoMuscular, diaNumero: dia, ...datos, forzar, riesgos: riesgosAlta,
+        grupoMuscular: ejercicio.grupoMuscular, urlMedia: ejercicio.urlMedia, diaNumero: dia, ...datos, forzar, riesgos: riesgosAlta,
       }]);
       limpiarAlta();
       setUltimoAgregado(agregado);
@@ -393,7 +400,7 @@ const Constructor = ({ onCerrar }) => {
     const rechazados = [];
     const ordenados = [...borrador].sort((a, b) => diaDe(a) - diaDe(b)); // sort estable: respeta el orden dentro del día
     for (const item of ordenados) {
-      const { clave, nombreEjercicio, grupoMuscular, forzar, riesgos, ...datos } = item;
+      const { clave, nombreEjercicio, grupoMuscular, urlMedia, forzar, riesgos, ...datos } = item;
       const resp = await enviarJson(`/rutinas/${idNueva}/ejercicios?forzar=${Boolean(forzar)}`, 'POST', datos);
       if (!resp.ok) rechazados.push(`${nombreEjercicio}: ${resp.data?.error || 'error desconocido'}`);
     }
@@ -488,12 +495,30 @@ const Constructor = ({ onCerrar }) => {
   const filaEjercicio = (item, indice) => {
     const riesgos = item.riesgos?.length ? item.riesgos : riesgosDe(item.idEjercicio);
     const descanso = formatDescanso(item.descansoSegundos);
+    const ejercicioVisual = {
+      idEjercicio: item.idEjercicio,
+      nombre: item.nombreEjercicio,
+      grupoMuscular: item.grupoMuscular,
+      urlMedia: item.urlMedia || catalogoPorId.get(item.idEjercicio)?.urlMedia,
+    };
+    const actualizarHoverFila = (e) => {
+      const { x, y } = calcularPosicionHover(e.clientX, e.clientY);
+      setHoverFila({ ejercicio: ejercicioVisual, x, y });
+    };
     return (
-      <li key={item.clave} className={`p-3 sm:p-3 rounded-xl border ${riesgos.length ? 'bg-amber-50/60 border-amber-200' : 'bg-white border-slate-200 shadow-xs'}`}>
+      <li
+        key={item.clave}
+        onMouseEnter={actualizarHoverFila}
+        onMouseOver={actualizarHoverFila}
+        onMouseMove={actualizarHoverFila}
+        onMouseLeave={() => setHoverFila(null)}
+        className={`p-3 sm:p-3 rounded-xl border ${riesgos.length ? 'bg-amber-50/60 border-amber-200' : 'bg-white border-slate-200 shadow-xs'}`}
+      >
         <div className="flex items-start gap-3">
           <span className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 font-bold flex items-center justify-center text-sm border border-slate-200 shrink-0">
             {indice + 1}
           </span>
+          <MiniaturaGif ejercicio={ejercicioVisual} tamano="w-11 h-11" />
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <p className="font-bold text-slate-800 leading-snug">{item.nombreEjercicio}</p>
@@ -827,6 +852,7 @@ const Constructor = ({ onCerrar }) => {
           </div>
         </Modal>
       )}
+      <VistaPreviaGif hover={hoverFila} />
     </>,
   );
 };

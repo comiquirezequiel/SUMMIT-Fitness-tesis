@@ -110,7 +110,7 @@ export const armarDesdePlantilla = (plantilla, catalogo) => {
     }
     items.push({
       idEjercicio: delCatalogo.idEjercicio, nombreEjercicio: delCatalogo.nombre, grupoMuscular: delCatalogo.grupoMuscular,
-      diaNumero: i + 1, series: e.series, repeticiones: e.repeticiones, pesoSugeridoKg: null,
+      urlMedia: delCatalogo.urlMedia, diaNumero: i + 1, series: e.series, repeticiones: e.repeticiones, pesoSugeridoKg: null,
       descansoSegundos: e.descansoSegundos, observaciones: e.observaciones,
     });
   }));

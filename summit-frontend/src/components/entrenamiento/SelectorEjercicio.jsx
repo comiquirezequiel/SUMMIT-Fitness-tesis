@@ -1,7 +1,8 @@
-import { Suspense, lazy, useMemo, useRef, useState } from 'react';
-import { Search, X, PersonStanding, AlertTriangle, Sparkles, Check, Loader2 } from 'lucide-react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Search, X, PersonStanding, AlertTriangle, Sparkles, Check, Loader2, Dumbbell } from 'lucide-react';
 import Modal from '../Modal';
-import { coincide, nombreGrupo } from './comun';
+import { coincide, nombreGrupo, resolverUrlMedia } from './comun';
 import { ejerciciosDelMusculo } from './musculos';
 
 // El modelo del cuerpo (imágenes y SVG grandes) se descarga recién cuando se abre
@@ -10,6 +11,102 @@ const ModeloHumano = lazy(() => import('../ModeloHumano'));
 const chip = 'px-3.5 py-1.5 tactil:min-h-11 rounded-full text-sm font-semibold whitespace-nowrap border transition-colors flex items-center gap-1.5 shrink-0';
 const chipActivo = 'bg-blue-600 text-white border-blue-600';
 const chipInactivo = 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
+
+export const calcularPosicionHover = (clientX, clientY) => {
+  const anchoPopup = 248;
+  const altoPopup = 285;
+  const margen = 14;
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+
+  let x = clientX + 20;
+  if (x + anchoPopup + margen > vw) {
+    x = Math.max(margen, clientX - anchoPopup - 20);
+  }
+  let y = clientY - altoPopup / 2;
+  y = Math.max(margen, Math.min(y, vh - altoPopup - margen));
+  return { x, y };
+};
+
+/**
+ * Vista previa flotante (hover / mouseover) que muestra el GIF demostrativo del ejercicio
+ * al pasar el puntero por encima para asignarlo a la rutina.
+ */
+export const VistaPreviaGif = ({ hover }) => {
+  const [errorImg, setErrorImg] = useState(false);
+  const ejercicio = hover?.ejercicio;
+  const urlGif = ejercicio ? resolverUrlMedia(ejercicio) : null;
+
+  useEffect(() => {
+    setErrorImg(false);
+  }, [urlGif, ejercicio?.idEjercicio]);
+
+  if (!ejercicio || typeof document === 'undefined') return null;
+  const tieneGif = Boolean(urlGif && !errorImg);
+
+  return createPortal(
+    <div
+      role="tooltip"
+      aria-label={`Demostración de ${ejercicio.nombre}`}
+      style={{ left: `${hover.x}px`, top: `${hover.y}px` }}
+      className="fixed z-[9999] w-60 bg-white border border-slate-200 rounded-2xl shadow-2xl p-3 pointer-events-none transition-opacity duration-150"
+    >
+      <div
+        className={`w-full h-48 rounded-xl border overflow-hidden flex items-center justify-center ${
+          tieneGif ? 'border-slate-100 bg-white p-1.5' : 'border-dashed border-slate-200 bg-slate-50 p-4'
+        }`}
+      >
+        {tieneGif ? (
+          <img
+            src={urlGif}
+            alt={`Demostración de ${ejercicio.nombre}`}
+            onError={() => setErrorImg(true)}
+            className="w-full h-full object-contain rounded-lg select-none"
+          />
+        ) : (
+          <div className="flex flex-col items-center gap-1.5 text-slate-400 text-center">
+            <Dumbbell className="w-6 h-6 opacity-60" />
+            <span className="text-xs font-medium">Sin GIF demostrativo</span>
+          </div>
+        )}
+      </div>
+      <div className="mt-2 px-0.5">
+        <p className="font-bold text-slate-800 text-sm leading-snug">{ejercicio.nombre}</p>
+        <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mt-0.5">
+          {nombreGrupo(ejercicio.grupoMuscular)}
+        </p>
+      </div>
+    </div>,
+    document.body,
+  );
+};
+
+// Miniatura del GIF dentro de cada fila de ejercicio
+export const MiniaturaGif = ({ ejercicio, tamano = 'w-11 h-11' }) => {
+  const urlGif = resolverUrlMedia(ejercicio);
+  const [errorImg, setErrorImg] = useState(false);
+  const tieneGif = Boolean(urlGif && !errorImg);
+
+  return (
+    <span
+      className={`${tamano} rounded-lg border shrink-0 overflow-hidden flex items-center justify-center ${
+        tieneGif ? 'border-slate-200 bg-white p-0.5' : 'border-dashed border-slate-200 bg-slate-50 text-slate-400'
+      }`}
+    >
+      {tieneGif ? (
+        <img
+          src={urlGif}
+          alt=""
+          onError={() => setErrorImg(true)}
+          loading="lazy"
+          className="w-full h-full object-contain select-none"
+        />
+      ) : (
+        <Dumbbell className="w-4 h-4 opacity-50" />
+      )}
+    </span>
+  );
+};
 
 /**
  * Marca de un ejercicio en la lista: ⚠ contraindicado (regla firme, pide confirmación al agregarlo) o ✦ lo que sugiere
@@ -22,11 +119,17 @@ const Marca = ({ marca }) => (marca ? (
   </span>
 ) : null);
 
-// Botón de un ejercicio de la lista: todo el renglón se toca (48 px o más)
-const Opcion = ({ ejercicio, marca, onElegir }) => (
-  <li>
+// Botón de un ejercicio de la lista: todo el renglón se toca (48 px o más) y muestra el GIF al hacer hover/mouseover
+const Opcion = ({ ejercicio, marca, onElegir, onHover, onMoverHover, onSalirHover }) => (
+  <li
+    onMouseEnter={(e) => onHover?.(ejercicio, e)}
+    onMouseOver={(e) => onHover?.(ejercicio, e)}
+    onMouseMove={(e) => onMoverHover?.(ejercicio, e)}
+    onMouseLeave={() => onSalirHover?.()}
+  >
     <button type="button" onClick={() => onElegir(ejercicio)}
       className="w-full min-h-12 text-left px-3 py-1.5 flex items-center gap-3 hover:bg-blue-50 active:bg-blue-100 focus:outline-hidden focus-visible:bg-blue-50">
+      <MiniaturaGif ejercicio={ejercicio} />
       <span className="min-w-0 flex-1">
         <span className="block font-semibold text-slate-800 leading-snug">{ejercicio.nombre}</span>
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
@@ -48,7 +151,22 @@ const SelectorEjercicio = ({ catalogo, cargando, elegido, onElegir, marca = () =
   const [grupo, setGrupo] = useState('');
   const [musculo, setMusculo] = useState(null); // { id, titulo } elegido en el cuerpo
   const [cuerpoAbierto, setCuerpoAbierto] = useState(false);
+  const [hover, setHover] = useState(null); // { ejercicio, x, y }
   const listaRef = useRef(null);
+
+  const mostrarHover = (ejercicio, e) => {
+    if (deshabilitado || !ejercicio) return;
+    const { x, y } = calcularPosicionHover(e.clientX, e.clientY);
+    setHover({ ejercicio, x, y });
+  };
+
+  const moverHover = (ejercicio, e) => {
+    if (deshabilitado || !ejercicio) return;
+    const { x, y } = calcularPosicionHover(e.clientX, e.clientY);
+    setHover((prev) => (prev && prev.x === x && prev.y === y && prev.ejercicio === ejercicio ? prev : { ejercicio, x, y }));
+  };
+
+  const salirHover = () => setHover(null);
 
   const grupos = useMemo(() => [...new Set(catalogo.map((e) => e.grupoMuscular || 'OTRO'))]
     .sort((a, b) => nombreGrupo(a).localeCompare(nombreGrupo(b), 'es')), [catalogo]);
@@ -70,6 +188,7 @@ const SelectorEjercicio = ({ catalogo, cargando, elegido, onElegir, marca = () =
 
   // La búsqueda ya cumplió: para el próximo ejercicio la lista arranca sin texto (el grupo elegido queda)
   const elegir = (ejercicio) => {
+    setHover(null);
     onElegir(String(ejercicio.idEjercicio));
     setTexto('');
     setCuerpoAbierto(false);
@@ -78,20 +197,30 @@ const SelectorEjercicio = ({ catalogo, cargando, elegido, onElegir, marca = () =
   // Elegido: tarjeta con el ejercicio y "Cambiar"
   if (ejercicioElegido) {
     return (
-      <div className="flex items-center gap-3 p-3 bg-blue-50/60 border border-blue-100 rounded-xl">
-        <span className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0"><Check className="w-5 h-5" /></span>
-        <div className="min-w-0 flex-1">
-          <p className="font-semibold text-slate-800 leading-snug">{ejercicioElegido.nombre}</p>
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">{nombreGrupo(ejercicioElegido.grupoMuscular)}</span>
-            <Marca marca={marca(ejercicioElegido)} />
+      <>
+        <div
+          onMouseEnter={(e) => mostrarHover(ejercicioElegido, e)}
+          onMouseOver={(e) => mostrarHover(ejercicioElegido, e)}
+          onMouseMove={(e) => moverHover(ejercicioElegido, e)}
+          onMouseLeave={salirHover}
+          className="flex items-center gap-3 p-3 bg-blue-50/60 border border-blue-100 rounded-xl"
+        >
+          <span className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0"><Check className="w-5 h-5" /></span>
+          <MiniaturaGif ejercicio={ejercicioElegido} tamano="w-12 h-12" />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-slate-800 leading-snug">{ejercicioElegido.nombre}</p>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
+              <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">{nombreGrupo(ejercicioElegido.grupoMuscular)}</span>
+              <Marca marca={marca(ejercicioElegido)} />
+            </div>
           </div>
+          <button type="button" onClick={() => { setHover(null); onElegir(''); }} disabled={deshabilitado}
+            className="text-sm font-semibold text-blue-700 hover:bg-blue-100 px-3 py-1.5 tactil:min-h-11 rounded-lg shrink-0 disabled:opacity-50">
+            Cambiar
+          </button>
         </div>
-        <button type="button" onClick={() => onElegir('')} disabled={deshabilitado}
-          className="text-sm font-semibold text-blue-700 hover:bg-blue-100 px-3 py-1.5 tactil:min-h-11 rounded-lg shrink-0 disabled:opacity-50">
-          Cambiar
-        </button>
-      </div>
+        <VistaPreviaGif hover={!deshabilitado ? hover : null} />
+      </>
     );
   }
 
@@ -117,7 +246,7 @@ const SelectorEjercicio = ({ catalogo, cargando, elegido, onElegir, marca = () =
             </button>
           )}
         </div>
-        <button type="button" onClick={() => setCuerpoAbierto(true)} disabled={deshabilitado || cargando}
+        <button type="button" onClick={() => { setHover(null); setCuerpoAbierto(true); }} disabled={deshabilitado || cargando}
           className="px-3 py-1.5 tactil:min-h-11 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 shrink-0 disabled:opacity-50">
           <PersonStanding className="w-4 h-4 text-blue-600" /> Por el cuerpo
         </button>
@@ -157,18 +286,34 @@ const SelectorEjercicio = ({ catalogo, cargando, elegido, onElegir, marca = () =
             )}
           </div>
         ) : (
-          <ul ref={listaRef} className="max-h-80 overflow-y-auto divide-y divide-slate-100 overscroll-contain" aria-label="Ejercicios del catálogo">
-            {resultados.map((e) => <Opcion key={e.idEjercicio} ejercicio={e} marca={marca(e)} onElegir={elegir} />)}
+          <ul
+            ref={listaRef}
+            onScroll={salirHover}
+            onMouseLeave={salirHover}
+            className="max-h-80 overflow-y-auto divide-y divide-slate-100 overscroll-contain"
+            aria-label="Ejercicios del catálogo"
+          >
+            {resultados.map((e) => (
+              <Opcion
+                key={e.idEjercicio}
+                ejercicio={e}
+                marca={marca(e)}
+                onElegir={elegir}
+                onHover={mostrarHover}
+                onMoverHover={moverHover}
+                onSalirHover={salirHover}
+              />
+            ))}
           </ul>
         )}
       </div>
       {!cargando && resultados.length > 0 && (
-        <p className="text-xs text-slate-500">{resultados.length} {resultados.length === 1 ? 'ejercicio' : 'ejercicios'}: tocá uno para elegirlo.</p>
+        <p className="text-xs text-slate-500">{resultados.length} {resultados.length === 1 ? 'ejercicio' : 'ejercicios'}: pasá el puntero para ver su GIF o tocá uno para elegirlo.</p>
       )}
 
       {cuerpoAbierto && (
         <Modal titulo="Elegí por el cuerpo" subtitulo="Tocá una zona y después el músculo: abajo aparecen sus ejercicios del catálogo."
-          onClose={() => setCuerpoAbierto(false)} ancho="max-w-5xl">
+          onClose={() => { setHover(null); setCuerpoAbierto(false); }} ancho="max-w-5xl">
           <Suspense fallback={<p className="p-4 text-sm text-slate-500 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Cargando el modelo...</p>}>
             <ModeloHumano
               estilo={{ height: 'min(64dvh, 680px)', minHeight: 0 }}
@@ -180,12 +325,22 @@ const SelectorEjercicio = ({ catalogo, cargando, elegido, onElegir, marca = () =
                   return <p className="text-sm text-slate-500 mb-3">El catálogo no tiene ejercicios para este músculo.</p>;
                 }
                 return (
-                  <div className="mb-3 space-y-3">
+                  <div className="mb-3 space-y-3" onMouseLeave={salirHover}>
                     {d.length > 0 && (
                       <div>
                         <p className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-1.5">Ejercicios del catálogo</p>
                         <ul className="border border-slate-200 rounded-xl divide-y divide-slate-100 overflow-hidden bg-white">
-                          {d.map((e) => <Opcion key={e.idEjercicio} ejercicio={e} marca={marca(e)} onElegir={elegir} />)}
+                          {d.map((e) => (
+                            <Opcion
+                              key={e.idEjercicio}
+                              ejercicio={e}
+                              marca={marca(e)}
+                              onElegir={elegir}
+                              onHover={mostrarHover}
+                              onMoverHover={moverHover}
+                              onSalirHover={salirHover}
+                            />
+                          ))}
                         </ul>
                       </div>
                     )}
@@ -193,7 +348,17 @@ const SelectorEjercicio = ({ catalogo, cargando, elegido, onElegir, marca = () =
                       <div>
                         <p className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-1.5">Más de {nombreGrupo(gr)}</p>
                         <ul className="border border-slate-200 rounded-xl divide-y divide-slate-100 overflow-hidden bg-white">
-                          {g.map((e) => <Opcion key={e.idEjercicio} ejercicio={e} marca={marca(e)} onElegir={elegir} />)}
+                          {g.map((e) => (
+                            <Opcion
+                              key={e.idEjercicio}
+                              ejercicio={e}
+                              marca={marca(e)}
+                              onElegir={elegir}
+                              onHover={mostrarHover}
+                              onMoverHover={moverHover}
+                              onSalirHover={salirHover}
+                            />
+                          ))}
                         </ul>
                       </div>
                     )}
@@ -209,6 +374,7 @@ const SelectorEjercicio = ({ catalogo, cargando, elegido, onElegir, marca = () =
           )}
         </Modal>
       )}
+      <VistaPreviaGif hover={!deshabilitado ? hover : null} />
     </div>
   );
 };

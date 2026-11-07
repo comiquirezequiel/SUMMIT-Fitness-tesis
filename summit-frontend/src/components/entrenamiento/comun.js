@@ -2,6 +2,10 @@
 // (Ejercicios, Rutinas y Constructor).
 import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '../../services/api';
+import { usuarioActual } from '../../utils/formato';
+import { EJERCICIOS_CON_GIF, resolverUrlMedia } from './musculos';
+
+export { resolverUrlMedia };
 
 export const DIAS_MAXIMOS = 7;
 
@@ -51,17 +55,70 @@ export const enviarJson = async (ruta, method, body) => {
   }
 };
 
-// Catálogo completo de ejercicios por nombre (el backend pagina de a 50 como máximo)
+// Catálogo completo de ejercicios por nombre (el backend pagina de a 50 como máximo).
+// Sincroniza los ejercicios con GIF de gym-exercises/ (creándolos si no existen o vinculando su urlMedia).
+let sincronizacionEnCurso = null;
+
 export const cargarCatalogo = async () => {
-  const todos = [];
-  for (let pagina = 0; pagina < 20; pagina++) {
-    const data = await obtenerJson(`/ejercicios?size=50&sort=nombre&page=${pagina}`,
-      'No se pudo cargar el catálogo de ejercicios.');
-    const contenido = Array.isArray(data) ? data : (data.content || []);
-    todos.push(...contenido);
-    if (Array.isArray(data) || data.last !== false || contenido.length === 0) break;
-  }
-  return todos;
+  if (sincronizacionEnCurso) return sincronizacionEnCurso;
+  sincronizacionEnCurso = (async () => {
+    try {
+      const todos = [];
+      for (let pagina = 0; pagina < 20; pagina++) {
+        const data = await obtenerJson(`/ejercicios?size=50&sort=nombre&page=${pagina}`,
+          'No se pudo cargar el catálogo de ejercicios.');
+        const contenido = Array.isArray(data) ? data : (data.content || []);
+        todos.push(...contenido);
+        if (Array.isArray(data) || data.last !== false || contenido.length === 0) break;
+      }
+
+      const puedeEditar = puedeEditarEntrenamiento(usuarioActual());
+      const porNombre = new Map(todos.map((e) => [normalizar(e.nombre), e]));
+
+      for (let i = 0; i < EJERCICIOS_CON_GIF.length; i++) {
+        const def = EJERCICIOS_CON_GIF[i];
+        const clave = normalizar(def.nombre);
+        const existente = porNombre.get(clave);
+
+        if (existente) {
+          const faltaMedia = !existente.urlMedia || !String(existente.urlMedia).trim();
+          const faltaSvg = !existente.svgTargetId && def.svgTargetId;
+          if (faltaMedia) existente.urlMedia = def.urlMedia;
+          if (faltaSvg) existente.svgTargetId = def.svgTargetId;
+          if ((faltaMedia || faltaSvg) && puedeEditar && existente.idEjercicio > 0) {
+            await enviarJson(`/ejercicios/${existente.idEjercicio}`, 'PUT', {
+              urlMedia: existente.urlMedia,
+              svgTargetId: existente.svgTargetId,
+            });
+          }
+        } else if (puedeEditar) {
+          const r = await enviarJson('/ejercicios', 'POST', def);
+          if (r.ok && r.data) {
+            todos.push(r.data);
+            porNombre.set(clave, r.data);
+          } else {
+            const local = { idEjercicio: -(i + 1), ...def };
+            todos.push(local);
+            porNombre.set(clave, local);
+          }
+        } else {
+          const local = { idEjercicio: -(i + 1), ...def };
+          todos.push(local);
+          porNombre.set(clave, local);
+        }
+      }
+
+      for (const e of todos) {
+        const resuelta = resolverUrlMedia(e);
+        if (resuelta && !e.urlMedia) e.urlMedia = resuelta;
+      }
+
+      return todos.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+    } finally {
+      sincronizacionEnCurso = null;
+    }
+  })();
+  return sincronizacionEnCurso;
 };
 
 // Lista de socios (GET /socios) con estados de carga y error

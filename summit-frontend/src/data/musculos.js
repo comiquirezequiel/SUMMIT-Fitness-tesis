@@ -62,7 +62,7 @@ export const MUSCULOS_DATA = {
     },
     "triceps-medial": {
       "titulo": "Tríceps — Cabeza Medial",
-      "mecanica": "<strong>Función principal:</strong> Extensión del codo. Trabaja en sinergia con las otras cabezas.<br><br><strong>Ejercicios Clave:</strong><br>• Extensiones en polea alta con barra recta<br>• Tate press con mancuernas",
+      "mecanica": "<strong>Función principal:</strong> Extensión del codo. Trabaja en sinergia con las otras cabezas.<br><br><strong>Ejercicios Clave:</strong><br>• Fondos en banco para tríceps<br>• Extensiones en polea alta con barra recta<br>• Tate press con mancuernas",
       "color": "#26C6DA"
     },
     "antebrazo-extensores": {
@@ -77,22 +77,22 @@ export const MUSCULOS_DATA = {
     },
     "isquiotibiales": {
       "titulo": "Femorales",
-      "mecanica": "<strong>Función principal:</strong> Flexión de rodilla y extensión de cadera.<br><br><strong>Ejercicios Clave:</strong><br>• Peso muerto rumano o con piernas rígidas<br>• Curl femoral acostado<br>• Curl femoral sentado<br>• Buenos días (Good mornings)",
+      "mecanica": "<strong>Función principal:</strong> Flexión de rodilla y extensión de cadera.<br><br><strong>Ejercicios Clave:</strong><br>• Peso muerto con barra<br>• Peso muerto rumano o con piernas rígidas<br>• Curl femoral acostado<br>• Curl femoral sentado<br>• Buenos días (Good mornings)",
       "color": "#EF4444"
     },
     "gemelos": {
       "titulo": "Pantorrillas ",
-      "mecanica": "<strong>Función principal:</strong> Flexión plantar del pie (ponerse en puntas de pie).<br><br><strong>Ejercicios Clave:</strong><br>• Elevación de talones de pie (Gastrocnemio)<br>• Elevación de talones sentado (Sóleo)<br>• Saltos a la cuerda",
+      "mecanica": "<strong>Función principal:</strong> Flexión plantar del pie (ponerse en puntas de pie).<br><br><strong>Ejercicios Clave:</strong><br>• Elevación de talones de pie (Gastrocnemio)<br>• Extensión de gemelos en prensa<br>• Elevación de talones sentado (Sóleo)<br>• Saltos a la cuerda",
       "color": "#4ADE80"
     },
     "abductores": {
       "titulo": "Abductores de Cadera",
-      "mecanica": "<strong>Función principal:</strong> Separar la pierna del eje del cuerpo (abducción).<br><br><strong>Ejercicios Clave:</strong><br>• Máquina de abductores<br>• Abducción en polea baja<br>• Banded lateral walks (caminata lateral con banda)",
+      "mecanica": "<strong>Función principal:</strong> Separar la pierna del eje del cuerpo (abducción).<br><br><strong>Ejercicios Clave:</strong><br>• Abducción de cadera en polea<br>• Máquina de abductores<br>• Banded lateral walks (caminata lateral con banda)",
       "color": "#FCD34D"
     },
     "recto-abdominal": {
       "titulo": "Recto Abdominal",
-      "mecanica": "<strong>Función principal:</strong> Flexión del tronco (aproximar costillas a pelvis).<br><br><strong>Ejercicios Clave:</strong><br>• Crunch con peso<br>• Elevación de piernas en barra<br>• Rueda abdominal (ab wheel)<br>• Cable crunch",
+      "mecanica": "<strong>Función principal:</strong> Flexión del tronco (aproximar costillas a pelvis).<br><br><strong>Ejercicios Clave:</strong><br>• Abdominales en V con mancuerna<br>• Crunch con peso<br>• Elevación de piernas en barra<br>• Rueda abdominal (ab wheel)<br>• Cable crunch",
       "color": "#F87171"
     },
     "oblicuos": {
@@ -127,12 +127,12 @@ export const MUSCULOS_DATA = {
     },
     "cuadriceps": {
       "titulo": "Cuádriceps (4 cabezas)",
-      "mecanica": "<strong>Función principal:</strong> Extensión de la rodilla; el recto femoral también flexiona la cadera.<br><br><strong>Ejercicios Clave:</strong><br>• Sentadilla con barra<br>• Prensa de piernas<br>• Extensión en máquina<br>• Zancadas (lunges)",
+      "mecanica": "<strong>Función principal:</strong> Extensión de la rodilla; el recto femoral también flexiona la cadera.<br><br><strong>Ejercicios Clave:</strong><br>• Sentadilla con barra<br>• Sentadilla con mancuernas<br>• Prensa de piernas<br>• Extensión de cuádriceps en máquina<br>• Air Bike (Bicicleta de aire)<br>• Zancadas (lunges)",
       "color": "#84CC16"
     },
     "aductores": {
       "titulo": "Aductores (Cara Interna)",
-      "mecanica": "<strong>Función principal:</strong> Aducción del muslo (cerrar las piernas); estabilización de la cadera.<br><br><strong>Ejercicios Clave:</strong><br>• Sentadilla sumo<br>• Aductores en máquina<br>• Zancada lateral<br>• Cable kick-in",
+      "mecanica": "<strong>Función principal:</strong> Aducción del muslo (cerrar las piernas); estabilización de la cadera.<br><br><strong>Ejercicios Clave:</strong><br>• Aducción en máquina<br>• Sentadilla sumo<br>• Zancada lateral<br>• Cable kick-in",
       "color": "#FB923C"
     },
     "tibia-anterior": {
