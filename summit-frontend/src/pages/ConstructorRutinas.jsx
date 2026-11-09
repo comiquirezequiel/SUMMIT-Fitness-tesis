@@ -151,6 +151,9 @@ const Constructor = ({ onCerrar }) => {
     return () => { vigente = false; };
   }, [modoEdicion, idSocio]);
 
+  // Antes del efecto que lo usa: una const declarada más abajo todavía no existe cuando se arma la lista de dependencias
+  const catalogoPorId = useMemo(() => new Map(catalogo.datos.map((e) => [e.idEjercicio, e])), [catalogo.datos]);
+
   // Cruce preventivo del ejercicio elegido (lo resuelve el backend con la ficha médica)
   useEffect(() => {
     if (!alta.idEjercicio || !idSocio || !puedeEditar) { setValidacion({ idEjercicio: '', cargando: false, riesgos: [] }); return undefined; }
@@ -176,7 +179,6 @@ const Constructor = ({ onCerrar }) => {
   const dia = Math.min(diaActivo, totalDias);
   const delDia = items.filter((i) => diaDe(i) === dia);
   const diasVacios = Array.from({ length: totalDias }, (_, i) => i + 1).filter((d) => !items.some((i) => diaDe(i) === d));
-  const catalogoPorId = useMemo(() => new Map(catalogo.datos.map((e) => [e.idEjercicio, e])), [catalogo.datos]);
   const riesgosDe = (idEjercicio) => riesgosLocales(ficha.patologias, catalogoPorId.get(idEjercicio)?.patologiasContraindicadas);
   // Marca de cada ejercicio en el buscador: ⚠ regla firme (bloquea y pide confirmación) o ✦ solo lo sugiere la IA
   // (informativo). Si tiene las dos, se muestra ⚠ porque es la que manda.
