@@ -93,7 +93,7 @@ programas recién instalados.
 ## Paso 2: traer el código de SUMMIT
 
 ```powershell
-git clone https://github.com/Granziok/SUMMIT-Fitness.git C:\SUMMIT\codigo
+git clone https://github.com/comiquirezequiel/SUMMIT-Fitness-tesis.git C:\SUMMIT\codigo
 ```
 
 El repositorio es privado: Git abre el navegador para que entres con la cuenta de GitHub que tiene acceso. Otra forma
