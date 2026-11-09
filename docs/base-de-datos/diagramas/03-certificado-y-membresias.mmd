@@ -1,0 +1,60 @@
+erDiagram
+    usuarios ||--o{ certificados_medicos : "presenta (socio)"
+    usuarios |o--o{ certificados_medicos : "revisa (personal)"
+    usuarios ||--o{ suscripciones : "contrata"
+    planes ||--o{ suscripciones : "define"
+    suscripciones ||--o{ congelamientos : "se congela en"
+    usuarios ||--o{ congelamientos : "congela (socio)"
+    usuarios |o--o{ congelamientos : "registra (personal)"
+
+    usuarios {
+        bigint id_usuario PK
+    }
+    certificados_medicos {
+        bigint id_certificado PK
+        bigint usuario_id FK "socio titular"
+        bigint revisado_por_id FK "empleado que revisó"
+        varchar archivo_url
+        date fecha_emision
+        date fecha_vencimiento
+        varchar estado_legal "VIGENTE, VENCIDO, RECHAZADO, PENDIENTE_REVISION"
+        varchar observaciones_patologias
+        varchar resumen_ia "Lectura de la IA confirmada"
+        varchar motivo_rechazo
+        datetime fecha_revision
+    }
+    planes {
+        bigint id_plan PK
+        varchar nombre_plan UK
+        decimal precio_base
+        int duracion_dias
+        int veces_por_semana "NULL = pase libre"
+        boolean activo
+    }
+    suscripciones {
+        bigint id_suscripcion PK
+        bigint usuario_id FK
+        bigint plan_id FK
+        date fecha_inicio
+        date fecha_vencimiento
+        boolean activa
+    }
+    congelamientos {
+        bigint id_congelamiento PK
+        bigint suscripcion_id FK
+        bigint usuario_id FK
+        bigint registrado_por_id FK
+        date desde
+        date hasta
+        int dias_aplicados
+        varchar motivo "VACACIONES, SALUD, OTRO"
+        boolean terminado_antes
+        boolean anulado
+    }
+    reglas_membresia {
+        bigint id_reglas PK "registro único (1)"
+        decimal matricula_monto
+        int matricula_reinscripcion_dias
+        int congelamiento_min_dias
+        int congelamiento_max_dias_anio
+    }

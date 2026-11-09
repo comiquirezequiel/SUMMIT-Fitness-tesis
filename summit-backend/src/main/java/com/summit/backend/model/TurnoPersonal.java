@@ -8,7 +8,7 @@ import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 
 /**
- * Turno de trabajo de una persona del equipo (FASES.md, Fase 9): de la entrada a la salida. Lo abre y lo cierra su
+ * Turno de trabajo de una persona del equipo (fase 9 del desarrollo): de la entrada a la salida. Lo abre y lo cierra su
  * paso por el control de acceso de recepción, y lo corrige el admin dejando el motivo (CorreccionTurno).
  *
  * <p>Un turno que pasa la medianoche es uno solo y cuenta en el día en que empezó. Sin salida: si es el último de la

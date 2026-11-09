@@ -1,0 +1,52 @@
+erDiagram
+    pago_historial ||--o{ comprobantes_fiscales : "se factura en"
+    comprobantes_fiscales |o--o{ comprobantes_fiscales : "anula (nota de crédito)"
+    usuarios |o--o{ comprobantes_fiscales : "solicita"
+
+    pago_historial {
+        bigint id_pago PK
+        decimal monto_abonado
+    }
+    usuarios {
+        bigint id_usuario PK
+    }
+    comprobantes_fiscales {
+        bigint id_comprobante PK
+        bigint pago_id FK
+        bigint comprobante_asociado_id FK "factura que anula"
+        bigint solicitado_por_id FK
+        varchar ambiente UK "SIMULADOR, HOMOLOGACION, PRODUCCION"
+        varchar estado "PENDIENTE, ENVIANDO, INCIERTO, AUTORIZADO, RECHAZADO"
+        varchar tipo UK "FACTURA_B, NOTA_CREDITO_B, FACTURA_C, NOTA_CREDITO_C"
+        varchar cuit_emisor UK
+        int punto_venta UK
+        bigint numero UK
+        date fecha
+        decimal imp_total
+        decimal imp_neto
+        decimal imp_iva
+        varchar cae
+        date cae_vencimiento
+        int intentos
+        datetime proximo_intento
+        bigint version "bloqueo optimista"
+    }
+    datos_fiscales {
+        bigint id_datos PK "registro único (1)"
+        varchar cuit
+        varchar razon_social
+        varchar condicion_iva "MONOTRIBUTO, RESPONSABLE_INSCRIPTO"
+        varchar ingresos_brutos
+        date inicio_actividades
+        varchar domicilio_comercial
+        int punto_venta
+        boolean identificar_socio
+    }
+    tickets_acceso_arca {
+        bigint id_ticket PK
+        varchar ambiente UK
+        varchar huella_certificado UK
+        text token
+        text firma
+        datetime vence "12 horas"
+    }

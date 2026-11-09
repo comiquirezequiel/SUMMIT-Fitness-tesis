@@ -1,0 +1,50 @@
+erDiagram
+    usuarios ||--o{ logs_asistencia : "pasa por recepción"
+    usuarios |o--o{ logs_asistencia : "autoriza excepción"
+    usuarios ||--o{ turnos_personal : "cumple"
+    logs_asistencia |o--o{ turnos_personal : "abre o cierra"
+    turnos_personal ||--o{ correcciones_turno : "se corrige con"
+    usuarios ||--o{ correcciones_turno : "corrige"
+
+    usuarios {
+        bigint id_usuario PK
+    }
+    configuracion_acceso {
+        bigint id_configuracion PK "registro único (1)"
+        boolean requerir_membresia_activa
+        boolean requerir_certificado_medico
+        boolean permitir_override_manual
+        int dias_gracia_membresia
+        int dias_gracia_certificado
+    }
+    logs_asistencia {
+        bigint id_log PK
+        bigint usuario_id FK
+        bigint autorizado_por_id FK
+        datetime fecha_hora
+        varchar tipo_evento "INGRESO_MOLINETE, CHECKOUT, INGRESO_EXCEPCION"
+        varchar resultado "PERMITIDO, DENEGADO_..."
+        varchar motivo_excepcion
+    }
+    turnos_personal {
+        bigint id_turno PK
+        bigint usuario_id FK
+        bigint log_entrada_id FK
+        bigint log_salida_id FK
+        datetime entrada
+        datetime salida
+        varchar origen "RECEPCION, MANUAL"
+        boolean anulado
+    }
+    correcciones_turno {
+        bigint id_correccion PK
+        bigint turno_id FK
+        bigint autor_id FK
+        varchar accion "ALTA, CAMBIO, ANULACION"
+        datetime entrada_anterior
+        datetime salida_anterior
+        datetime entrada_nueva
+        datetime salida_nueva
+        varchar motivo
+        datetime fecha
+    }

@@ -46,7 +46,7 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 /**
- * Asistencia del personal (FASES.md, Fase 9): entradas y salidas del equipo, horas trabajadas y correcciones.
+ * Asistencia del personal (fase 9 del desarrollo): entradas y salidas del equipo, horas trabajadas y correcciones.
  *
  * <p>El equipo (recepción, profesores y administradores) ficha en el mismo control de acceso que los socios, sin
  * pasos de más: si la persona tiene un turno en curso, su paso por recepción es la salida; si no, es una entrada.

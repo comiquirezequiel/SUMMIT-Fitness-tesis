@@ -1,0 +1,22 @@
+erDiagram
+    datos_gimnasio ||--|{ datos_gimnasio_horarios : "abre en"
+
+    datos_gimnasio {
+        bigint id_datos PK "registro único (1)"
+        varchar nombre
+        varchar direccion
+        varchar ciudad
+        varchar telefono
+        varchar whatsapp
+        varchar email
+        varchar instagram
+        varchar logo_url "logo de los PDF"
+        datetime logo_actualizado
+    }
+    datos_gimnasio_horarios {
+        bigint id_datos PK, FK
+        int orden PK "0 = lunes ... 6 = domingo"
+        varchar dia
+        time abre
+        time cierra "NULL = no abre"
+    }

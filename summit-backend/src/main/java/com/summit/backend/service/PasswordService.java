@@ -38,7 +38,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Contraseñas (Fase 6 de FASES.md): cambiar la propia, restablecerla con una temporal (recepción o el admin) y
+ * Contraseñas (fase 6 del desarrollo): cambiar la propia, restablecerla con una temporal (recepción o el admin) y
  * recuperarla por email con un link de un solo uso.
  *
  * <p>Cada cambio deja sin efecto los tokens emitidos antes (JwtAuthenticationFilter compara con passwordCambiada).</p>

@@ -140,6 +140,13 @@ Para tener fechas actuales (por ejemplo, el día de la defensa), se vuelve a cor
   Termina con `BUILD SUCCESS` si todo anda.
 - **Frontend:** `npm.cmd run lint` dentro de `summit-frontend` revisa el código (sin errores = no muestra nada).
 
+## Documentación
+
+- [`docs/informe-detallado/`](docs/informe-detallado/00-INDICE-Y-ARQUITECTURA-GENERAL.md): informe técnico archivo por archivo (backend, frontend, instalación y tests), empezando por el índice y la arquitectura general.
+- [`docs/base-de-datos/`](docs/base-de-datos): modelo entidad-relación, modelo lógico con el diccionario de datos, script de creación y diagramas.
+- [`INSTALACION.md`](INSTALACION.md): instalación en la PC del gimnasio. [`FACTURACION.md`](FACTURACION.md): factura electrónica de ARCA.
+- El análisis, el desarrollo por etapas y el instructivo de uso están en el informe final de la tesis, que se entrega aparte.
+
 ## Notas
 
 - Para instalar SUMMIT en la PC del gimnasio (servicios que arrancan solos, acceso desde otras PC y copias de

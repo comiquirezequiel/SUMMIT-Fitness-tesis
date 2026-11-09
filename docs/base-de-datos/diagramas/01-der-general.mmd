@@ -1,0 +1,67 @@
+erDiagram
+    direction LR
+    usuarios ||--o| perfiles_socio : "tiene ficha (1:0..1)"
+    descuentos |o--o{ perfiles_socio : "es el habitual de"
+    usuarios ||--o{ recuperaciones_password : "solicita"
+
+    usuarios ||--o{ certificados_medicos : "presenta (socio)"
+    usuarios |o--o{ certificados_medicos : "revisa (personal)"
+
+    usuarios ||--o{ suscripciones : "contrata"
+    planes ||--o{ suscripciones : "define"
+    suscripciones ||--o{ congelamientos : "se congela en"
+    usuarios |o--o{ congelamientos : "registra (personal)"
+
+    usuarios ||--o{ pago_historial : "paga (socio)"
+    planes ||--o{ pago_historial : "corresponde a"
+    usuarios |o--o{ pago_historial : "cobra / verifica (personal)"
+    usuarios ||--o{ debitos_automaticos : "adhiere"
+    planes ||--o{ debitos_automaticos : "cobra"
+    usuarios |o--o{ gastos : "registra / anula"
+    usuarios |o--o{ cierres_caja : "cierra"
+    cierres_caja ||--|{ cierres_caja_metodos : "se desglosa en"
+
+    pago_historial ||--o{ comprobantes_fiscales : "se factura en"
+    comprobantes_fiscales |o--o{ comprobantes_fiscales : "anula (nota de crédito)"
+    usuarios |o--o{ comprobantes_fiscales : "solicita"
+
+    usuarios ||--o{ logs_asistencia : "pasa por recepción"
+    usuarios |o--o{ logs_asistencia : "autoriza excepción"
+    usuarios ||--o{ turnos_personal : "cumple"
+    logs_asistencia |o--o{ turnos_personal : "abre o cierra"
+    turnos_personal ||--o{ correcciones_turno : "se corrige con"
+    usuarios ||--o{ correcciones_turno : "corrige"
+
+    usuarios |o--o{ clases : "dicta (profesor)"
+    clases ||--o{ clase_horarios : "se dicta en"
+    clase_horarios ||--o{ reservas_clases : "recibe"
+    usuarios ||--o{ reservas_clases : "reserva (socio)"
+
+    usuarios ||--o{ rutinas : "recibe (socio)"
+    usuarios |o--o{ rutinas : "arma (profesor)"
+    rutinas ||--o{ rutina_ejercicios : "contiene"
+    ejercicios ||--o{ rutina_ejercicios : "se prescribe en"
+
+    usuarios ||--o{ tareas_seguimiento : "es contactado (socio)"
+    usuarios |o--o{ tareas_seguimiento : "carga / resuelve (personal)"
+
+    datos_gimnasio ||--|{ datos_gimnasio_horarios : "abre en"
+
+    configuracion_acceso
+    reglas_membresia
+    datos_fiscales
+    tickets_acceso_arca
+
+    usuarios {
+        bigint id_usuario PK "Identificador único central"
+        varchar dni UK "Documento de identidad"
+        varchar nombre_completo "Apellido y nombre"
+        varchar email UK "Correo de acceso del personal"
+        varchar password "Hash BCrypt"
+        varchar telefono "Contacto (WhatsApp)"
+        varchar rol "ADMIN, RECEPCION, PROFESOR, SOCIO"
+        varchar estado "ACTIVO, INACTIVO, etc."
+        datetime fecha_creacion "Alta en el sistema"
+        boolean debe_cambiar_password "Contraseña temporal"
+        datetime password_cambiada "Último cambio"
+    }

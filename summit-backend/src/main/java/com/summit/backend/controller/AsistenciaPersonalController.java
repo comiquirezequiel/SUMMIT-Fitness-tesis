@@ -13,7 +13,7 @@ import java.time.LocalDate;
 import java.util.Map;
 
 /**
- * Asistencia del personal (FASES.md, Fase 9): horas trabajadas del equipo y correcciones. Solo ADMIN (ver
+ * Asistencia del personal (fase 9 del desarrollo): horas trabajadas del equipo y correcciones. Solo ADMIN (ver
  * SecurityConfig). Las entradas y salidas las registra el control de acceso de recepción (/api/asistencia/molinete).
  */
 @RestController

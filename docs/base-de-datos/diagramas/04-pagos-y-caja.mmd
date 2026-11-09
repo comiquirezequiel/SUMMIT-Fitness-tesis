@@ -1,0 +1,75 @@
+erDiagram
+    usuarios ||--o{ pago_historial : "paga (socio)"
+    usuarios |o--o{ pago_historial : "cobra / verifica (personal)"
+    planes ||--o{ pago_historial : "corresponde a"
+    usuarios ||--o{ debitos_automaticos : "adhiere"
+    planes ||--o{ debitos_automaticos : "cobra"
+    usuarios |o--o{ gastos : "registra / anula"
+    usuarios |o--o{ cierres_caja : "cierra"
+    cierres_caja ||--|{ cierres_caja_metodos : "se desglosa en"
+
+    usuarios {
+        bigint id_usuario PK
+    }
+    planes {
+        bigint id_plan PK
+    }
+    pago_historial {
+        bigint id_pago PK
+        bigint usuario_id FK "socio que paga"
+        bigint plan_id FK
+        bigint registrado_por_id FK "quien cobró"
+        bigint verificado_por_id FK
+        decimal monto_abonado
+        decimal precio_lista
+        varchar descuento_nombre
+        decimal descuento_monto
+        decimal matricula_monto
+        varchar metodo_pago
+        varchar estado_pago "PENDIENTE, APROBADO, RECHAZADO"
+        datetime fecha_pago
+        date vence_membresia
+        varchar mp_payment_id UK
+    }
+    debitos_automaticos {
+        bigint id_debito PK
+        bigint usuario_id FK
+        bigint plan_id FK
+        decimal monto
+        varchar estado "PENDIENTE_AUTORIZACION, ACTIVO, PAUSADO, CANCELADO"
+        varchar mp_preapproval_id UK
+        varchar email_pagador
+        date proximo_cobro
+        datetime ultimo_rechazo
+    }
+    gastos {
+        bigint id_gasto PK
+        bigint registrado_por_id FK
+        bigint anulado_por_id FK
+        datetime fecha
+        varchar categoria "ALQUILER, SUELDOS, etc."
+        decimal monto
+        varchar metodo_pago
+        boolean fuera_de_caja
+        boolean anulado
+    }
+    cierres_caja {
+        bigint id_cierre PK
+        bigint cerrado_por_id FK
+        datetime desde UK
+        datetime hasta
+        decimal fondo_inicial
+        decimal efectivo_esperado
+        decimal efectivo_contado
+        decimal diferencia
+        decimal retiro
+        decimal fondo_siguiente
+        decimal total_ingresos
+        decimal total_egresos
+    }
+    cierres_caja_metodos {
+        bigint cierre_id PK, FK
+        varchar metodo_pago PK
+        decimal ingresos
+        decimal egresos
+    }

@@ -1,0 +1,39 @@
+erDiagram
+    usuarios ||--o{ rutinas : "recibe (socio)"
+    usuarios |o--o{ rutinas : "arma (profesor)"
+    rutinas ||--o{ rutina_ejercicios : "contiene"
+    ejercicios ||--o{ rutina_ejercicios : "se prescribe en"
+
+    usuarios {
+        bigint id_usuario PK
+    }
+    ejercicios {
+        bigint id_ejercicio PK
+        varchar nombre
+        varchar descripcion
+        varchar grupo_muscular "PECHO, ESPALDA, BICEPS..."
+        varchar url_media
+        varchar svg_target_id "zona del modelo muscular"
+        varchar patologias_contraindicadas
+    }
+    rutinas {
+        bigint id_rutina PK
+        bigint socio_id FK
+        bigint profesor_id FK
+        varchar nombre
+        varchar objetivo
+        date fecha_creacion
+        boolean activa
+    }
+    rutina_ejercicios {
+        bigint id_rutina_ejercicio PK
+        bigint rutina_id FK
+        bigint ejercicio_id FK
+        int dia_numero "1 a 7"
+        int orden
+        int series
+        int repeticiones
+        double peso_sugerido_kg
+        int descanso_segundos
+        varchar observaciones
+    }

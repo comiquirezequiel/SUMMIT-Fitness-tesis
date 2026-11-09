@@ -1,0 +1,32 @@
+erDiagram
+    usuarios |o--o{ clases : "dicta (profesor)"
+    clases ||--o{ clase_horarios : "se dicta en"
+    clase_horarios ||--o{ reservas_clases : "recibe"
+    usuarios ||--o{ reservas_clases : "reserva (socio)"
+
+    usuarios {
+        bigint id_usuario PK
+    }
+    clases {
+        bigint id_clase PK
+        bigint profesor_id FK
+        varchar nombre
+        varchar descripcion
+        int capacidad_maxima
+        boolean activa
+    }
+    clase_horarios {
+        bigint id_horario PK
+        bigint clase_id FK
+        varchar dia_semana "LUNES a DOMINGO"
+        time hora_inicio
+        time hora_fin
+    }
+    reservas_clases {
+        bigint id_reserva PK
+        bigint usuario_id FK
+        bigint horario_id FK
+        date fecha_clase
+        datetime fecha_reserva
+        varchar estado "CONFIRMADA, CANCELADA, ASISTIO, AUSENTE"
+    }

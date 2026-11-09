@@ -1,0 +1,26 @@
+erDiagram
+    usuarios ||--o{ tareas_seguimiento : "es contactado (socio)"
+    usuarios |o--o{ tareas_seguimiento : "carga (personal)"
+    usuarios |o--o{ tareas_seguimiento : "resuelve (personal)"
+
+    usuarios {
+        bigint id_usuario PK
+        varchar nombre_completo
+        varchar telefono "link de WhatsApp"
+    }
+    tareas_seguimiento {
+        bigint id_tarea PK
+        bigint usuario_id FK "socio"
+        bigint creada_por_id FK "NULL = automática"
+        bigint resuelta_por_id FK
+        varchar tipo "CUOTA_VENCIDA, APTO_POR_VENCER, INACTIVO, MANUAL"
+        varchar descripcion
+        date vence
+        date fecha_referencia
+        varchar clave UK "evita duplicar automáticas"
+        varchar estado "PENDIENTE, HECHA, DESCARTADA, RESUELTA"
+        varchar canal "WHATSAPP, LLAMADA, PRESENCIAL, EMAIL, OTRO"
+        varchar nota
+        datetime fecha_creacion
+        datetime fecha_resolucion
+    }

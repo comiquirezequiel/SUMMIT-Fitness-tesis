@@ -1,0 +1,46 @@
+erDiagram
+    usuarios ||--o| perfiles_socio : "tiene ficha (1:0..1)"
+    descuentos |o--o{ perfiles_socio : "es el habitual de"
+    usuarios ||--o{ recuperaciones_password : "solicita"
+
+    usuarios {
+        bigint id_usuario PK
+        varchar dni UK
+        varchar nombre_completo
+        varchar email UK
+        varchar password "Hash BCrypt"
+        varchar telefono
+        varchar rol "ADMIN, RECEPCION, PROFESOR, SOCIO"
+        varchar estado "ACTIVO, INACTIVO, PENDIENTE, SUSPENDIDO, CANCELADO"
+        datetime fecha_creacion
+        boolean debe_cambiar_password
+        datetime password_cambiada
+    }
+    perfiles_socio {
+        bigint id_perfil PK
+        bigint usuario_id FK, UK
+        bigint descuento_id FK
+        date fecha_nacimiento
+        varchar genero
+        varchar domicilio
+        varchar ciudad
+        varchar objetivo
+        varchar observaciones
+        varchar foto_url "Foto para reconocerlo en recepción"
+        datetime foto_actualizada
+    }
+    descuentos {
+        bigint id_descuento PK
+        varchar nombre UK
+        varchar tipo "PORCENTAJE, MONTO_FIJO"
+        decimal valor
+        boolean activo
+    }
+    recuperaciones_password {
+        bigint id_recuperacion PK
+        bigint usuario_id FK
+        varchar hash_token UK "SHA-256 del link"
+        datetime creada
+        datetime vence
+        datetime usada
+    }
